@@ -197,16 +197,16 @@
 
 Before starting Phase 1 - Sprint 1 (Authentication & Core Layout), verify:
 
-- [x] Node.js installed (`node --version` works)
-- [x] Dependencies installed (`node_modules/` exists)
-- [x] Supabase project created
-- [x] Database schema applied (13 tables + 4 enums)
-- [ ] ~~Microsoft OAuth configured~~ (Deferred - will add later)
-- [ ] ~~Google OAuth configured~~ (Deferred - will add later)
-- [x] Environment variables set (`.env.local`)
+- [ ] Node.js installed (`node --version` works)
+- [ ] Dependencies installed (`node_modules/` exists)
+- [ ] Supabase project created
+- [ ] Database schema applied (13 tables + 4 enums)
+- [ ] Microsoft OAuth configured
+- [ ] Google OAuth configured
+- [ ] Environment variables set (`.env.local`)
 - [ ] Dev server runs (`npm run dev`)
 - [ ] ShadCN UI initialized
-- [ ] First admin user created (via SQL - after first login)
+- [ ] First admin user created (via SQL)
 
 ---
 
