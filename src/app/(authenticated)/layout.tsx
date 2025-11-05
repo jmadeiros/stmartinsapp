@@ -1,7 +1,6 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
-import { Sidebar } from '@/components/layout/sidebar'
-import { Header } from '@/components/layout/header'
+import { DashboardShell } from '@/components/dashboard/dashboard-shell'
 
 export default async function AuthenticatedLayout({
   children,
@@ -24,17 +23,5 @@ export default async function AuthenticatedLayout({
     .eq('id', user.id)
     .single()
 
-  return (
-    <div className="min-h-screen bg-slate-50">
-      <Sidebar user={profile} />
-      <div className="lg:pl-64">
-        <Header user={profile} />
-        <main className="py-6">
-          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-            {children}
-          </div>
-        </main>
-      </div>
-    </div>
-  )
+  return <DashboardShell user={profile}>{children}</DashboardShell>
 }
