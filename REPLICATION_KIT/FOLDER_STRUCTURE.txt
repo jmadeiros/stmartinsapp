@@ -1,0 +1,54 @@
+.
+|____app
+| |____login-page.tsx
+| |____social-page.tsx
+|____QUICK_START_CHECKLIST.md
+|____FILE_INVENTORY.md
+|____docs
+| |____CONTENT_SYSTEM_SUMMARY.md
+| |____SOCIAL_HOMEPAGE_BLUEPRINT.md
+|____FOLDER_STRUCTURE.txt
+|____README.md
+|____styles
+| |____theme.css
+| |____globals.css
+|____components
+| |____send-alert-dialog.tsx
+| |____ui
+| | |____category-badge.tsx
+| | |____needs-chip.tsx
+| | |____card.tsx
+| | |____post-menu.tsx
+| | |____label.tsx
+| | |____category-selector.tsx
+| | |____avatar.tsx
+| | |____alert-banner.tsx
+| | |____dialog.tsx
+| | |____interest-counter.tsx
+| | |____partner-avatars.tsx
+| | |____card-5.tsx
+| | |____button.tsx
+| | |____action-cta.tsx
+| | |____collapsible.tsx
+| | |____dropdown-menu.tsx
+| | |____textarea.tsx
+| | |____input.tsx
+| | |____content-badge.tsx
+| |____create-event-dialog.tsx
+| |____event-card.tsx
+| |____aitrium
+| | |____canvas-reveal-effect.tsx
+| | |____sphere-image-grid.tsx
+| |____animated-events.tsx
+| |____project-card.tsx
+| |____main-feed.tsx
+| |____create-project-dialog.tsx
+| |____left-sidebar.tsx
+| |____header.tsx
+| |____post-card.tsx
+| |____right-sidebar.tsx
+|____package.json
+|____lib
+| |____utils.ts
+| |____types.ts
+|____components.json

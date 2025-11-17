@@ -1,0 +1,234 @@
+/**
+ * OKLCH-based Design Token System
+ * Shared between shadcn/ui and HeroUI components
+ * 
+ * OKLCH provides better perceptual uniformity and wider color gamut
+ * Format: oklch(lightness chroma hue / alpha)
+ */
+
+/* ============================================
+   CORE DESIGN TOKENS
+   ============================================ */
+
+:root {
+  /* Spacing & Layout */
+  --spacing-xs: 0.25rem;
+  --spacing-sm: 0.5rem;
+  --spacing-md: 1rem;
+  --spacing-lg: 1.5rem;
+  --spacing-xl: 2rem;
+  --spacing-2xl: 3rem;
+
+  /* Border Radius */
+  --radius: 0.625rem;
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+
+  /* Typography Scale */
+  --font-size-xs: 0.75rem;
+  --font-size-sm: 0.875rem;
+  --font-size-base: 1rem;
+  --font-size-lg: 1.125rem;
+  --font-size-xl: 1.25rem;
+  --font-size-2xl: 1.5rem;
+  --font-size-3xl: 1.875rem;
+  --font-size-4xl: 2.25rem;
+
+  /* ============================================
+     LIGHT MODE COLORS (OKLCH)
+     ============================================ */
+  
+  /* Base Colors */
+  --background: oklch(1 0 0); /* Pure white */
+  --foreground: oklch(0.145 0 0); /* Near black */
+  
+  /* Card */
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.145 0 0);
+  
+  /* Popover */
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.145 0 0);
+  
+  /* Primary - Blue */
+  --primary: oklch(0.45 0.18 250); /* Vibrant blue */
+  --primary-foreground: oklch(0.985 0 0); /* Near white */
+  
+  /* Secondary - Gray */
+  --secondary: oklch(0.97 0 0);
+  --secondary-foreground: oklch(0.205 0 0);
+  
+  /* Muted - Subtle gray */
+  --muted: oklch(0.97 0 0);
+  --muted-foreground: oklch(0.556 0 0);
+  
+  /* Accent - Purple */
+  --accent: oklch(0.65 0.22 280); /* Purple accent */
+  --accent-foreground: oklch(0.985 0 0);
+  
+  /* Destructive - Red */
+  --destructive: oklch(0.577 0.245 27.325);
+  --destructive-foreground: oklch(0.985 0 0);
+  
+  /* Success - Green */
+  --success: oklch(0.65 0.18 145); /* Green */
+  --success-foreground: oklch(0.985 0 0);
+  
+  /* Warning - Orange */
+  --warning: oklch(0.75 0.15 65); /* Orange */
+  --warning-foreground: oklch(0.145 0 0);
+  
+  /* Info - Cyan */
+  --info: oklch(0.65 0.15 210); /* Cyan */
+  --info-foreground: oklch(0.985 0 0);
+  
+  /* Border & Input */
+  --border: oklch(0.922 0 0);
+  --input: oklch(0.922 0 0);
+  --ring: oklch(0.45 0.18 250); /* Matches primary */
+  
+  /* Charts */
+  --chart-1: oklch(0.646 0.222 41.116);
+  --chart-2: oklch(0.6 0.118 184.704);
+  --chart-3: oklch(0.398 0.07 227.392);
+  --chart-4: oklch(0.828 0.189 84.429);
+  --chart-5: oklch(0.769 0.188 70.08);
+  
+  /* Sidebar */
+  --sidebar: oklch(0.985 0 0);
+  --sidebar-foreground: oklch(0.145 0 0);
+  --sidebar-primary: oklch(0.45 0.18 250);
+  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-accent: oklch(0.97 0 0);
+  --sidebar-accent-foreground: oklch(0.205 0 0);
+  --sidebar-border: oklch(0.922 0 0);
+  --sidebar-ring: oklch(0.45 0.18 250);
+}
+
+.dark {
+  /* ============================================
+     DARK MODE COLORS (OKLCH)
+     ============================================ */
+  
+  /* Base Colors */
+  --background: oklch(0.145 0 0); /* Near black */
+  --foreground: oklch(0.985 0 0); /* Near white */
+  
+  /* Card */
+  --card: oklch(0.205 0 0);
+  --card-foreground: oklch(0.985 0 0);
+  
+  /* Popover */
+  --popover: oklch(0.205 0 0);
+  --popover-foreground: oklch(0.985 0 0);
+  
+  /* Primary - Blue (lighter in dark mode) */
+  --primary: oklch(0.65 0.22 250); /* Lighter blue for dark mode */
+  --primary-foreground: oklch(0.145 0 0); /* Dark text on light background */
+  
+  /* Secondary - Gray */
+  --secondary: oklch(0.269 0 0);
+  --secondary-foreground: oklch(0.985 0 0);
+  
+  /* Muted - Subtle gray */
+  --muted: oklch(0.269 0 0);
+  --muted-foreground: oklch(0.708 0 0);
+  
+  /* Accent - Purple (lighter in dark mode) */
+  --accent: oklch(0.75 0.25 280); /* Lighter purple for dark mode */
+  --accent-foreground: oklch(0.145 0 0);
+  
+  /* Destructive - Red (lighter in dark mode) */
+  --destructive: oklch(0.704 0.191 22.216);
+  --destructive-foreground: oklch(0.985 0 0);
+  
+  /* Success - Green (lighter in dark mode) */
+  --success: oklch(0.75 0.20 145);
+  --success-foreground: oklch(0.145 0 0);
+  
+  /* Warning - Orange (lighter in dark mode) */
+  --warning: oklch(0.80 0.18 65);
+  --warning-foreground: oklch(0.145 0 0);
+  
+  /* Info - Cyan (lighter in dark mode) */
+  --info: oklch(0.75 0.18 210);
+  --info-foreground: oklch(0.145 0 0);
+  
+  /* Border & Input */
+  --border: oklch(1 0 0 / 10%);
+  --input: oklch(1 0 0 / 15%);
+  --ring: oklch(0.65 0.22 250); /* Matches primary */
+  
+  /* Charts */
+  --chart-1: oklch(0.488 0.243 264.376);
+  --chart-2: oklch(0.696 0.17 162.48);
+  --chart-3: oklch(0.769 0.188 70.08);
+  --chart-4: oklch(0.627 0.265 303.9);
+  --chart-5: oklch(0.645 0.246 16.439);
+  
+  /* Sidebar */
+  --sidebar: oklch(0.205 0 0);
+  --sidebar-foreground: oklch(0.985 0 0);
+  --sidebar-primary: oklch(0.65 0.22 250);
+  --sidebar-primary-foreground: oklch(0.145 0 0);
+  --sidebar-accent: oklch(0.269 0 0);
+  --sidebar-accent-foreground: oklch(0.985 0 0);
+  --sidebar-border: oklch(1 0 0 / 10%);
+  --sidebar-ring: oklch(0.65 0.22 250);
+}
+
+/* ============================================
+   UTILITY CLASSES
+   ============================================ */
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  
+  body {
+    @apply bg-background text-foreground;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+  
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-semibold tracking-tight;
+  }
+}
+
+/* ============================================
+   HEROUI INTEGRATION
+   Custom properties for HeroUI to use our tokens
+   ============================================ */
+
+.heroui-provider {
+  /* Map our tokens to HeroUI's expected variables */
+  --heroui-background: var(--background);
+  --heroui-foreground: var(--foreground);
+  --heroui-primary: var(--primary);
+  --heroui-primary-foreground: var(--primary-foreground);
+  --heroui-secondary: var(--secondary);
+  --heroui-secondary-foreground: var(--secondary-foreground);
+  --heroui-success: var(--success);
+  --heroui-success-foreground: var(--success-foreground);
+  --heroui-warning: var(--warning);
+  --heroui-warning-foreground: var(--warning-foreground);
+  --heroui-danger: var(--destructive);
+  --heroui-danger-foreground: var(--destructive-foreground);
+  --heroui-default: var(--muted);
+  --heroui-default-foreground: var(--muted-foreground);
+  --heroui-content1: var(--card);
+  --heroui-content1-foreground: var(--card-foreground);
+  --heroui-radius-small: var(--radius-sm);
+  --heroui-radius-medium: var(--radius-md);
+  --heroui-radius-large: var(--radius-lg);
+}
+
+
+
+
+
+
+
