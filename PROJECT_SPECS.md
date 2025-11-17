@@ -534,93 +534,464 @@
 
 ---
 
-### 4.2 Dashboard (Landing Page)
+### 4.2 Homepage Social Feed (Primary Landing Experience)
 
-**Layout:**
+**Overview:**
+The homepage has been redesigned as a social collaboration feed, moving from a traditional dashboard to an interactive, real-time collaboration hub. This design prioritizes discovery, engagement, and cross-charity collaboration through three distinct content types: Posts, Events, and Projects.
+
+**Layout Architecture:**
 ```
-+----------------+-----------------------------------------------+
-| Sidebar Nav    | Main Content Area                             |
-| (collapsible)  |                                               |
-+----------------+-----------------------------------------------+
++----------------+------------------------+----------------------+
+| Left Sidebar   | Main Feed             | Right Sidebar        |
+| (280px)        | (Fluid)               | (320px)              |
++----------------+------------------------+----------------------+
+| - Welcome Card | - Post Creation Area  | - Priority Alerts    |
+| - Team Display | - Content Type Filter | - Events Carousel    |
+| - Highlights   | - Feed Items          |                      |
++----------------+------------------------+----------------------+
 ```
 
-**Header Section:**
-- The Village Hub logo (top-left)
-- Global search bar (center)
-- Notifications bell icon with badge
-- User profile avatar with dropdown
-
-**Personalized Greeting:**
-- "Good [morning/afternoon/evening], [First Name]!"
-- Current date and time
-- Weather widget (optional Phase 2)
-
-**This Week's Highlights Section:**
-- Card-based layout
-- Shows top 3-5 pinned or upcoming items:
-  - Pinned announcements (red/priority badge)
-  - Upcoming events (within 7 days)
-  - New job postings
-  - Recent meeting notes
-- Each item clickable to full detail
-
-**Quick Access Cards:**
-
-**Card 1: Latest Announcements**
-- Last 3 announcement titles with timestamps
-- Truncated preview (40 chars)
-- "View All" link to Community Board
-
-**Card 2: Lunch Menu Preview**
-- Current day's lunch menu
-- Next 2 days preview
-- "View Full Week" link
-
-**Card 3: Upcoming Events**
-- Next 3 events with date/time
-- Visual calendar icon with date
-- "View Calendar" link
-
-**Card 4: Recent Activity** (Phase 2)
-- Latest chat messages
-- New job postings
-- Recent uploads
+**Responsive Behavior:**
+- **Desktop (>1024px):** Three-column layout
+- **Tablet (768-1024px):** Main feed only, sidebars hidden
+- **Mobile (<768px):** Single column, sidebars accessible via drawer
 
 ---
 
-### 4.3 Community Board
+#### 4.2.1 Three-Column Layout Components
 
-**Purpose:** User-generated content hub with categorization
+**Top Header Bar (Sticky):**
+- Logo and site title (left)
+- Navigation: Home | Events | Jobs | Chat | Notes | Media (center)
+- Search bar
+- Notifications bell
+- User avatar with dropdown (right)
 
-**Post Types & Categories:**
-- 📢 **Announcements** (official building-wide news)
-- 📅 **Events** (upcoming activities, workshops)
-- 💼 **Jobs/Volunteering** (opportunities across charities)
-- 📖 **Stories** (success stories, impact reports, community highlights)
-- 💬 **General Discussion** (casual community chat)
+**Left Sidebar (Community Context):**
+1. **Welcome Card**
+   - Personalized greeting: "Good [morning/afternoon/evening], [Name]!"
+   - Current date
+   - Quick post creation textarea
+   - Link to event/project dropdowns
+
+2. **Team Members Display**
+   - Shows 5-8 active team members
+   - Avatar grid with online indicators
+   - "View All" link to directory
+
+3. **Community Highlights Carousel**
+   - Auto-rotating cards showing:
+   - Recent wins
+   - Upcoming milestone events
+   - Featured projects
+   - Max 5 cards, auto-advance every 4 seconds
+
+**Main Feed (Central Column):**
+- Post creation area (expandable)
+- Content type filters: [All] [Events] [Projects] [Posts]
+- Sort dropdown: Latest | Shared by | Shared with
+- Unified feed of all content types
+- Infinite scroll pagination
+
+**Right Sidebar (Awareness & Discovery):**
+1. **Priority Alerts Banner** (if active)
+   - Urgent building-wide announcements
+   - Dismissible per-user
+   - Red/amber color coding
+
+2. **Upcoming Events Carousel**
+   - Next 5 events
+   - Auto-scrolling horizontal carousel
+   - Shows event image, title, date, location
+   - "See all events" link
+
+---
+
+#### 4.2.2 Content Type System
+
+The platform supports three first-class content types with distinct purposes and UI patterns:
+
+##### **Type 1: Posts** (General Updates)
+
+**Purpose:** Quick updates, announcements, questions, and general community content
+
+**Categories (6 types):**
+1. **Intros** (👋) - Team member introductions, welcome messages
+2. **Wins** (🎉) - Celebrating successes and milestones
+3. **Opportunities** (💼) - Collaboration opportunities, quick asks
+4. **Questions** (❓) - Community questions and discussions
+5. **Learnings** (📚) - Insights, tips, lessons learned
+6. **General** (💬) - Everything else
 
 **Post Structure:**
+- Author (with org affiliation)
+- Optional title (max 100 chars)
+- Content (required, max 2000 chars, supports basic Markdown)
+- Optional category badge
+- Optional linked event/project (displays badge)
+- Optional image
+- Engagement: Likes, comments
+- Timestamp ("3 hours ago")
+
+**Post Card Display:**
+```
+┌─────────────────────────────────────┐
+│ [Avatar] Name · Organization        │
+│          [Category Badge]           │
+│                                     │
+│ Optional Title in Bold              │
+│ Post content goes here...           │
+│                                     │
+│ [❤️ 12] [💬 5] [3 hours ago]        │
+└─────────────────────────────────────┘
+```
+
+**Creation Flow:**
+- Click into textarea in welcome card OR main feed
+- Type content
+- Optional: Select category via animated chip selector
+- Optional: Link to existing event/project via dropdown
+- Optional: Add @mentions (autocomplete)
+- Click "Post" (validates content present)
+
+---
+
+##### **Type 2: Events** (Time/Location-Specific Activities)
+
+**Purpose:** Coordinate activities, workshops, meetings with specific date/time/location
+
+**Event Structure:**
+- Author (with org affiliation)
 - Title (required, max 100 chars)
-- Category selection (required)
-- Body content (rich text editor with formatting)
-- Attachments (optional, max 5 files, 10MB each)
-- Tags (optional, for searchability)
-- Target audience (optional: specific charity/all)
-- Expiry date (optional, auto-archive old posts)
+- Description (required, supports Markdown)
+- Date (required, date picker)
+- Time (required, start-end or "All day")
+- Location (required, text or dropdown of building rooms)
+- Optional cause tag (e.g., "Food Security", "Youth Education")
+- Optional parent project (if event is part of larger project)
+- Optional needs (volunteers, participants, partners)
+- Collaboration partners (multi-select orgs)
+- Status: Open | Closed (closed stops new signups)
 
-**Features:**
-- **Pinning:** Admins/St Martins staff can pin critical posts to top
-- **Priority Badges:** Visual indicators (urgent, pinned, new)
-- **Reactions:** Like, helpful, celebrate emojis (no comments to keep simple)
-- **Comments:** Threaded discussions under posts
-- **Search & Filter:** By category, date, author, tags
-- **Sort Options:** Most recent, most popular, pinned first
+**Needs System:**
+- **Volunteers Needed:** Number (e.g., "25 volunteers needed")
+- **Participants Requested:** Specific program requests (e.g., "After-School Program participants")
+- **Seeking Partners:** Boolean flag
 
-**Moderation:**
-- Post-moderation model: publish immediately, remove if needed
-- Users can flag inappropriate content
-- Admins receive flagged content notifications
-- Simple ban system for repeat offenders
+**Event Card Display:**
+```
+┌─────────────────────────────────────┐
+│ [Avatar] Name · Organization        │
+│          [Event Badge] [Cause Tag]  │
+│                                     │
+│ Event Title in Bold                 │
+│ Description text...                 │
+│                                     │
+│ 📅 Dec 15, 2024                     │
+│ 🕐 9:00 AM - 3:00 PM                │
+│ 📍 Community Center                 │
+│                                     │
+│ [Parent Project Chip] (if attached)│
+│                                     │
+│ 🙋 25 volunteers | 👥 Participants  │
+│                                     │
+│ Collaborating with: [Org Avatars]  │
+│                                     │
+│ ⭐ 12 charities interested          │
+│                                     │
+│ [I'm Attending ▼] (with popover)    │
+│ [3 hours ago]                       │
+└─────────────────────────────────────┘
+```
+
+**Attendance/Support Popover:**
+When user clicks "I'm Attending", shows dropdown with:
+- ☐ I'll volunteer (if volunteers needed)
+- ☐ Bring participants: [input field] (if participants requested)
+- ☐ My org can partner (if seeking partners)
+- User can select none, one, or multiple
+- Submits on click-outside or explicit submit
+
+**Interest Tracking:**
+- "X charities interested" counter
+- "Y participants referred" counter
+- Shows which orgs have expressed interest (admin view)
+
+**Creation Flow:**
+- Click "Event" button in post creation area
+- Opens modal dialog with form
+- Required fields: Title, Description, Date, Time, Location
+- Advanced options (collapsible):
+  - Cause tag
+  - Parent project selector
+  - Volunteers needed (number input)
+  - Participants needed (multi-select program tags)
+  - Seeking partners (checkbox)
+  - Collaborating orgs (multi-select)
+- Click "Create Event" (validates required fields)
+
+---
+
+##### **Type 3: Projects** (Long-Term Collaborative Initiatives)
+
+**Purpose:** Multi-charity collaborations, ongoing programs, long-term impact initiatives
+
+**Project Structure:**
+- Author (with org affiliation)
+- Title (required, max 100 chars)
+- Description (required, supports Markdown)
+- **Impact Goal** (required, min 20 chars) - Clear statement of intended impact
+- Optional target date (or "Ongoing")
+- Optional service area (e.g., "East London", "Building-wide")
+- Optional cause tag
+- Optional needs (volunteers, resources, funding, partners)
+- Collaboration partners (multi-select orgs)
+- Optional progress tracking (current/target with unit)
+- Linked events count (events attached to this project)
+- Status: Open | Closed
+
+**Needs System (Extended):**
+- **Volunteers Needed:** Number
+- **Participants Requested:** Program-specific requests
+- **Resources Requested:** Text list (e.g., "laptops", "training space")
+- **Fundraising Goal:** Amount (e.g., "£5,000")
+- **Seeking Partners:** Boolean flag
+
+**Progress Tracking:**
+- Current value (number)
+- Target value (number)
+- Unit (text: "trees planted", "USD raised", "families served")
+- Visual progress bar (percentage)
+- Last updated timestamp
+
+**Project Card Display:**
+```
+┌─────────────────────────────────────┐
+│ [Avatar] Name · Organization        │
+│          [Project Badge] [Cause Tag]│
+│                                     │
+│ Project Title in Bold               │
+│ Description text...                 │
+│                                     │
+│ ⭐ IMPACT GOAL (highlighted box)    │
+│ "Plant 1,000 trees in East London" │
+│                                     │
+│ [Progress Bar: 650/1,000 trees]    │
+│                                     │
+│ 🎯 Target: March 2025               │
+│ 📅 3 events planned                 │
+│                                     │
+│ 🙋 25 volunteers | 💰 Funding       │
+│                                     │
+│ Collaborating with: [Org Avatars]  │
+│                                     │
+│ ⭐ 8 charities interested           │
+│                                     │
+│ [I'm Interested ▼] (with popover)   │
+│ [2 days ago]                        │
+└─────────────────────────────────────┘
+```
+
+**Interest/Support Popover:**
+When user clicks "I'm Interested", shows dropdown with:
+- ☐ I'll volunteer (if volunteers needed)
+- ☐ Bring participants: [input field]
+- ☐ We can provide: [dropdown of requested resources]
+- ☐ We can contribute funding
+- ☐ My org wants to partner
+- User selects applicable options
+- Submits on click-outside or explicit submit
+
+**Creation Flow:**
+- Click "Project" button in post creation area
+- Opens modal dialog with form
+- Required fields: Title, Description, **Impact Goal**
+- Optional fields: Target date (or select "Ongoing")
+- Advanced options (collapsible):
+  - Service area
+  - Cause tag
+  - Volunteers needed
+  - Participants needed
+  - Resources requested (text area)
+  - Fundraising goal (currency input)
+  - Seeking partners (checkbox)
+  - Collaborating orgs (multi-select)
+  - Initial progress (if tracking)
+- Click "Create Project" (validates required fields + impact goal min length)
+
+---
+
+#### 4.2.3 Cross-Content Features
+
+**@Mention System:**
+- Type "@" in any textarea → autocomplete dropdown appears
+- Can mention:
+  - Users: @username (notifies user)
+  - Organizations: @OrgName (highlights for org members)
+  - Events: @"Event Name" (creates link)
+  - Projects: @"Project Name" (creates link)
+- Mentioned items display as clickable badges
+- Mentioned users receive notifications
+
+**Linking System:**
+- **Posts can link to Events/Projects:** Via dropdown selector during creation
+- **Events can attach to Projects:** Via "Parent Project" field
+- Linked content displays badge on card
+- Creates relationship for discovery ("Events attached to this project")
+
+**Filtering & Sorting:**
+- **Type Filters:** All | Events | Projects | Posts
+  - Visual chip-style buttons
+  - Active state highlighted
+  - Filter applied immediately (no submit)
+
+- **Sort Options:** Latest | Shared by | Shared with
+  - Dropdown in feed header
+  - Latest: Chronological descending
+  - Shared by: Content from my organization
+  - Shared with: Content mentioning my org
+
+**Content Actions Menu (Three-dot menu):**
+- Edit (author or admin)
+- Share (copy link, export)
+- Report (flag for moderation)
+- Delete (author or admin)
+
+**Context-Specific Actions:**
+- **Events:** Attach to project | Detach from project | Close/reopen
+- **Projects:** Update progress | Add event | Link event | Close/reopen
+- **Posts:** Link to event | Link to project
+
+---
+
+#### 4.2.4 Engagement & Collaboration Tracking
+
+**Interest Counters:**
+- Shows "X charities interested" (org-level aggregation)
+- Shows "Y participants referred" (if applicable)
+- Clicking counter shows list of interested orgs (admin view)
+
+**Collaboration Partners Display:**
+- Visual org avatar circles (max 4 shown + "+2" counter)
+- Hover shows org name
+- Clicking navigates to org profile
+- Label: "Collaborating with:"
+
+**Notification Triggers:**
+- User is @mentioned
+- Someone comments on your content
+- Someone shows interest in your event/project
+- Event you're attending is updated
+- Project you're interested in updates progress
+- Content is flagged for moderation (admins)
+
+---
+
+#### 4.2.5 Visual Design System (OKLCH Color Space)
+
+**Color System:**
+- **OKLCH** (Oklab Lightness Chroma Hue) color space for perceptual uniformity
+- Better than HSL for accessibility and dark mode
+- CSS custom properties for theme tokens
+
+**Content Type Color Coding:**
+- **Events:** Blue/purple gradient (`oklch(0.60 0.20 260)`)
+- **Projects:** Emerald/teal gradient (`oklch(0.65 0.15 160)`)
+- **Causes:** Rose/pink gradient (`oklch(0.65 0.18 10)`)
+- **Posts:** Subtle gray (no strong color)
+
+**Category Badge Colors (Posts):**
+- **Intros:** Warm amber
+- **Wins:** Success green
+- **Opportunities:** Primary blue
+- **Questions:** Info cyan
+- **Learnings:** Purple
+- **General:** Muted gray
+
+**Needs Chip Colors:**
+- **Volunteers:** Amber (`oklch(0.75 0.15 80)`)
+- **Participants:** Blue (`oklch(0.65 0.18 250)`)
+- **Resources:** Purple (`oklch(0.65 0.18 280)`)
+- **Funding:** Gold (`oklch(0.75 0.20 70)`)
+
+**Status Indicators:**
+- **Open:** Success green
+- **Closed:** Muted gray
+- **Urgent/Alert:** Red (`oklch(0.60 0.22 25)`)
+
+**Design Tokens:**
+- 8-step typography scale (xs to 3xl)
+- 6-level spacing system (xs: 4px to 2xl: 48px)
+- Consistent border radius (sm: 4px, md: 8px, lg: 12px)
+- Shadow depth system (sm, md, lg for elevation)
+
+**Animation Principles:**
+- Framer Motion for all animations
+- Subtle micro-interactions (button hover, card raise)
+- Smooth transitions (300ms default ease-out)
+- Progressive disclosure (expand/collapse with animation)
+- Reduced motion respect (prefers-reduced-motion CSS)
+
+---
+
+#### 4.2.6 Implementation Notes
+
+**Technical Considerations:**
+- All components use "use client" directive (client-side interactivity)
+- Mock data included in replication kit (replace with API calls)
+- React Hook Form + Zod for form validation
+- React Query for data fetching and caching
+- Supabase Realtime for live updates
+- Optimistic UI updates for instant feedback
+
+**Database Schema Updates Required:**
+- New `projects` table (full schema)
+- Alter `posts` table: Add `category`, `linked_event_id`, `linked_project_id`
+- Alter `events` table: Add `needs` JSONB, `collaborations` JSONB, `parent_project_id`
+- New `interests` table: Track org interest in events/projects
+- New `support_commitments` table: Track volunteer/resource commitments
+
+**Performance Targets:**
+- Initial page load: <2 seconds
+- Feed filter switch: <200ms
+- Modal open: <100ms
+- Feed scroll: 60fps smooth
+- Supports 100+ feed items with virtual scrolling
+
+---
+
+**Note:** The Lunch Menu has been removed from the homepage quick access. It will have a dedicated section accessible via main navigation or alternative placement (TBD).
+
+---
+
+### 4.3 Community Board (Superseded by Homepage Social Feed)
+
+**Note:** The Community Board concept has been redesigned and integrated into the Homepage Social Feed (Section 4.2). The original Community Board's post types have been reorganized into the three-content-type system:
+
+**Content Type Mapping:**
+- **Original "Announcements"** → Now **Posts** with category badges (intros, wins, opportunities, etc.)
+- **Original "Events"** → Now first-class **Events** content type with full event metadata
+- **Original "Jobs/Volunteering"** → Remains separate Jobs Board (Section 4.8)
+- **Original "Stories"** → Now **Posts** with "Wins" or "General" categories
+- **Original "General Discussion"** → Now **Posts** with "Questions" or "General" categories
+- **New "Projects"** → New first-class **Projects** content type for long-term initiatives
+
+**Key Improvements in New Design:**
+- Three distinct content types (Posts, Events, Projects) vs. single post type with categories
+- Rich collaboration features (interest tracking, support popovers, partner avatars)
+- @Mention system across all content types
+- Cross-content linking (Posts→Events, Events→Projects)
+- OKLCH color system for better accessibility
+- Three-column social feed layout vs. single-column board
+- Real-time engagement tracking
+
+**Features Retained:**
+- Pinning capability (priority alerts in right sidebar)
+- Reactions and comments (likes, comments on posts)
+- Search & filter (enhanced with type filters: All | Events | Projects | Posts)
+- Moderation tools (context menu on all content)
+
+**Refer to Section 4.2** for complete specification of the new Homepage Social Feed system.
 
 ---
 
