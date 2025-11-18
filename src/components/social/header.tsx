@@ -178,7 +178,7 @@ export function SocialHeader() {
                 5
               </motion.span>
               {/* Pulse animation */}
-              <span className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-primary animate-ping opacity-20" />
+              <span className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-primary animate-ping opacity-[0.06]" />
             </Button>
           </motion.div>
 
