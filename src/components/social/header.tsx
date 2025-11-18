@@ -60,7 +60,12 @@ export function SocialHeader() {
           >
             <div className="relative">
               <div className="absolute inset-0 rounded-xl bg-gradient-to-br from-primary to-primary/50 opacity-20 blur-md group-hover:opacity-30 transition-opacity" />
-              <div className="relative p-2 rounded-xl bg-gradient-to-br from-primary/20 via-primary/15 to-primary/10 group-hover:from-primary/30 group-hover:via-primary/25 group-hover:to-primary/20 transition-all duration-300 shadow-lg shadow-primary/10">
+              <div 
+                className="relative p-2 rounded-xl transition-all duration-300 shadow-lg shadow-primary/10"
+                style={{
+                  background: 'linear-gradient(135deg, oklch(0.52 0.12 166 / 0.2), oklch(0.52 0.12 166 / 0.15), oklch(0.52 0.12 166 / 0.1))'
+                }}
+              >
                 <Sparkles className="h-5 w-5 text-primary group-hover:rotate-12 transition-transform duration-300" />
               </div>
             </div>
@@ -110,7 +115,10 @@ export function SocialHeader() {
                 {item.active && (
                   <motion.div
                     layoutId="activeTab"
-                    className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-primary/50 via-primary to-primary/50 rounded-full"
+                    className="absolute bottom-0 left-0 right-0 h-0.5 rounded-full"
+                    style={{
+                      background: 'linear-gradient(to right, oklch(0.52 0.12 166 / 0.5), oklch(0.52 0.12 166), oklch(0.52 0.12 166 / 0.5))'
+                    }}
                     transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
                   />
                 )}
@@ -178,7 +186,7 @@ export function SocialHeader() {
                 5
               </motion.span>
               {/* Pulse animation */}
-              <span className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-primary animate-ping opacity-[0.06]" />
+              <span className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-primary animate-ping opacity-20" />
             </Button>
           </motion.div>
 

@@ -219,7 +219,7 @@ export function ProjectCard({ project }: ProjectCardProps) {
   }, [supportPanelOpen])
 
   return (
-    <Card className="border border-border bg-card shadow-sm transition-shadow hover:shadow-md">
+    <Card className="text-card-foreground flex flex-col gap-6 rounded-xl py-6 border border-border bg-card shadow-sm transition-shadow hover:shadow-md">
       <div className="p-6">
         {/* Header */}
         <div className="mb-4 flex items-start justify-between">

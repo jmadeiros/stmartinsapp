@@ -251,7 +251,10 @@ export function SocialLeftSidebar({ userName = "Michael" }: SocialLeftSidebarPro
         {/* Community Highlights Carousel */}
         <div className="space-y-3">
           <div className="flex items-center gap-2 px-1">
-            <div className="p-1.5 rounded-lg bg-primary/10">
+            <div 
+              className="p-1.5 rounded-lg"
+              style={{ backgroundColor: 'oklch(0.52 0.12 166 / 0.1)' }}
+            >
               <Sparkles className="h-4 w-4 text-primary" />
             </div>
             <div>

@@ -87,7 +87,6 @@ const config: Config = {
           "100%": { transform: "translateX(100%)" },
         },
         ping: {
-          "0%": { transform: "scale(1)", opacity: "1" },
           "75%, 100%": { transform: "scale(2)", opacity: "0" },
         },
   		},

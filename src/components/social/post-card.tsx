@@ -42,7 +42,7 @@ export function PostCard({ post }: PostCardProps) {
   const cta = getCTA()
 
   return (
-    <Card className="overflow-hidden border border-border bg-card shadow-sm transition-shadow hover:shadow-md">
+    <Card className="text-card-foreground flex flex-col gap-6 rounded-xl py-6 overflow-hidden border border-border bg-card shadow-sm transition-shadow hover:shadow-md">
       <div className="p-6">
         {/* Header */}
         <div className="mb-4 flex items-start justify-between">
