@@ -202,7 +202,7 @@ export function EventCard({ event }: EventCardProps) {
 
   return (
     <Card className="border border-border bg-card shadow-sm transition-shadow hover:shadow-md">
-      <div className="!p-6">
+      <div className="p-6">
         <div className="mb-4 flex items-start justify-between">
           <div className="flex items-center gap-3">
             {collaborations.length > 0 ? (

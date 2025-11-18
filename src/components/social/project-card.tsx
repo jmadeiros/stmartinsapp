@@ -220,7 +220,7 @@ export function ProjectCard({ project }: ProjectCardProps) {
 
   return (
     <Card className="border border-border bg-card shadow-sm transition-shadow hover:shadow-md">
-      <div className="!p-6">
+      <div className="p-6">
         {/* Header */}
         <div className="mb-4 flex items-start justify-between">
           <div className="flex items-center gap-3">
