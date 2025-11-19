@@ -93,3 +93,6 @@ export type FeedItem = EventPost | ProjectPost | FeedPost
 
 export type FilterType = "All" | "Events" | "Projects" | "Posts"
 
+// Alias for backwards compatibility
+export type Post = FeedPost
+

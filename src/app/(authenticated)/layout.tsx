@@ -8,9 +8,10 @@ export default async function AuthenticatedLayout({ children }: { children: Reac
     data: { user },
   } = await supabase.auth.getUser()
 
-  if (!user) {
-    redirect("/login")
-  }
+  // Temporarily disabled for development
+  // if (!user) {
+  //   redirect("/login")
+  // }
 
   return <>{children}</>
 }

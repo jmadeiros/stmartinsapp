@@ -13,6 +13,11 @@ import { AnimatedEvents } from "./animated-events"
 export function SocialRightSidebar() {
   const [alertDismissed, setAlertDismissed] = useState(false)
 
+  const handleAcknowledge = () => {
+    console.log('Acknowledge clicked, dismissing alert...')
+    setAlertDismissed(true)
+  }
+
   return (
     <aside className="hidden space-y-4 lg:block">
       <div className="sticky top-24 space-y-4">
@@ -58,7 +63,7 @@ export function SocialRightSidebar() {
                   </div>
 
                   <Button
-                    onClick={() => setAlertDismissed(true)}
+                    onClick={handleAcknowledge}
                     className="w-full bg-destructive hover:bg-destructive/90 text-destructive-foreground border-0 shadow-sm transition-all active:scale-[0.98]"
                   >
                     Acknowledge

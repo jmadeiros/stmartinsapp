@@ -160,16 +160,16 @@ export function SocialLeftSidebar({ userName = "Michael" }: SocialLeftSidebarPro
           transition={{ duration: 0.4, delay: 0.1 }}
         >
           <Card
-            className="border border-border/50 bg-[var(--surface)] p-3 py-2.5"
+            className="border border-border/50 bg-[var(--surface)] p-4 py-4"
             style={{ boxShadow: "var(--shadow-surface)" }}
           >
-            <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center justify-between mb-3">
               <h3 className="text-sm font-semibold text-foreground">My Team</h3>
               <Users className="h-4 w-4 text-muted-foreground" />
             </div>
-            <p className="text-xs text-muted-foreground mb-3 text-center">Hope Foundation</p>
+            <p className="text-xs text-muted-foreground mb-4 text-center">Hope Foundation</p>
             
-            <div className="flex justify-center -space-x-2.5 mb-3">
+            <div className="flex justify-center -space-x-2.5 mb-4">
               {teamMembers.map((member, index) => {
                 const ActivityIcon = member.recentActivity ? getActivityIcon(member.recentActivity.type) : null
                 return (
@@ -196,7 +196,7 @@ export function SocialLeftSidebar({ userName = "Michael" }: SocialLeftSidebarPro
                     
                     {/* Hover tooltip */}
                     <AnimatePresence>
-                      {hoveredMember === index && member.recentActivity && (
+                      {hoveredMember === index && member.recentActivity && ActivityIcon && (
                         <motion.div
                           initial={{ opacity: 0, y: -8, scale: 0.95 }}
                           animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -241,7 +241,7 @@ export function SocialLeftSidebar({ userName = "Michael" }: SocialLeftSidebarPro
               </div>
             </div>
             
-            <button className="w-full text-xs text-primary hover:text-primary/80 transition-colors flex items-center justify-center gap-1 py-1 rounded-lg hover:bg-muted/40 mt-1">
+            <button className="w-full text-xs text-primary hover:text-primary/80 transition-colors flex items-center justify-center gap-1 py-2 rounded-lg hover:bg-muted/40 mt-2">
               <span>See all team members</span>
               <ChevronRight className="h-3 w-3" />
             </button>
