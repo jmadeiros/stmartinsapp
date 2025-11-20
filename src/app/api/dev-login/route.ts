@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createClient as createServerClient } from '@supabase/supabase-js'
+import type { Database } from '@/lib/database.types'
 
 export async function POST() {
   // Only allow in development
@@ -9,7 +10,7 @@ export async function POST() {
 
   try {
     // Use service role client to bypass RLS
-    const supabaseAdmin = createServerClient(
+    const supabaseAdmin = createServerClient<Database>(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.SUPABASE_SERVICE_ROLE_KEY!,
       {
@@ -20,8 +21,9 @@ export async function POST() {
       }
     )
 
-    const testEmail = 'test@villagehub.dev'
+    const testEmail = 'test@stmartins.dev'
     const testPassword = 'dev-password-123' // Simple password for dev only
+    const testOrgId = '00000000-0000-0000-0000-000000000001' // Default test org
 
     // Check if auth user exists
     const { data: existingAuthUsers } = await supabaseAdmin.auth.admin.listUsers()
@@ -36,7 +38,7 @@ export async function POST() {
         password: testPassword,
         email_confirm: true,
         user_metadata: {
-          full_name: 'Test User',
+          display_name: 'Test User',
         }
       })
 
@@ -47,21 +49,60 @@ export async function POST() {
 
       userId = authUser.user.id
 
-      // Create user in database
-      const { error: insertError } = await supabaseAdmin
-        .from('users')
+      // Create test organization if it doesn't exist
+      const { data: existingOrg } = await supabaseAdmin
+        .schema('app')
+        .from('organizations')
+        .select('id')
+        .eq('id', testOrgId)
+        .single()
+
+      if (!existingOrg) {
+        const { error: orgError } = await supabaseAdmin
+          .schema('app')
+          .from('organizations')
+          .insert({
+            id: testOrgId,
+            name: 'St Martins Village (Test)',
+            slug: 'st-martins-test',
+            description: 'Test organization for development',
+            is_active: true,
+          })
+
+        if (orgError) {
+          console.error('Error creating test org:', orgError)
+        }
+      }
+
+      // Create profile in app.profiles
+      const { error: profileError } = await supabaseAdmin
+        .schema('app')
+        .from('profiles')
         .insert({
           id: userId,
+          display_name: 'Test User',
+          bio: 'Development test account',
           email: testEmail,
-          full_name: 'Test User',
-          role: 'admin',
-          organization_id: '00000000-0000-0000-0000-000000000001',
-          is_active: true,
         })
 
-      if (insertError) {
-        console.error('Error creating database user:', insertError)
-        return NextResponse.json({ error: 'Failed to create database user' }, { status: 500 })
+      if (profileError) {
+        console.error('Error creating profile:', profileError)
+        return NextResponse.json({ error: 'Failed to create profile' }, { status: 500 })
+      }
+
+      // Add user to organization as member
+      const { error: memberError } = await supabaseAdmin
+        .schema('app')
+        .from('organization_members')
+        .insert({
+          org_id: testOrgId,
+          user_id: userId,
+          role: 'admin',
+        })
+
+      if (memberError) {
+        console.error('Error creating org membership:', memberError)
+        return NextResponse.json({ error: 'Failed to create org membership' }, { status: 500 })
       }
     } else {
       userId = existingAuthUser.id
@@ -73,7 +114,8 @@ export async function POST() {
       message: 'Dev user ready',
       email: testEmail,
       password: testPassword,
-      userId: userId
+      userId: userId,
+      orgId: testOrgId
     })
   } catch (error) {
     console.error('Dev login error:', error)
