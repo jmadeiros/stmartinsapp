@@ -15,7 +15,6 @@ export async function getFeed(
   }
 ) {
   const { data, error } = await supabase
-    .schema('app')
     .from('feed')
     .select('*')
     .eq('org_id', orgId)
@@ -36,14 +35,13 @@ export async function getFeed(
 export async function getPostsByCategory(
   supabase: Client,
   orgId: string,
-  category: Database['app']['Enums']['post_category'],
+  category: Database['public']['Enums']['post_category'],
   options?: {
     limit?: number
     offset?: number
   }
 ) {
   const { data, error } = await supabase
-    .schema('app')
     .from('posts')
     .select(`
       *,
@@ -78,7 +76,6 @@ export async function getEvents(
   }
 ) {
   const { data, error } = await supabase
-    .schema('app')
     .from('events')
     .select(`
       *,
@@ -113,7 +110,6 @@ export async function getProjects(
   }
 ) {
   const { data, error } = await supabase
-    .schema('app')
     .from('projects')
     .select(`
       *,
@@ -141,10 +137,9 @@ export async function getProjects(
  */
 export async function createPost(
   supabase: Client,
-  post: Database['app']['Tables']['posts']['Insert']
+  post: Database['public']['Tables']['posts']['Insert']
 ) {
   const { data, error } = await supabase
-    .schema('app')
     .from('posts')
     .insert(post)
     .select()
@@ -173,7 +168,7 @@ export async function rsvpToEvent(
     canPartner?: boolean
   }
 ) {
-  const { data, error } = await supabase.schema('app').rpc('rsvp_event', {
+  const { data, error } = await supabase.rpc('rsvp_event', {
     p_event_id: params.eventId,
     p_user_id: params.userId,
     p_org_id: params.orgId,
@@ -207,7 +202,7 @@ export async function expressProjectInterest(
     contributeFunding?: boolean
   }
 ) {
-  const { data, error } = await supabase.schema('app').rpc('express_project_interest', {
+  const { data, error } = await supabase.rpc('express_project_interest', {
     p_project_id: params.projectId,
     p_user_id: params.userId,
     p_org_id: params.orgId,
@@ -227,9 +222,9 @@ export async function expressProjectInterest(
 }
 
 /**
- * Fetch jobs board (combines jobs + opportunity posts)
+ * Fetch opportunities (opportunity posts)
  */
-export async function getJobsBoard(
+export async function getOpportunities(
   supabase: Client,
   orgId: string,
   options?: {
@@ -238,15 +233,14 @@ export async function getJobsBoard(
   }
 ) {
   const { data, error } = await supabase
-    .schema('app')
-    .from('jobs_board')
+    .from('opportunities')
     .select('*')
     .eq('org_id', orgId)
     .order('created_at', { ascending: false })
     .range(options?.offset ?? 0, (options?.offset ?? 0) + (options?.limit ?? 20) - 1)
 
   if (error) {
-    console.error('Error fetching jobs board:', error)
+    console.error('Error fetching opportunities:', error)
     return { data: null, error }
   }
 

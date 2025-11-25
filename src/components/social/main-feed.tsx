@@ -24,155 +24,6 @@ import { motion, AnimatePresence } from "framer-motion"
 import type { FeedItem, FilterType, PostCategory } from "@/lib/types"
 import { CategorySelector } from "@/components/ui/category-selector"
 
-// Sample data
-const feedItems: FeedItem[] = [
-  {
-    id: "event-1",
-    type: "event",
-    author: {
-      name: "Marcus Rodriguez",
-      handle: "@marcus.rodriguez",
-      avatar: "/professional-woman.png",
-      role: "Community Outreach Coordinator",
-      organization: "Hope Foundation",
-    },
-    collaborations: [
-      { organization: "City Food Bank", avatar: "/placeholder.svg" },
-      { organization: "Westside Community Kitchen", avatar: "/placeholder.svg" },
-      { organization: "Neighborhood Pantry", avatar: "/placeholder.svg" },
-    ],
-    title: "Community Food Drive & Distribution",
-    description: "We're organizing a major food drive to support families in need this holiday season.",
-    date: "Dec 15, 2024",
-    time: "9:00 AM - 3:00 PM",
-    location: "Community Center, Downtown",
-    cause: "Food Security",
-    needs: {
-    volunteersNeeded: 25,
-      seekingPartners: true
-    },
-    partnerOrgs: ["City Food Bank", "Community Kitchen", "Neighborhood Alliance"],
-    interestedOrgs: ["Org1", "Org2", "Org3"],
-    timeAgo: "3 hours ago",
-  },
-  {
-    id: "project-1",
-    type: "project",
-    author: {
-      name: "Sarah Chen",
-      handle: "@sarah.chen",
-      avatar: "/professional-woman.png",
-      role: "Environmental Programs Director",
-      organization: "Green Earth Alliance",
-    },
-    collaborations: [
-      { organization: "Urban Roots Collective", avatar: "/placeholder.svg" },
-      { organization: "City Parks Coalition", avatar: "/placeholder.svg" },
-    ],
-    title: "Urban Tree Planting Initiative",
-    description: "Collaborative effort to increase urban tree coverage and combat climate change.",
-    impactGoal: "Plant 5,000 trees across 10 neighborhoods by spring to create healthier communities",
-    cause: "Environment",
-    targetDate: "March 20, 2025",
-    progress: {
-      current: 3350,
-      target: 5000,
-      unit: "trees",
-      lastUpdated: "2 days ago"
-    },
-    needs: {
-      volunteersNeeded: 100,
-    fundraisingGoal: "$50K",
-      seekingPartners: true
-    },
-    partnerOrgs: ["City Parks Coalition", "Community Gardeners"],
-    interestedOrgs: ["Org1", "Org2", "Org3", "Org4", "Org5"],
-    eventsCount: 3,
-    timeAgo: "6 hours ago",
-  },
-  {
-    id: "post-1",
-    type: "post",
-    author: {
-      name: "David Park",
-      handle: "@david.park",
-      avatar: "/professional-woman.png",
-      role: "Program Manager",
-      organization: "Community Outreach Network",
-    },
-    category: "wins",
-    content: "Incredible turnout at today's food drive! We served over 300 families and collected 2 tons of food donations. Thank you to everyone who volunteered and contributed!",
-    timeAgo: "2 hours ago",
-    likes: 24,
-    comments: 8,
-  },
-  {
-    id: "post-2",
-    type: "post",
-    author: {
-      name: "Emily Johnson",
-      handle: "@emily.j",
-      avatar: "/professional-woman.png",
-      organization: "Youth Development Alliance",
-    },
-    category: "intros",
-    title: "Hello from Youth Development Alliance!",
-    content: "Hi everyone! I'm Emily, joining this community to connect with other organizations working on youth programs. We focus on after-school mentorship and skills training. Looking forward to collaborating!",
-    timeAgo: "5 hours ago",
-    likes: 15,
-    comments: 6,
-  },
-  {
-    id: "post-3",
-    type: "post",
-    author: {
-      name: "Michael Torres",
-      handle: "@m.torres",
-      avatar: "/professional-woman.png",
-      role: "Volunteer Coordinator",
-      organization: "Hope Foundation",
-    },
-    category: "opportunities",
-    content: "We're looking for volunteers with event planning experience to help organize our annual fundraiser in March. Also seeking a partner org that can provide venue space. Please reach out if interested!",
-    timeAgo: "1 day ago",
-    likes: 12,
-    comments: 5,
-  },
-  {
-    id: "post-4",
-    type: "post",
-    author: {
-      name: "Lisa Anderson",
-      handle: "@l.anderson",
-      avatar: "/professional-woman.png",
-      role: "Research Lead",
-      organization: "Green Earth Alliance",
-    },
-    category: "questions",
-    content: "Has anyone here successfully applied for EPA environmental grants? Would love to hear about your experience and any tips for the application process.",
-    timeAgo: "8 hours ago",
-    likes: 8,
-    comments: 12,
-  },
-  {
-    id: "post-5",
-    type: "post",
-    author: {
-      name: "James Wilson",
-      handle: "@j.wilson",
-      avatar: "/professional-woman.png",
-      role: "Operations Director",
-      organization: "City Food Bank",
-    },
-    category: "learnings",
-    content: "After 3 years of running our mobile food pantry, here's what we learned: 1) Consistency matters more than quantity, 2) Partner with local schools for better reach, 3) Digital sign-ups reduce wait times by 40%. Happy to share more details!",
-    cause: "Food Security",
-    timeAgo: "1 day ago",
-    likes: 31,
-    comments: 14,
-  },
-]
-
 // Mock existing items for selection modal
 const existingEvents = [
   { id: "event-1", title: "Community Food Drive & Distribution", date: "Dec 15" },
@@ -198,7 +49,14 @@ const existingOrganizations = [
 const filterOptions: FilterType[] = ["All", "Events", "Projects", "Posts"]
 const sortOptions = ["Latest", "Shared by", "Shared with"]
 
-export function MainFeed() {
+interface MainFeedProps {
+  initialFeedItems?: FeedItem[]
+  userId?: string
+  orgId?: string
+}
+
+export function MainFeed({ initialFeedItems = [], userId, orgId }: MainFeedProps) {
+  const [feedItems, setFeedItems] = useState<FeedItem[]>(initialFeedItems)
   const [activeFilter, setActiveFilter] = useState<FilterType>("All")
   const [activeSort, setActiveSort] = useState("Latest")
   const [postContent, setPostContent] = useState("")
@@ -284,24 +142,10 @@ export function MainFeed() {
   const handleContentChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const value = e.target.value
     const position = e.target.selectionStart
-    
+
     setPostContent(value)
     setCursorPosition(position)
 
-    const trimmed = value.trim().toLowerCase()
-    if (trimmed === "/event") {
-      setPostContent("")
-      setShowEventDialog(true)
-      setPostFocused(false)
-      return
-    }
-    if (trimmed === "/project") {
-      setPostContent("")
-      setShowProjectDialog(true)
-      setPostFocused(false)
-      return
-    }
-    
     // Check if typing @mention
     const textBeforeCursor = value.slice(0, position)
     const lastAtIndex = textBeforeCursor.lastIndexOf('@')
@@ -492,7 +336,7 @@ export function MainFeed() {
                   
                 <textarea
                     ref={textareaRef}
-                    placeholder="Share an update with your community... (Try typing @)"
+                    placeholder="Share an update with your community... (Type @ to mention events, projects, or organizations)"
                   value={postContent}
                     onChange={handleContentChange}
                     onFocus={() => setPostFocused(true)}
@@ -1010,11 +854,15 @@ export function MainFeed() {
       <CreateEventDialog
         open={showEventDialog}
         onOpenChange={setShowEventDialog}
+        userId={userId}
+        orgId={orgId}
       />
 
       <CreateProjectDialog
         open={showProjectDialog}
         onOpenChange={setShowProjectDialog}
+        userId={userId}
+        orgId={orgId}
       />
 
       <SendAlertDialog

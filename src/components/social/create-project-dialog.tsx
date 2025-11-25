@@ -7,16 +7,24 @@ import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
-import { ChevronDown, Target, Plus } from "lucide-react"
+import { MultiSelect } from "@/components/ui/multiselect"
+import { ChevronDown, Target, Plus, Loader2 } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { createProject } from "@/lib/actions/projects"
+import { useRouter } from "next/navigation"
 
 interface CreateProjectDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
+  userId?: string
+  orgId?: string
 }
 
-export function CreateProjectDialog({ open, onOpenChange }: CreateProjectDialogProps) {
+export function CreateProjectDialog({ open, onOpenChange, userId, orgId }: CreateProjectDialogProps) {
+  const router = useRouter()
   const [showAdvanced, setShowAdvanced] = useState(false)
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [error, setError] = useState<string | null>(null)
   const [formData, setFormData] = useState({
     title: "",
     description: "",
@@ -28,12 +36,71 @@ export function CreateProjectDialog({ open, onOpenChange }: CreateProjectDialogP
     resourcesRequested: "",
     fundraisingGoal: "",
     seekingPartners: false,
+    inviteCollaborators: [] as string[],
   })
 
-  const handleSubmit = (e: React.FormEvent) => {
+  // Mock organization data - will be replaced with real data from API
+  const availableOrganizations = [
+    { label: "Youth Action Network", value: "00000000-0000-0000-0000-000000000002" },
+    { label: "Community Arts Trust", value: "00000000-0000-0000-0000-000000000003" },
+    { label: "Elder Care Foundation", value: "00000000-0000-0000-0000-000000000004" },
+    { label: "Food Security Alliance", value: "00000000-0000-0000-0000-000000000005" },
+  ]
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    console.log("Creating project:", formData)
-    onOpenChange(false)
+
+    if (!userId || !orgId) {
+      setError("User ID or Organization ID is missing")
+      return
+    }
+
+    setIsSubmitting(true)
+    setError(null)
+
+    try {
+      const result = await createProject({
+        title: formData.title,
+        description: formData.description,
+        impactGoal: formData.impactGoal,
+        authorId: userId,
+        orgId: orgId,
+        cause: formData.cause || undefined,
+        targetDate: formData.targetDate || undefined,
+        volunteersNeeded: formData.volunteersNeeded ? parseInt(formData.volunteersNeeded) : undefined,
+        resourcesRequested: formData.resourcesRequested || undefined,
+        fundraisingGoal: formData.fundraisingGoal || undefined,
+        seekingPartners: formData.seekingPartners,
+        inviteCollaborators: formData.inviteCollaborators.length > 0 ? formData.inviteCollaborators : undefined,
+      })
+
+      if (result.success) {
+        // Reset form
+        setFormData({
+          title: "",
+          description: "",
+          impactGoal: "",
+          cause: "",
+          targetDate: "",
+          volunteersNeeded: "",
+          participantPrograms: "",
+          resourcesRequested: "",
+          fundraisingGoal: "",
+          seekingPartners: false,
+          inviteCollaborators: [],
+        })
+        setShowAdvanced(false)
+        onOpenChange(false)
+        // Refresh the page to show new project
+        router.refresh()
+      } else {
+        setError(result.error || "Failed to create project")
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "An unexpected error occurred")
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   return (
@@ -199,9 +266,32 @@ export function CreateProjectDialog({ open, onOpenChange }: CreateProjectDialogP
                     Seeking partner organizations
                   </Label>
                 </div>
+
+                {formData.seekingPartners && (
+                  <div className="space-y-2 pl-6 border-l-2 border-emerald-200">
+                    <Label htmlFor="inviteCollaborators">Invite Organizations</Label>
+                    <MultiSelect
+                      options={availableOrganizations}
+                      selected={formData.inviteCollaborators}
+                      onChange={(values) => setFormData({ ...formData, inviteCollaborators: values })}
+                      placeholder="Select organizations to invite..."
+                      className="w-full"
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Organizations will receive a collaboration invitation and can accept or decline
+                    </p>
+                  </div>
+                )}
               </div>
             </CollapsibleContent>
           </Collapsible>
+
+          {/* Error Message */}
+          {error && (
+            <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
+              <p className="text-sm text-red-800">{error}</p>
+            </div>
+          )}
 
           {/* Footer Actions */}
           <div className="flex gap-3 pt-4 border-t">
@@ -210,15 +300,23 @@ export function CreateProjectDialog({ open, onOpenChange }: CreateProjectDialogP
               variant="outline"
               onClick={() => onOpenChange(false)}
               className="flex-1"
+              disabled={isSubmitting}
             >
               Cancel
             </Button>
             <Button
               type="submit"
               className="flex-1 bg-emerald-600 hover:bg-emerald-700"
-              disabled={!formData.title || !formData.description || !formData.impactGoal || formData.impactGoal.length < 20}
+              disabled={!formData.title || !formData.description || !formData.impactGoal || formData.impactGoal.length < 20 || isSubmitting}
             >
-              Create Project
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Creating...
+                </>
+              ) : (
+                "Create Project"
+              )}
             </Button>
           </div>
         </form>

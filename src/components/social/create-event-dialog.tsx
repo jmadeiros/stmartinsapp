@@ -7,16 +7,24 @@ import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
-import { ChevronDown, Calendar, Plus } from "lucide-react"
+import { MultiSelect } from "@/components/ui/multiselect"
+import { ChevronDown, Calendar, Plus, Loader2 } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { createEvent } from "@/lib/actions/events"
+import { useRouter } from "next/navigation"
 
 interface CreateEventDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
+  userId?: string
+  orgId?: string
 }
 
-export function CreateEventDialog({ open, onOpenChange }: CreateEventDialogProps) {
+export function CreateEventDialog({ open, onOpenChange, userId, orgId }: CreateEventDialogProps) {
+  const router = useRouter()
   const [showAdvanced, setShowAdvanced] = useState(false)
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [error, setError] = useState<string | null>(null)
   const [formData, setFormData] = useState({
     title: "",
     description: "",
@@ -27,12 +35,69 @@ export function CreateEventDialog({ open, onOpenChange }: CreateEventDialogProps
     volunteersNeeded: "",
     participantPrograms: "",
     seekingPartners: false,
+    inviteCollaborators: [] as string[],
   })
 
-  const handleSubmit = (e: React.FormEvent) => {
+  // Mock organization data - will be replaced with real data from API
+  const availableOrganizations = [
+    { label: "Youth Action Network", value: "00000000-0000-0000-0000-000000000002" },
+    { label: "Community Arts Trust", value: "00000000-0000-0000-0000-000000000003" },
+    { label: "Elder Care Foundation", value: "00000000-0000-0000-0000-000000000004" },
+    { label: "Food Security Alliance", value: "00000000-0000-0000-0000-000000000005" },
+  ]
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    console.log("Creating event:", formData)
-    onOpenChange(false)
+
+    if (!userId || !orgId) {
+      setError("User ID or Organization ID is missing")
+      return
+    }
+
+    setIsSubmitting(true)
+    setError(null)
+
+    try {
+      const result = await createEvent({
+        title: formData.title,
+        description: formData.description,
+        date: formData.date,
+        time: formData.time,
+        location: formData.location,
+        organizerId: userId,
+        orgId: orgId,
+        cause: formData.cause || undefined,
+        volunteersNeeded: formData.volunteersNeeded ? parseInt(formData.volunteersNeeded) : undefined,
+        seekingPartners: formData.seekingPartners,
+        inviteCollaborators: formData.inviteCollaborators.length > 0 ? formData.inviteCollaborators : undefined,
+      })
+
+      if (result.success) {
+        // Reset form
+        setFormData({
+          title: "",
+          description: "",
+          date: "",
+          time: "",
+          location: "",
+          cause: "",
+          volunteersNeeded: "",
+          participantPrograms: "",
+          seekingPartners: false,
+          inviteCollaborators: [],
+        })
+        setShowAdvanced(false)
+        onOpenChange(false)
+        // Refresh the page to show new event
+        router.refresh()
+      } else {
+        setError(result.error || "Failed to create event")
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "An unexpected error occurred")
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   return (
@@ -185,9 +250,32 @@ export function CreateEventDialog({ open, onOpenChange }: CreateEventDialogProps
                     Seeking partner organizations
                   </Label>
                 </div>
+
+                {formData.seekingPartners && (
+                  <div className="space-y-2 pl-6 border-l-2 border-blue-200">
+                    <Label htmlFor="inviteCollaborators">Invite Organizations</Label>
+                    <MultiSelect
+                      options={availableOrganizations}
+                      selected={formData.inviteCollaborators}
+                      onChange={(values) => setFormData({ ...formData, inviteCollaborators: values })}
+                      placeholder="Select organizations to invite..."
+                      className="w-full"
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Organizations will receive a collaboration invitation and can accept or decline
+                    </p>
+                  </div>
+                )}
               </div>
             </CollapsibleContent>
           </Collapsible>
+
+          {/* Error Message */}
+          {error && (
+            <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
+              <p className="text-sm text-red-800">{error}</p>
+            </div>
+          )}
 
           {/* Footer Actions */}
           <div className="flex gap-3 pt-4 border-t">
@@ -196,15 +284,23 @@ export function CreateEventDialog({ open, onOpenChange }: CreateEventDialogProps
               variant="outline"
               onClick={() => onOpenChange(false)}
               className="flex-1"
+              disabled={isSubmitting}
             >
               Cancel
             </Button>
             <Button
               type="submit"
               className="flex-1 bg-blue-600 hover:bg-blue-700"
-              disabled={!formData.title || !formData.description || !formData.date || !formData.time || !formData.location}
+              disabled={!formData.title || !formData.description || !formData.date || !formData.time || !formData.location || isSubmitting}
             >
-              Create Event
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Creating...
+                </>
+              ) : (
+                "Create Event"
+              )}
             </Button>
           </div>
         </form>

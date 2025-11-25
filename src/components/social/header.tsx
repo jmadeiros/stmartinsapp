@@ -14,12 +14,10 @@ export function SocialHeader() {
   const navItems = [
     { label: "Home", active: true },
     { label: "Chats", badge: 3 },
-    { label: "Directory" },
-    { label: "Tools" },
-    { label: "Benefits" },
-    { label: "Wellbeing" },
-    { label: "Careers" },
-    { label: "Departments" },
+    { label: "Calendar" },
+    { label: "Opportunities" },
+    { label: "People" },
+    { label: "Projects" },
   ]
 
   return (

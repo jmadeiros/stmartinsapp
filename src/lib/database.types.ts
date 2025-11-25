@@ -1,6 +1,6 @@
 // TypeScript types generated from Supabase schema
-// Schema: app
-// Last updated: 2025-11-19
+// Schema: public
+// Last updated: 2025-11-21
 
 export type Json =
   | string
@@ -11,7 +11,7 @@ export type Json =
   | Json[]
 
 export interface Database {
-  app: {
+  public: {
     Tables: {
       organizations: {
         Row: {

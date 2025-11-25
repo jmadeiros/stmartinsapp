@@ -20,11 +20,14 @@ export function DevLogin() {
       })
 
       if (!response.ok) {
-        alert('Dev login failed')
+        const errorData = await response.json()
+        console.error('API error:', errorData)
+        alert(`Dev login failed: ${errorData.error || 'Unknown error'}`)
         return
       }
 
       const data = await response.json()
+      console.log('Dev user created/exists:', data)
 
       // Now sign in with the client using the credentials
       const { error: signInError } = await supabase.auth.signInWithPassword({
@@ -34,16 +37,18 @@ export function DevLogin() {
 
       if (signInError) {
         console.error('Sign in error:', signInError)
-        alert('Failed to sign in')
+        alert(`Failed to sign in: ${signInError.message}`)
         return
       }
+
+      console.log('Sign in successful, redirecting...')
 
       // Redirect to dashboard
       router.push('/dashboard')
       router.refresh()
     } catch (error) {
       console.error('Dev login error:', error)
-      alert('An error occurred')
+      alert(`An error occurred: ${error instanceof Error ? error.message : 'Unknown error'}`)
     } finally {
       setIsLoading(false)
     }
