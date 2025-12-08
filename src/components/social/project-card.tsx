@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useRef, useState } from "react"
+import { useRouter } from "next/navigation"
 import { AnimatePresence, motion } from "framer-motion"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -42,6 +43,7 @@ interface ProjectCardProps {
 }
 
 export function ProjectCard({ project }: ProjectCardProps) {
+  const router = useRouter()
   const [interested, setInterested] = useState(false)
   const [supportPanelOpen, setSupportPanelOpen] = useState(false)
   const [supportChoices, setSupportChoices] = useState<ProjectSupportResponse>({
@@ -63,6 +65,7 @@ export function ProjectCard({ project }: ProjectCardProps) {
   })
 
   // Collaboration display logic
+  // Force rebuild
   const collaborations = project.collaborations ?? []
   const firstCollaborator = collaborations[0]
   const additionalCollaboratorCount = Math.max(collaborations.length - 1, 0)
@@ -324,7 +327,7 @@ export function ProjectCard({ project }: ProjectCardProps) {
             <Calendar className="h-4 w-4 text-primary shrink-0" />
             <div>
               <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Target Date</p>
-                <p className="text-xs font-semibold text-foreground">{project.targetDate}</p>
+              <p className="text-xs font-semibold text-foreground">{project.targetDate}</p>
         </div>
             </div>
           )}
@@ -679,7 +682,10 @@ export function ProjectCard({ project }: ProjectCardProps) {
                 variant="ghost"
                 size="sm"
                 className="gap-2 text-emerald-600 hover:text-emerald-700"
-                onClick={() => console.log("Navigate to project detail")}
+                onClick={() => {
+                  console.log("Navigating to project:", project.id)
+                  router.push(`/projects/${project.id}`)
+                }}
               >
                 <Target className="h-4 w-4" />
                 View project

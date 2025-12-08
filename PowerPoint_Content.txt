@@ -1,0 +1,22 @@
+SLIDE 1: Introduction
+Internal Communication Tool for The Village Hub
+
+SLIDE 2: Key Features
+Central stream for posts, updates, wins, and project information
+Pinned announcements so critical information doesn't get lost
+Lunch menu and meeting notes - updated each week
+Calendar view of what's going on in the village
+People & Skills Directory for finding collaborators
+Real-time messaging and notifications
+Automated weekly summaries consolidating upcoming activities, announcements, and deadlines
+Monthly reports summarizing key achievements, completed activities, and community metrics
+
+SLIDE 3: Live Demonstration
+Platform Walkthrough
+
+SLIDE 4: Benefits Summary
+Unified information source: one place to check each morning
+Enhanced collaboration: clear visibility of joint initiatives
+Stronger community: staff connect across organisations
+Better coordination: fewer conflicts, smoother use of shared spaces
+
