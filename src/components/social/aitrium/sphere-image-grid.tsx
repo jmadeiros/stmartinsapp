@@ -7,7 +7,6 @@ import React, {
   useRef,
   useState,
 } from "react";
-import { X } from "lucide-react";
 
 export interface Position3D {
   x: number;
@@ -50,6 +49,7 @@ export interface SphereImageGridProps {
   autoRotate?: boolean;
   autoRotateSpeed?: number;
   className?: string;
+  onImageClick?: (image: ImageData) => void;
 }
 
 interface RotationState {
@@ -106,12 +106,12 @@ const SphereImageGrid: React.FC<SphereImageGridProps> = ({
   autoRotate = false,
   autoRotateSpeed = 0.3,
   className = "",
+  onImageClick,
 }) => {
   const [isMounted, setIsMounted] = useState<boolean>(false);
   const [rotation, setRotation] = useState<RotationState>({ x: 15, y: 15, z: 0 });
   const [velocity, setVelocity] = useState<VelocityState>({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState<boolean>(false);
-  const [selectedImage, setSelectedImage] = useState<ImageData | null>(null);
   const [imagePositions, setImagePositions] = useState<SphericalPosition[]>([]);
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
 
@@ -432,7 +432,9 @@ const SphereImageGrid: React.FC<SphereImageGridProps> = ({
           }}
           onMouseEnter={() => setHoveredIndex(index)}
           onMouseLeave={() => setHoveredIndex(null)}
-          onClick={() => setSelectedImage(image)}
+          onClick={() => {
+            onImageClick?.(image);
+          }}
         >
           <div className="relative w-full h-full rounded-full overflow-hidden shadow-lg border-2 border-white/20">
             <img
@@ -448,45 +450,6 @@ const SphereImageGrid: React.FC<SphereImageGridProps> = ({
     },
     [worldPositions, baseImageSize, containerSize, hoveredIndex, hoverScale],
   );
-
-  const renderSpotlightModal = () => {
-    if (!selectedImage) return null;
-
-    return (
-      <div
-        className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/30"
-        onClick={() => setSelectedImage(null)}
-        style={{
-          animation: "fadeIn 0.3s ease-out",
-        }}
-      >
-        <div
-          className="bg-white rounded-xl max-w-md w-full overflow-hidden"
-          onClick={(e) => e.stopPropagation()}
-          style={{
-            animation: "scaleIn 0.3s ease-out",
-          }}
-        >
-          <div className="relative aspect-square">
-            <img src={selectedImage.src} alt={selectedImage.alt} className="w-full h-full object-cover" />
-            <button
-              onClick={() => setSelectedImage(null)}
-              className="absolute top-2 right-2 w-8 h-8 bg-black bg-opacity-50 rounded-full text-white flex items-center justify-center hover:bg-opacity-70 transition-all cursor-pointer"
-            >
-              <X size={16} />
-            </button>
-          </div>
-
-          {(selectedImage.title || selectedImage.description) && (
-            <div className="p-6">
-              {selectedImage.title && <h3 className="text-xl font-bold mb-2">{selectedImage.title}</h3>}
-              {selectedImage.description && <p className="text-gray-600">{selectedImage.description}</p>}
-            </div>
-          )}
-        </div>
-      </div>
-    );
-  };
 
   if (!isMounted) {
     return (
@@ -514,34 +477,21 @@ const SphereImageGrid: React.FC<SphereImageGridProps> = ({
   }
 
   return (
-    <>
-      <style>{`
-        @keyframes fadeIn {
-          from { opacity: 0; }
-          to { opacity: 1; }
-        }
-        @keyframes scaleIn {
-          from { transform: scale(0.8); opacity: 0; }
-          to { transform: scale(1); opacity: 1; }
-        }
-      `}</style>
-      <div
-        ref={containerRef}
-        className={`relative select-none cursor-grab active:cursor-grabbing ${className}`}
-        style={{
-          width: containerSize,
-          height: containerSize,
-          perspective: `${perspective}px`,
-        }}
-        onMouseDown={handleMouseDown}
-        onTouchStart={handleTouchStart}
-      >
-        <div className="relative w-full h-full" style={{ zIndex: 10 }}>
-          {images.map((image, index) => renderImageNode(image, index))}
-        </div>
+    <div
+      ref={containerRef}
+      className={`relative select-none cursor-grab active:cursor-grabbing ${className}`}
+      style={{
+        width: containerSize,
+        height: containerSize,
+        perspective: `${perspective}px`,
+      }}
+      onMouseDown={handleMouseDown}
+      onTouchStart={handleTouchStart}
+    >
+      <div className="relative w-full h-full" style={{ zIndex: 10 }}>
+        {images.map((image, index) => renderImageNode(image, index))}
       </div>
-      {renderSpotlightModal()}
-    </>
+    </div>
   );
 };
 

@@ -167,7 +167,7 @@ export function SocialLeftSidebar({ userName = "Michael" }: SocialLeftSidebarPro
               <h3 className="text-sm font-semibold text-foreground">My Team</h3>
               <Users className="h-4 w-4 text-muted-foreground" />
             </div>
-            <p className="text-xs text-muted-foreground mb-4 text-center">Hope Foundation</p>
+            <p className="text-xs text-muted-foreground mb-4 text-center">Oasis St Martins Village</p>
             
             <div className="flex justify-center -space-x-2.5 mb-4">
               {teamMembers.map((member, index) => {

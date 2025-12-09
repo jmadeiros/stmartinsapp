@@ -4,6 +4,166 @@ import { createClient } from "@/lib/supabase/server"
 import type { FeedItem, EventPost, ProjectPost, FeedPost } from "@/lib/types"
 import { formatDistanceToNow } from "date-fns"
 
+// Mock data for demo purposes
+const MOCK_FEED_ITEMS: FeedItem[] = [
+  {
+    id: 'event-1',
+    type: 'event',
+    author: {
+      name: 'Sarah Chen',
+      handle: '@sarahchen',
+      avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&h=150&fit=crop&crop=face',
+      organization: 'St Martins',
+    },
+    collaborations: [
+      { organization: 'Hope Kitchen', avatar: '/placeholder.svg' },
+      { organization: 'Youth Forward', avatar: '/placeholder.svg' },
+    ],
+    title: 'Community Food Drive & Distribution',
+    description: 'Join us for our monthly food drive! We\'ll be collecting non-perishable items and distributing them to families in need. Volunteers welcome!',
+    date: 'Dec 15, 2024',
+    time: '10:00 AM - 2:00 PM',
+    location: 'St Martins Community Centre',
+    cause: 'Food Security',
+    needs: {
+      volunteersNeeded: 12,
+      seekingPartners: true,
+    },
+    timeAgo: '2 hours ago',
+  },
+  {
+    id: 'project-1',
+    type: 'project',
+    author: {
+      name: 'Marcus Johnson',
+      handle: '@marcusj',
+      avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face',
+      organization: 'St Martins',
+    },
+    collaborations: [
+      { organization: 'Green Spaces Trust', avatar: '/placeholder.svg' },
+    ],
+    title: 'Urban Garden Initiative',
+    description: 'Creating community gardens in underserved areas to provide fresh produce and green spaces for local residents.',
+    impactGoal: 'Establish 5 community gardens serving 500+ families',
+    cause: 'Environment',
+    targetDate: 'March 2025',
+    serviceArea: 'West London',
+    needs: {
+      volunteersNeeded: 20,
+      fundraisingGoal: 15000,
+      seekingPartners: true,
+    },
+    progress: {
+      current: 2,
+      target: 5,
+      unit: 'gardens',
+      lastUpdated: '3 days ago',
+    },
+    timeAgo: '1 day ago',
+  },
+  {
+    id: 'post-1',
+    type: 'post',
+    author: {
+      name: 'Emma Williams',
+      handle: '@emmaw',
+      avatar: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150&h=150&fit=crop&crop=face',
+      organization: 'St Martins',
+    },
+    title: 'Milestone Reached!',
+    content: '🎉 Incredible news! We\'ve just served our 10,000th meal at the community kitchen this year. Thank you to all our amazing volunteers and donors who make this possible. Together, we\'re making a real difference in our community.',
+    category: 'milestone',
+    cause: 'Food Security',
+    timeAgo: '3 hours ago',
+    likes: 47,
+    comments: 12,
+  },
+  {
+    id: 'event-2',
+    type: 'event',
+    author: {
+      name: 'Priya Patel',
+      handle: '@priyap',
+      avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&h=150&fit=crop&crop=face',
+      organization: 'Youth Forward',
+    },
+    title: 'Youth Mentorship Workshop',
+    description: 'A hands-on workshop connecting young people with industry professionals. Learn about career paths, build your network, and get inspired!',
+    date: 'Dec 18, 2024',
+    time: '2:00 PM - 5:00 PM',
+    location: 'Youth Forward Centre',
+    cause: 'Youth Development',
+    needs: {
+      volunteersNeeded: 8,
+    },
+    timeAgo: '5 hours ago',
+  },
+  {
+    id: 'project-2',
+    type: 'project',
+    author: {
+      name: 'David Okonkwo',
+      handle: '@davido',
+      avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&h=150&fit=crop&crop=face',
+      organization: 'Hope Kitchen',
+    },
+    title: 'Mobile Meal Service Expansion',
+    description: 'Expanding our meal delivery service to reach housebound elderly residents who cannot access our community kitchen.',
+    impactGoal: 'Deliver 500 meals weekly to housebound residents',
+    cause: 'Food Security',
+    targetDate: 'February 2025',
+    needs: {
+      volunteersNeeded: 15,
+      fundraisingGoal: 8000,
+      resourcesRequested: ['Delivery van', 'Insulated food containers'],
+    },
+    progress: {
+      current: 200,
+      target: 500,
+      unit: 'meals/week',
+      lastUpdated: '1 week ago',
+    },
+    timeAgo: '2 days ago',
+  },
+  {
+    id: 'post-2',
+    type: 'post',
+    author: {
+      name: 'James Morrison',
+      handle: '@jamesm',
+      avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face',
+      organization: 'St Martins',
+    },
+    title: 'Volunteer Spotlight',
+    content: 'Shoutout to our incredible volunteer team who put in 200+ hours this month! Special thanks to the weekend crew who helped reorganize our donation storage. You make everything we do possible. 💪',
+    category: 'shoutout',
+    timeAgo: '6 hours ago',
+    likes: 34,
+    comments: 8,
+  },
+  {
+    id: 'event-3',
+    type: 'event',
+    author: {
+      name: 'Tom Richardson',
+      handle: '@tomr',
+      avatar: 'https://images.unsplash.com/photo-1463453091185-61582044d556?w=150&h=150&fit=crop&crop=face',
+      organization: 'Green Spaces Trust',
+    },
+    title: 'Winter Tree Planting Day',
+    description: 'Help us plant 100 trees in the local park! All equipment provided. Bring warm clothes and a willingness to get your hands dirty.',
+    date: 'Dec 20, 2024',
+    time: '9:00 AM - 1:00 PM',
+    location: 'Riverside Park',
+    cause: 'Environment',
+    needs: {
+      volunteersNeeded: 25,
+    },
+    timeAgo: '1 day ago',
+  },
+]
+
 export async function getFeedData(orgId: string): Promise<FeedItem[]> {
   const supabase = await createClient()
 
@@ -78,16 +238,35 @@ export async function getFeedData(orgId: string): Promise<FeedItem[]> {
   // Create organizations lookup map
   const organizationsMap = new Map(organizationsData?.map(o => [o.id, o]) || [])
 
+  // Mock profiles for when real profiles aren't found
+  const mockProfiles = [
+    { name: 'Sarah Chen', avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&h=150&fit=crop&crop=face', handle: 'sarahchen' },
+    { name: 'Marcus Johnson', avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face', handle: 'marcusj' },
+    { name: 'Emma Williams', avatar: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150&h=150&fit=crop&crop=face', handle: 'emmaw' },
+    { name: 'David Okonkwo', avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&h=150&fit=crop&crop=face', handle: 'davido' },
+    { name: 'Priya Patel', avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&h=150&fit=crop&crop=face', handle: 'priyap' },
+    { name: 'James Morrison', avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face', handle: 'jamesm' },
+    { name: 'Tom Richardson', avatar: 'https://images.unsplash.com/photo-1463453091185-61582044d556?w=150&h=150&fit=crop&crop=face', handle: 'tomr' },
+    { name: 'Sophie Martin', avatar: 'https://images.unsplash.com/photo-1487412720507-e7ab37603c6f?w=150&h=150&fit=crop&crop=face', handle: 'sophiem' },
+  ]
+  let mockProfileIndex = 0
+  const getNextMockProfile = () => {
+    const profile = mockProfiles[mockProfileIndex % mockProfiles.length]
+    mockProfileIndex++
+    return profile
+  }
+
   // Transform posts
   const posts: FeedPost[] = (postsData || []).map((post: any) => {
     const profile = profilesMap.get(post.author_id)
+    const mockProfile = !profile ? getNextMockProfile() : null
     return {
       id: post.id,
       type: 'post' as const,
       author: {
-        name: profile?.full_name || 'Unknown User',
-        handle: `@${profile?.contact_email?.split('@')[0] || 'unknown'}`,
-        avatar: profile?.avatar_url || '/placeholder.svg',
+        name: profile?.full_name || mockProfile?.name || 'Team Member',
+        handle: `@${profile?.contact_email?.split('@')[0] || mockProfile?.handle || 'team'}`,
+        avatar: profile?.avatar_url || mockProfile?.avatar || '/placeholder.svg',
         organization: 'St Martins Village',
       },
       title: post.title,
@@ -106,6 +285,7 @@ export async function getFeedData(orgId: string): Promise<FeedItem[]> {
   // Transform events
   const events: EventPost[] = (eventsData || []).map((event: any) => {
     const profile = profilesMap.get(event.organizer_id)
+    const mockProfile = !profile ? getNextMockProfile() : null
 
     // Format date and time
     const startDate = new Date(event.start_time)
@@ -118,7 +298,7 @@ export async function getFeedData(orgId: string): Promise<FeedItem[]> {
     const collaborations = (event.collaborating_orgs || []).map((orgId: string) => {
       const org = organizationsMap.get(orgId)
       return {
-        organization: org?.name || 'Unknown Organization',
+        organization: org?.name || 'Partner Organization',
         avatar: org?.logo_url || '/placeholder.svg',
       }
     })
@@ -127,9 +307,9 @@ export async function getFeedData(orgId: string): Promise<FeedItem[]> {
       id: event.id,
       type: 'event' as const,
       author: {
-        name: profile?.full_name || 'Unknown User',
-        handle: `@${profile?.contact_email?.split('@')[0] || 'unknown'}`,
-        avatar: profile?.avatar_url || '/placeholder.svg',
+        name: profile?.full_name || mockProfile?.name || 'Team Member',
+        handle: `@${profile?.contact_email?.split('@')[0] || mockProfile?.handle || 'team'}`,
+        avatar: profile?.avatar_url || mockProfile?.avatar || '/placeholder.svg',
         organization: 'St Martins Village',
       },
       collaborations,
@@ -152,12 +332,13 @@ export async function getFeedData(orgId: string): Promise<FeedItem[]> {
   // Transform projects
   const projects: ProjectPost[] = (projectsData || []).map((project: any) => {
     const profile = profilesMap.get(project.author_id)
+    const mockProfile = !profile ? getNextMockProfile() : null
 
     // Map collaborators to Collaboration type
     const collaborations = (project.collaborators || []).map((orgId: string) => {
       const org = organizationsMap.get(orgId)
       return {
-        organization: org?.name || 'Unknown Organization',
+        organization: org?.name || 'Partner Organization',
         avatar: org?.logo_url || '/placeholder.svg',
       }
     })
@@ -166,9 +347,9 @@ export async function getFeedData(orgId: string): Promise<FeedItem[]> {
       id: project.id,
       type: 'project' as const,
       author: {
-        name: profile?.full_name || 'Unknown User',
-        handle: `@${profile?.contact_email?.split('@')[0] || 'unknown'}`,
-        avatar: profile?.avatar_url || '/placeholder.svg',
+        name: profile?.full_name || mockProfile?.name || 'Team Member',
+        handle: `@${profile?.contact_email?.split('@')[0] || mockProfile?.handle || 'team'}`,
+        avatar: profile?.avatar_url || mockProfile?.avatar || '/placeholder.svg',
         organization: 'St Martins Village',
       },
       collaborations,
@@ -202,6 +383,12 @@ export async function getFeedData(orgId: string): Promise<FeedItem[]> {
     ...events,
     ...projects,
   ]
+
+  // Return mock data if no real data exists
+  if (allItems.length === 0) {
+    console.log('[getFeedData] No real data found, returning mock data')
+    return MOCK_FEED_ITEMS
+  }
 
   // Sort by created_at timestamp (we need to extract it from timeAgo or store timestamps)
   // For now, items are already sorted within their type, and we're interleaving them

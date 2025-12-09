@@ -89,6 +89,10 @@ const config: Config = {
         ping: {
           "75%, 100%": { transform: "scale(2)", opacity: "0" },
         },
+        marquee: {
+          "0%": { transform: "translateX(0%)" },
+          "100%": { transform: "translateX(-50%)" },
+        },
   		},
   		animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
@@ -96,6 +100,7 @@ const config: Config = {
         gradient: "gradient 6s ease infinite",
         shine: "shine 1.5s ease-in-out infinite",
         ping: "ping 1s cubic-bezier(0, 0, 0.2, 1) infinite",
+        marquee: "marquee 30s linear infinite",
       },
     },
   },

@@ -18,6 +18,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import { WeeklyUpdateDialog } from "@/components/social/weekly-update-dialog"
 import { Sparkles, Send, Image as ImageIcon, Smile, Calendar, Target, BarChart3, Paperclip, Tag, X, Plus, AlertTriangle } from "lucide-react"
 import { useState, useRef, useEffect } from "react"
 import { motion, AnimatePresence } from "framer-motion"
@@ -88,22 +89,16 @@ export function MainFeed({ initialFeedItems = [], userId, orgId }: MainFeedProps
   const [showEventDialog, setShowEventDialog] = useState(false)
   const [showProjectDialog, setShowProjectDialog] = useState(false)
   const [showAlertDialog, setShowAlertDialog] = useState(false)
-  const [showAISummary, setShowAISummary] = useState(false)
+  const [showWeeklyUpdate, setShowWeeklyUpdate] = useState(false)
 
   useEffect(() => {
-    function handleAISummaryOpen(event: Event) {
-      setShowAISummary(true)
-      requestAnimationFrame(() => {
-        const card = document.getElementById("ai-summary-card")
-        if (card) {
-          card.scrollIntoView({ behavior: "smooth", block: "center" })
-        }
-      })
+    function handleWeeklyUpdateOpen(event: Event) {
+      setShowWeeklyUpdate(true)
     }
 
-    window.addEventListener("ai-summary:open", handleAISummaryOpen as EventListener)
+    window.addEventListener("ai-summary:open", handleWeeklyUpdateOpen as EventListener)
     return () => {
-      window.removeEventListener("ai-summary:open", handleAISummaryOpen as EventListener)
+      window.removeEventListener("ai-summary:open", handleWeeklyUpdateOpen as EventListener)
     }
   }, [])
   
@@ -272,14 +267,14 @@ export function MainFeed({ initialFeedItems = [], userId, orgId }: MainFeedProps
               <Sparkles className="h-5 w-5 text-primary" />
             </div>
             <div className="flex-1 min-w-0">
-              <h2 className="text-2xl font-bold text-gray-900 tracking-tight mb-2">Welcome to the Community!</h2>
+              <h2 className="text-2xl font-bold text-gray-900 tracking-tight mb-2">Welcome to The Village!</h2>
               <p className="text-sm text-gray-600 leading-relaxed">
                 Discover collaboration opportunities, upcoming events, and initiatives from charities in your network. 
                 Together, we can make a greater impact.
               </p>
             </div>
             <Button
-              onClick={() => setShowAISummary(!showAISummary)}
+              onClick={() => setShowWeeklyUpdate(true)}
               className="shrink-0 gap-2 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white shadow-lg shadow-purple-500/30 transition-all relative overflow-hidden group"
             >
               {/* Continuous animated shine effect */}
@@ -727,130 +722,15 @@ export function MainFeed({ initialFeedItems = [], userId, orgId }: MainFeedProps
             {item.type === "event" && <EventCard event={item} />}
             {item.type === "project" && <ProjectCard project={item} />}
           </motion.div>
-          
-          {/* AI Summary Card - appears after 2nd item in feed */}
-          {index === 1 && (
-            <motion.div
-              id="ai-summary-card"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.4, delay: 0.2 }}
-              className="mt-6"
-            >
-              <Card className="bg-gradient-to-r from-orange-400 via-orange-500 to-red-500 rounded-xl shadow-lg border-0 overflow-hidden hover:shadow-xl transition-shadow">
-                <div className="flex items-center gap-3 p-3">
-                  {/* Icon/Image Section */}
-                  <div className="shrink-0">
-                    <div className="h-11 w-11 rounded-lg bg-white/20 backdrop-blur-sm flex items-center justify-center">
-                      <Sparkles className="h-5 w-5 text-white" />
-                    </div>
-                  </div>
-                  
-                  {/* Content */}
-                  <div className="flex-1 min-w-0">
-                    <h3 className="text-sm font-semibold text-white leading-tight">Monday's Team Meeting Notes</h3>
-                    <p className="text-xs text-white/90 leading-tight mt-0.5">Friday, July 10 at 4:00 PM</p>
-                  </div>
-                  
-                  {/* Action Button */}
-                  <Button
-                    onClick={() => setShowAISummary(!showAISummary)}
-                    className="shrink-0 bg-white hover:bg-white/90 text-orange-600 font-semibold px-4 py-1.5 text-sm rounded-lg shadow-md transition-all"
-                  >
-                    Attend
-                  </Button>
-                </div>
-                
-                {/* Expanded AI Summary */}
-                <AnimatePresence>
-                  {showAISummary && (
-                    <motion.div
-                      initial={{ opacity: 0, height: 0 }}
-                      animate={{ opacity: 1, height: "auto" }}
-                      exit={{ opacity: 0, height: 0 }}
-                      transition={{ duration: 0.3 }}
-                      className="overflow-hidden"
-                    >
-                      <div className="bg-white p-6 border-t border-purple-200/30">
-                        <div className="flex items-start justify-between mb-4">
-                          <div>
-                            <h3 className="text-lg font-bold text-gray-900 mb-1">Your Weekly AI Summary</h3>
-                            <p className="text-sm text-gray-600">AI-powered insights from this week's activity</p>
-                          </div>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => setShowAISummary(false)}
-                            className="h-8 w-8 p-0"
-                          >
-                            <X className="h-4 w-4" />
-                          </Button>
-                        </div>
-                        
-                        <div className="grid md:grid-cols-2 gap-4">
-                          {/* Last Week */}
-                          <div className="bg-purple-50 rounded-lg p-4 border border-purple-100">
-                            <div className="flex items-center gap-2 mb-3">
-                              <BarChart3 className="h-4 w-4 text-purple-600" />
-                              <h4 className="font-semibold text-gray-900">Last Week's Highlights</h4>
-                            </div>
-                            <ul className="space-y-2 text-sm text-gray-700">
-                              <li className="flex items-start gap-2">
-                                <span className="text-purple-500 mt-1">•</span>
-                                <span><strong>15 new collaborations</strong> started across 8 charities</span>
-                              </li>
-                              <li className="flex items-start gap-2">
-                                <span className="text-purple-500 mt-1">•</span>
-                                <span>Community Food Drive saw <strong>200+ RSVPs</strong></span>
-                              </li>
-                              <li className="flex items-start gap-2">
-                                <span className="text-purple-500 mt-1">•</span>
-                                <span>Most active: <strong>Hope Foundation</strong> with 24 posts</span>
-                              </li>
-                              <li className="flex items-start gap-2">
-                                <span className="text-purple-500 mt-1">•</span>
-                                <span>Urban Tree Initiative reached <strong>67% of target</strong></span>
-                              </li>
-                            </ul>
-                          </div>
-                          
-                          {/* This Week */}
-                          <div className="bg-blue-50 rounded-lg p-4 border border-blue-100">
-                            <div className="flex items-center gap-2 mb-3">
-                              <Calendar className="h-4 w-4 text-blue-600" />
-                              <h4 className="font-semibold text-gray-900">This Week's Focus</h4>
-                            </div>
-                            <ul className="space-y-2 text-sm text-gray-700">
-                              <li className="flex items-start gap-2">
-                                <span className="text-blue-500 mt-1">•</span>
-                                <span><strong>3 major events</strong> happening this week</span>
-                              </li>
-                              <li className="flex items-start gap-2">
-                                <span className="text-blue-500 mt-1">•</span>
-                                <span>Volunteer Training needs <strong>12 more sign-ups</strong></span>
-                              </li>
-                              <li className="flex items-start gap-2">
-                                <span className="text-blue-500 mt-1">•</span>
-                                <span><strong>5 charities</strong> looking for partners</span>
-                              </li>
-                              <li className="flex items-start gap-2">
-                                <span className="text-blue-500 mt-1">•</span>
-                                <span>Trending topic: <strong>#MentalHealthSupport</strong></span>
-                              </li>
-                            </ul>
-                          </div>
-                        </div>
-                      </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </Card>
-            </motion.div>
-          )}
         </div>
       ))}
 
       {/* Modals */}
+      <WeeklyUpdateDialog 
+        open={showWeeklyUpdate} 
+        onOpenChange={setShowWeeklyUpdate} 
+      />
+
       <CreateEventDialog
         open={showEventDialog}
         onOpenChange={setShowEventDialog}

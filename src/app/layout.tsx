@@ -4,8 +4,8 @@ import { GeistMono } from "geist/font/mono";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "The Village Hub - Internal Communications",
-  description: "A unified digital collaboration hub for The Village Hub community",
+  title: "Aitrium - Oasis St Martins Village",
+  description: "A unified digital collaboration hub for Oasis St Martins Village community",
 };
 
 export default function RootLayout({

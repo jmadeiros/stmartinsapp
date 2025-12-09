@@ -11,7 +11,7 @@ export function SocialHeader() {
   
   const navItems = [
     { label: "Home", href: "/dashboard" },
-    { label: "Chats", href: "/chats", badge: 3 },
+    { label: "Chat", href: "/chat", badge: 3 },
     { label: "Calendar", href: "/calendar" },
     { label: "Opportunities", href: "/opportunities" },
     { label: "People", href: "/people" },
@@ -59,10 +59,10 @@ export function SocialHeader() {
             </div>
             <div>
               <h1 className="text-xl font-bold text-foreground tracking-tight group-hover:text-primary transition-colors flex items-center gap-1.5">
-                Your Brand
+                Aitrium
                 <Zap className="h-3.5 w-3.5 text-primary opacity-0 group-hover:opacity-100 transition-opacity" />
               </h1>
-              <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Premium</p>
+              <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Oasis St Martins Village</p>
             </div>
           </Link>
 

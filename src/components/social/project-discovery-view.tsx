@@ -87,13 +87,6 @@ export function ProjectDiscoveryView({ initialProjects, userOrgId }: ProjectDisc
           {/* Header Title Area */}
           <div className="flex flex-col lg:flex-row justify-between items-start lg:items-end gap-8 mb-12">
             <div className="space-y-4 max-w-2xl">
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-slate-100 border border-slate-200 text-xs font-semibold text-slate-600 uppercase tracking-wide">
-                <span className="relative flex h-2 w-2">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-                </span>
-                Live Ecosystem Tracking
-              </div>
               <h1 className="text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl lg:text-5xl">
                 The Village Pulse
               </h1>
@@ -133,12 +126,22 @@ export function ProjectDiscoveryView({ initialProjects, userOrgId }: ProjectDisc
                <Activity className="h-3.5 w-3.5 text-emerald-500" />
                Latest Activity
              </div>
-             <div className="flex items-center gap-8 animate-marquee whitespace-nowrap">
-                <TickerItem text="Sarah J. volunteered for Urban Garden" time="2m ago" />
-                <TickerItem text="TechCorp pledged 5 laptops to Youth Code" time="5m ago" />
-                <TickerItem text="New Project: 'Clean River Initiative' started" time="12m ago" />
-                <TickerItem text="St. Martins reached 500 meals served" time="1h ago" />
-                <TickerItem text="Community Center raised $1,200" time="2h ago" />
+             <div className="flex items-center animate-marquee whitespace-nowrap">
+                <div className="flex items-center gap-8 pr-8">
+                  <TickerItem text="Sarah J. volunteered for Urban Garden" time="2m ago" />
+                  <TickerItem text="TechCorp pledged 5 laptops to Youth Code" time="5m ago" />
+                  <TickerItem text="New Project: 'Clean River Initiative' started" time="12m ago" />
+                  <TickerItem text="St. Martins reached 500 meals served" time="1h ago" />
+                  <TickerItem text="Community Center raised $1,200" time="2h ago" />
+                </div>
+                {/* Duplicate for seamless loop */}
+                <div className="flex items-center gap-8 pr-8">
+                  <TickerItem text="Sarah J. volunteered for Urban Garden" time="2m ago" />
+                  <TickerItem text="TechCorp pledged 5 laptops to Youth Code" time="5m ago" />
+                  <TickerItem text="New Project: 'Clean River Initiative' started" time="12m ago" />
+                  <TickerItem text="St. Martins reached 500 meals served" time="1h ago" />
+                  <TickerItem text="Community Center raised $1,200" time="2h ago" />
+                </div>
              </div>
           </div>
 

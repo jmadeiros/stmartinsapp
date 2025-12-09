@@ -1,0 +1,460 @@
+# St Martins Village Hub - Master Implementation Plan
+
+> **Created:** December 9, 2024
+> **Status:** Ready for Implementation
+> **Related Docs:** [ARCHITECTURE_MAP.md](./ARCHITECTURE_MAP.md), [AI_FEATURES_ROADMAP.md](./AI_FEATURES_ROADMAP.md)
+
+---
+
+## Pre-Phase: What's Already Working ✅
+
+| Feature | Status | Notes |
+|---------|--------|-------|
+| Dev Login | ✅ Works | Creates user + profile + org membership |
+| User → Org Connection | ✅ Works | `user_memberships` table |
+| Create Event | ✅ Works | Dialog → `createEvent()` → DB |
+| Create Project | ✅ Works | Dialog → `createProject()` → DB |
+| Create Post | ❌ NOT WIRED | Dialog only console.logs |
+| OAuth UI | ✅ Built | Buttons exist, providers not configured |
+| OAuth callback | ✅ Built | Route exists at `/auth/callback` |
+| Post-OAuth user setup | ❌ Missing | Need trigger to create profile + membership |
+
+### Production User Onboarding (Task 4.7)
+
+For real users (not dev login), the full sign-up flow:
+
+**1. OAuth Sign-In**
+- User clicks Microsoft/Google on login page
+- Supabase creates `auth.users` row
+- Redirects to `/onboarding`
+
+**2. Onboarding Form (`/onboarding`)**
+```
+┌─────────────────────────────────────────────────────────────┐
+│  Welcome to Village Hub!                                    │
+│  Complete your profile to get started                       │
+├─────────────────────────────────────────────────────────────┤
+│                                                             │
+│  Profile Photo *        [Upload]                            │
+│                                                             │
+│  Full Name *            [________________________]          │
+│                                                             │
+│  Email *                [________________________]          │
+│                                                             │
+│  Phone *                [________________________]          │
+│                                                             │
+│  Job Title *            [________________________]          │
+│                                                             │
+│  Organization *         [▼ Select your organization ]       │
+│                                                             │
+│  ┌─────────────────────────────────────────────────────┐   │
+│  │ ☐ I agree to the Terms of Service and Privacy      │   │
+│  │   Policy. I consent to Village Hub storing and     │   │
+│  │   processing my personal data as described. *      │   │
+│  │   [View Privacy Policy] [View Terms]               │   │
+│  └─────────────────────────────────────────────────────┘   │
+│                                                             │
+│                    [Complete Sign Up]                       │
+│                                                             │
+├─────────────────────────────────────────────────────────────┤
+│  ℹ️ Your account will be reviewed by an admin before you    │
+│     can access the hub.                                     │
+└─────────────────────────────────────────────────────────────┘
+```
+
+**Required fields:** Photo, Full Name, Email, Phone, Job Title, Organization, GDPR Consent
+**Optional (add later in profile):** Bio, Skills, Interests, LinkedIn
+
+**3. Pending Approval**
+- User sees "Account Pending" screen
+- Admin reviews in `/admin/user-approvals`
+- Admin approves → user gets email + can access app
+
+**Database Changes Needed:**
+| Field | Table | Purpose |
+|-------|-------|---------|
+| `account_status` | `user_profiles` | 'pending', 'approved', 'rejected' |
+| `approved_at` | `user_profiles` | When admin approved |
+| `approved_by` | `user_profiles` | Admin who approved |
+| `gdpr_consent` | `user_profiles` | Boolean - user accepted terms |
+| `gdpr_consent_at` | `user_profiles` | Timestamp of consent |
+
+**Admin User Approval Queue** (part of 3.11):
+- Shows pending user sign-ups
+- Admin can view profile, approve, or reject
+- Rejection sends email with reason
+
+---
+
+## Infrastructure Notes
+
+### Email Setup (part of 4.7)
+**Provider:** Resend (free tier: 3k emails/month) or Supabase built-in
+
+**Templates needed:**
+| Email | When Sent |
+|-------|-----------|
+| Welcome/Approved | Admin approves user sign-up |
+| Rejected | Admin rejects user sign-up (include reason) |
+| Website Approved | Admin approves content for website |
+
+### Error Tracking & User Feedback
+**Sentry** (add when test users start):
+- Automatic error catching
+- Free tier sufficient for this scale
+- Users can comment on errors they trigger
+
+**Feedback Button** (build simple in-app):
+- "Report Issue" button in header or settings
+- Form: description + screenshot option + current page URL
+- Saves to `user_feedback` table or sends to Slack
+
+### Testing Approach
+- **Manual testing** after each task completion
+- **Test with real data** before removing mock fallbacks
+- **Test user group** before Phase 4 completion
+- No automated test suite needed initially (can add later for SaaS)
+
+### Responsive Testing (Ongoing)
+Test at these widths after building/modifying UI components:
+
+| Size | Width | Check For |
+|------|-------|-----------|
+| Mobile | 375px | No horizontal scroll, readable text, tappable buttons |
+| Tablet | 768px | Layout uses space well, sidebars visible if needed |
+| Laptop | 1024px | 3-column layout works, nothing overlaps |
+| Desktop | 1440px | Content centered, not stretched too wide |
+
+**How:** Chrome DevTools → Device toolbar (`Cmd+Shift+M`) → drag edges or pick presets
+
+**Common issues to watch:**
+- Fixed widths (`w-80`, `w-64`) → use `w-full sm:w-80` pattern
+- Dropdowns/popovers overflowing screen edges
+- Padding too large on mobile (`p-8` → `p-4 sm:p-6 md:p-8`)
+- Sidebars hidden when they shouldn't be
+
+### Row Level Security (RLS) Notes
+
+**⚠️ IMPORTANT: RLS should NOT block development.**
+
+**Development Approach:**
+1. Build feature first, test it works
+2. Add RLS policy AFTER feature is working
+3. Test again to ensure RLS doesn't break it
+4. If RLS causes issues → temporarily disable while debugging
+
+**How to disable RLS if stuck:**
+```sql
+-- In Supabase SQL editor (for debugging only!)
+ALTER TABLE table_name DISABLE ROW LEVEL SECURITY;
+-- Re-enable when done:
+ALTER TABLE table_name ENABLE ROW LEVEL SECURITY;
+```
+
+**Policies to add (one at a time, after feature works):**
+
+| Feature | RLS Rule | When to Add |
+|---------|----------|-------------|
+| Post reactions | Users can only delete own | After 2.9 works |
+| Post comments | Users can only edit/delete own | After 2.10 works |
+| Event comments | Users can only edit/delete own | After 3.4 works |
+| User profiles | Users can only edit own | After 3.9 works |
+| Feedback | Users can only see own submissions | After 3.18 works |
+
+Most RLS already exists for core tables. The above are additions for new features.
+
+---
+
+## PHASE 1: Critical Fixes & Cleanup 🔧
+*Stabilize before building*
+
+| # | Task | Files | Complexity | 🤖 AI Hook |
+|---|------|-------|------------|------------|
+| 1.1 | **Fix `getProjectById`** - Function imported but doesn't exist | `lib/actions/projects.ts`, `projects/[id]/page.tsx` | 🟢 Small | - |
+| 1.2 | **Delete empty `/directory` route** - Superseded by `/people` | `app/(authenticated)/directory/` | 🟢 Small | - |
+| 1.3 | **Delete old `/components/layout/`** - Orphaned sidebar/header | `components/layout/sidebar.tsx`, `header.tsx` | 🟢 Small | - |
+| 1.4 | **Fix hardcoded `isManager: true`** | `components/social/main-feed.tsx:245` | 🟢 Small | - |
+| 1.5 | **Fix "Current User" hardcoded** - Alert sender | `components/social/main-feed.tsx:230-231` | 🟢 Small | - |
+| 1.6 | **Regenerate TypeScript types** | `lib/database.types.ts` | 🟢 Small | - |
+| 1.7 | **Add event category picker** - Currently hardcodes 'other' | `create-event-dialog.tsx`, `lib/actions/events.ts:48` | 🟢 Small | Auto-tag |
+| 1.8 | **Wire up Create Post** - Currently only console.logs | `main-feed.tsx` → call `createPost()` | 🟢 Small | Auto-tag |
+
+---
+
+## PHASE 2: Core Feature Completion 🔌
+*Wire mock data to real Supabase*
+
+| # | Task | Files | Complexity | 🤖 AI Hook |
+|---|------|-------|------------|------------|
+| 2.1 | **Wire up Chat** - 100% mock → real messages/conversations | `components/chat/*`, new query file | 🔴 Large | - |
+| 2.2 | **Wire up Calendar** - Mock events → real events table | `calendar/page.tsx`, `monthly-calendar.tsx` | 🟡 Medium | - |
+| 2.3 | **Wire up My Team Box** - Hardcoded → org members query | `left-sidebar.tsx:12-56` | 🟡 Medium | - |
+| 2.4 | **Wire up Priority Alerts** - Hardcoded → announcements. **Send restricted to st_martins_staff/admin only** (everyone views + acks) | `right-sidebar.tsx`, `send-alert-dialog.tsx` | 🟡 Medium | Smart alerts |
+| 2.5 | **Wire up Badge Counts** - Hardcoded "3" → real unread counts | `header.tsx:14,88-91` | 🟡 Medium | - |
+| 2.6 | **Remove mock fallback from Dashboard** | `dashboard/actions.ts:8-165` | 🟢 Small | - |
+| 2.7 | **Wire up Community Highlights** - Real metrics from DB | `left-sidebar.tsx:58-83` | 🟡 Medium | Weekly summary |
+| 2.8 | **Remove mock projects** - Once real data exists | `projects/page.tsx:9-155` | 🟢 Small | - |
+| 2.9 | **Wire up Post Reactions** - Heart button → `post_reactions` table | `post-card.tsx`, new action | 🟢 Small | - |
+| 2.10 | **Wire up Post Comments** - Schema exists, build UI + backend | `post-card.tsx`, new component | 🟡 Medium | - |
+| 2.11 | **Persist @Mentions** - Currently visual only, save to DB | `main-feed.tsx`, posts table | 🟢 Small | - |
+
+---
+
+## PHASE 3: New Features ✨
+*Build missing functionality*
+
+| # | Task | Files | Complexity | 🤖 AI Hook |
+|---|------|-------|------------|------------|
+| 3.1 | **Integrate NotificationsDropdown** - Built but not in header | `notifications-dropdown.tsx` → `header.tsx` | 🟢 Small | Smart notifs |
+| 3.2 | **Use ActionCTA in RSVP flow** - Orphaned component | `action-cta.tsx` → `event-card.tsx`, `project-card.tsx` | 🟡 Medium | - |
+| 3.3 | **Use ExpressInterestButton** - Built but unused | `express-interest-button.tsx` → cards | 🟢 Small | Org matcher |
+| 3.4 | **Event Comments System** - console.log → real comments | `event-card.tsx:354`, new component | 🟡 Medium | - |
+| 3.5 | **Project Comments System** - Share infra with events | `project-card.tsx:440` | 🟢 Small | - |
+| 3.6 | **Event Detail Page** - `/events/[id]` route | New route + page | 🟡 Medium | Event-Project link |
+| 3.7 | **Build Opportunities Page** - Merge jobs + opportunity posts | New `/opportunities` route | 🟡 Medium | - |
+| 3.8 | **Build Search** - Header search non-functional | `header.tsx:117-125`, new components | 🔴 Large | Semantic search |
+| 3.9 | **Build Profile Page** - View/edit profile, add skills/interests/bio, bookmarks | New `/profile` route | 🟡 Medium | - |
+| 3.10 | **Build Settings Page** - Preferences | New `/settings` route | 🟡 Medium | AI opt-out |
+| 3.11 | **Build Admin Page** - Org/user management, user approval queue, website approval queue | New `/admin` route | 🔴 Large | Data health |
+| 3.12 | **Collaboration Post-Acceptance** - Roles, permissions, removal | `lib/actions/collaboration.ts`, cards | 🔴 Large | Org matcher |
+| 3.13 | **Meeting Notes on Events** - Attach to calendar events | Calendar detail panel | 🟡 Medium | Notes summary |
+| 3.14 | **Acknowledge Button** - Save to DB (depends on 2.4) | `right-sidebar.tsx:17` | 🟢 Small | - |
+| 3.15 | **Post Pinning** - Admin-only pin/unpin posts (schema exists) | `post-card.tsx`, `PostMenu`, actions | 🟢 Small | - |
+| 3.16 | **Build Polls** - New schema + backend + UI for post polls | New tables, `main-feed.tsx` | 🟡 Medium | - |
+| 3.17 | **Publish to Website** - Toggle on create → admin approval → external calendar/highlights | Create dialogs, admin queue, API | 🔴 Large | - |
+| 3.18 | **User Feedback System** - "Report Issue" button in header → saves to `user_feedback` table | Header, new table, simple form | 🟢 Small | - |
+
+---
+
+## PHASE 4: Polish & Production 🚀
+*Production readiness*
+
+| # | Task | Files | Complexity | 🤖 AI Hook |
+|---|------|-------|------------|------------|
+| 4.1 | **Re-enable auth check** - Currently commented out | `(authenticated)/layout.tsx:11-14` | 🟢 Small | - |
+| 4.2 | **Remove all console.log** - ~24 occurrences | Multiple files | 🟡 Medium | - |
+| 4.3 | **Remove TODO comments** - Replace with implementations | `post-card.tsx`, `main-feed.tsx` | 🟢 Small | - |
+| 4.4 | **Clean up old routes** - Delete/redirect /board, /events, /jobs, /menu | Route files | 🟢 Small | - |
+| 4.5 | **Real-time subscriptions** - Live updates for chat, feed, notifications | Chat, feed, notifications | 🟡 Medium | - |
+| 4.6 | **File uploads** - Supabase Storage | Post creation, profiles | 🟡 Medium | - |
+| 4.7 | **OAuth + User Onboarding** - Configure providers + post-OAuth profile/membership creation | Supabase config, DB trigger | 🟡 Medium | - |
+| 4.8 | **Mobile responsiveness** - Audit all components | All components | 🟡 Medium | - |
+| 4.9 | **Error handling & loading states** | All pages | 🟡 Medium | - |
+
+---
+
+## Final Navigation Structure
+
+| Keep/Enhance | Build New | Delete/Redirect |
+|--------------|-----------|-----------------|
+| `/dashboard` | `/opportunities` | `/directory` → delete |
+| `/calendar` | `/events/[id]` | `/board` → `/dashboard` |
+| `/chat` | `/profile` | `/events` → `/calendar` |
+| `/people` | `/settings` | `/jobs` → `/opportunities` |
+| `/projects` | `/admin` | `/menu` → delete |
+| `/projects/[id]` | | `/notes` → calendar |
+
+---
+
+## Summary by Complexity
+
+| | 🟢 Small | 🟡 Medium | 🔴 Large | Total |
+|---|----------|-----------|----------|-------|
+| **Phase 1** | 8 | 0 | 0 | 8 |
+| **Phase 2** | 4 | 6 | 1 | 11 |
+| **Phase 3** | 7 | 8 | 4 | 19 |
+| **Phase 4** | 3 | 5 | 0 | 8 |
+| **Total** | **22** | **19** | **5** | **46** |
+
+---
+
+## 🤖 AI Integration Points
+
+The `🤖 AI Hook` column indicates where AI features from [AI_FEATURES_ROADMAP.md](./AI_FEATURES_ROADMAP.md) can be added later. These are **not blockers** - build the feature first, then optionally enhance with AI.
+
+| AI Hook | Feature | Tasks That Can Use It |
+|---------|---------|----------------------|
+| **Auto-tag** | Suggests category/cause during creation | 1.7, 1.8 |
+| **Smart alerts** | "Based on your interests..." notifications | 2.4 |
+| **Weekly summary** | AI-generated community highlights | 2.7 |
+| **Smart notifs** | Personalized notification prioritization | 3.1 |
+| **Org matcher** | "These orgs work on similar causes" | 3.3, 3.12 |
+| **Event-Project link** | "This event relates to that project" | 3.6 |
+| **Semantic search** | Natural language search across content | 3.8 |
+| **AI opt-out** | User preference to disable AI features | 3.10 |
+| **Data health** | "This project has no activity" alerts | 3.11 |
+| **Notes summary** | Auto-generates action items from notes | 3.13 |
+
+**When to build AI:** After Phase 4 is complete, or earlier if a specific feature would benefit significantly. See Phase 5 below.
+
+---
+
+## Console.log Buttons to Fix
+
+| Location | Button | Current Behavior | Task |
+|----------|--------|------------------|------|
+| `main-feed.tsx` | Post Submit | `console.log('Creating post:...')` - No DB call | 1.8 |
+| `post-card.tsx` | Heart/Like | No DB call | 2.9 |
+| `post-card.tsx` | Comments | No comments UI | 2.10 |
+| `left-sidebar.tsx:150` | Community Highlights | `console.log('Clicked...')` | 2.7 |
+| `right-sidebar.tsx:17` | Acknowledge Alert | Dismisses UI only | 3.14 |
+| `event-card.tsx:354` | Comments | `console.log('Open comments')` | 3.4 |
+| `event-card.tsx` | Navigate | `console.log('Navigate to event detail')` | 3.6 |
+| `project-card.tsx` | Comments | `console.log('Open comments')` | 3.5 |
+
+---
+
+## Post System Features (Tasks 2.9-2.11, 3.15-3.16)
+
+| Feature | Schema | Status | Task |
+|---------|--------|--------|------|
+| **Reactions** | ✅ `post_reactions` table | Wire up | 2.9 |
+| **Comments** | ✅ `post_comments` table (threaded) | Build UI + backend | 2.10 |
+| **@Mentions** | Partial | Persist to DB | 2.11 |
+| **Pinning** | ✅ `is_pinned`, `pinned_at`, `pinned_by` | Admin-only UI | 3.15 |
+| **Polls** | ❌ Need new schema | Full build | 3.16 |
+
+### Polls Schema (to create for 3.16)
+```sql
+CREATE TABLE poll_options (
+  id UUID PRIMARY KEY,
+  post_id UUID REFERENCES posts(id),
+  option_text TEXT NOT NULL,
+  position INT
+);
+
+CREATE TABLE poll_votes (
+  poll_option_id UUID REFERENCES poll_options(id),
+  user_id UUID REFERENCES auth.users(id),
+  voted_at TIMESTAMPTZ DEFAULT NOW(),
+  PRIMARY KEY (poll_option_id, user_id)
+);
+```
+
+---
+
+## Publish to Website (Task 3.17)
+
+**User Flow:**
+1. When creating event/post/project, user sees "Publish to website" toggle
+2. If toggled ON → item saved with `website_status: 'pending'`
+3. Admin goes to `/admin/website-queue` → sees all pending items
+4. Admin approves or rejects each item
+5. If approved → API pushes to external website:
+   - **Events** → public website calendar
+   - **Posts/Projects** → public website highlights page
+
+**Admin Approval Page: `/admin/website-queue`**
+```
+┌─────────────────────────────────────────────────────────────┐
+│  Website Publishing Queue                    [3 pending]    │
+├─────────────────────────────────────────────────────────────┤
+│  ┌─────────────────────────────────────────────────────┐   │
+│  │ 📅 EVENT: Community Food Drive                      │   │
+│  │ Submitted by: Sarah @ Hope Foundation               │   │
+│  │ Date: Dec 15, 2024                                  │   │
+│  │ [Preview] [✓ Approve] [✗ Reject]                    │   │
+│  └─────────────────────────────────────────────────────┘   │
+│  ┌─────────────────────────────────────────────────────┐   │
+│  │ 📝 POST: Youth Program Graduation Success           │   │
+│  │ Submitted by: James @ Youth Alliance                │   │
+│  │ Category: Wins                                      │   │
+│  │ [Preview] [✓ Approve] [✗ Reject]                    │   │
+│  └─────────────────────────────────────────────────────┘   │
+└─────────────────────────────────────────────────────────────┘
+```
+
+**Database Fields Needed:**
+| Field | Type | Description |
+|-------|------|-------------|
+| `publish_to_website` | boolean | User toggled "publish to website" |
+| `website_status` | enum | 'pending', 'approved', 'rejected' |
+| `website_approved_at` | timestamp | When admin approved |
+| `website_approved_by` | UUID | Admin who approved |
+| `website_rejected_reason` | text | Optional rejection reason |
+
+**API Endpoints for External Website:**
+| Endpoint | Returns |
+|----------|---------|
+| `GET /api/public/events` | Approved events (for website calendar) |
+| `GET /api/public/highlights` | Approved posts/projects (for highlights page) |
+
+**Note:** The `/admin/website-queue` is a sub-route of the main admin page (3.11)
+
+---
+
+## User Feedback System (Task 3.18)
+
+Simple in-app bug/issue reporting for test users.
+
+**UI:**
+- "Report Issue" button in header (or footer)
+- Opens modal with: description textarea, optional screenshot upload, auto-captures current page URL
+
+**Schema:**
+```sql
+CREATE TABLE user_feedback (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID REFERENCES auth.users(id),
+  description TEXT NOT NULL,
+  page_url TEXT,
+  screenshot_url TEXT,
+  status TEXT DEFAULT 'new', -- 'new', 'reviewed', 'resolved'
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+```
+
+**Admin View:** Simple list in `/admin` showing feedback with status toggles.
+
+---
+
+## Collaboration System - Current State
+
+### What Exists (Backend Complete)
+1. **Invite** → Org A creates event/project, invites Org B
+2. **Notify** → Org B gets notification in `notifications` table
+3. **Accept/Decline** → Via `respondToInvitation()`
+4. **If Accepted** → Org B's ID added to `collaborating_orgs[]`
+
+### What's Missing (To Build in 3.12)
+
+| Gap | What's Needed |
+|-----|---------------|
+| Post-acceptance permissions | What can collaborators DO? |
+| Collaborator posting | Can Org B post updates to Org A's project? |
+| Remove collaborator | `removeCollaborator()` function |
+| Collaboration roles | owner, co-organizer, supporter |
+| My collaborations view | "Projects I'm collaborating on" |
+
+### Proposed Permission Model
+```
+├── Owner (org that created it)
+│   └── Full control: edit, delete, invite, remove
+├── Co-organizer (invited with edit rights)
+│   └── Can: post updates, edit details, invite others
+│   └── Cannot: delete project, remove owner
+└── Supporter (default when accepting)
+    └── Can: post comments, view private details
+    └── Cannot: edit project, invite others
+```
+
+---
+
+## PHASE 5: AI Features (Future)
+
+*See [AI_FEATURES_ROADMAP.md](./AI_FEATURES_ROADMAP.md) for full details*
+
+| Feature | What It Does | Priority |
+|---------|--------------|----------|
+| Auto-tagging | Suggests category/cause on create | High |
+| Event-Project Linking | "This event relates to that project" | High |
+| Smart Notifications | "Based on your interests..." | Medium |
+| Weekly/Monthly Highlights | AI community summary | Medium |
+| Meeting Notes Summary | Auto-generates action items | Medium |
+| Data Health Analyzer | "This project has no activity" | Low |
+
+**Estimated Cost:** ~$8/month for medium usage (100-500 users)
+
+---
+
+*End of Master Plan*

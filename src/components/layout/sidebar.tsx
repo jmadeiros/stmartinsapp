@@ -51,7 +51,10 @@ export function Sidebar({ user }: SidebarProps) {
           {/* Logo */}
           <div className="flex h-16 shrink-0 items-center gap-2">
             <Building2 className="h-8 w-8 text-primary" />
-            <span className="text-xl font-bold">The Village Hub</span>
+            <div className="flex flex-col">
+              <span className="text-lg font-bold leading-tight">Aitrium</span>
+              <span className="text-[10px] text-muted-foreground uppercase tracking-wider">Oasis St Martins Village</span>
+            </div>
           </div>
 
           {/* Navigation */}
