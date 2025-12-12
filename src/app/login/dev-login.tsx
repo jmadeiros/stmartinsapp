@@ -8,6 +8,7 @@ import { Code } from 'lucide-react'
 
 export function DevLogin() {
   const [isLoading, setIsLoading] = useState(false)
+  const [role, setRole] = useState<'admin' | 'st_martins_staff' | 'partner_staff' | 'volunteer'>('admin')
   const router = useRouter()
   const supabase = createClient()
 
@@ -17,6 +18,8 @@ export function DevLogin() {
       // First, create/ensure the user exists via API
       const response = await fetch('/api/dev-login', {
         method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ role }),
       })
 
       if (!response.ok) {
@@ -71,6 +74,22 @@ export function DevLogin() {
             <p className="text-xs text-yellow-700 mt-1">
               Skip OAuth and create a test user to preview the app
             </p>
+            <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
+              <label className="text-xs font-medium text-yellow-900">
+                Test account:
+              </label>
+              <select
+                value={role}
+                onChange={(e) => setRole(e.target.value as typeof role)}
+                disabled={isLoading}
+                className="w-full sm:w-auto rounded-md border border-yellow-300 bg-white px-3 py-2 text-sm text-yellow-900 focus:outline-none focus:ring-2 focus:ring-yellow-400"
+              >
+                <option value="admin">Admin (admin@stmartins.dev)</option>
+                <option value="st_martins_staff">St Martins Staff (staff@stmartins.dev)</option>
+                <option value="partner_staff">Partner Staff (partner@stmartins.dev)</option>
+                <option value="volunteer">Volunteer (volunteer@stmartins.dev)</option>
+              </select>
+            </div>
             <Button
               onClick={handleDevLogin}
               disabled={isLoading}

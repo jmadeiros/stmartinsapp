@@ -155,7 +155,7 @@ export function CreateProjectDialog({ open, onOpenChange, userId, orgId }: Creat
                 required
               />
               <p className="text-xs text-muted-foreground">
-                {formData.impactGoal.length}/20 characters - Clear, measurable outcome you're working toward
+                {formData.impactGoal.length}/20 characters - Clear, measurable outcome you&apos;re working toward
               </p>
             </div>
           </div>

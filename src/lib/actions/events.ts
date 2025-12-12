@@ -3,6 +3,8 @@
 import { createClient } from "@/lib/supabase/server"
 import { inviteCollaborators } from "./collaboration"
 
+export type EventCategory = 'meeting' | 'social' | 'workshop' | 'building_event' | 'other'
+
 export type CreateEventParams = {
   title: string
   description: string
@@ -11,6 +13,7 @@ export type CreateEventParams = {
   location: string
   organizerId: string
   orgId: string
+  category?: EventCategory
   cause?: string
   volunteersNeeded?: number
   seekingPartners?: boolean
@@ -45,9 +48,9 @@ export async function createEvent(params: CreateEventParams) {
         cause: params.cause || null,
         volunteers_needed: params.volunteersNeeded || null,
         seeking_partners: params.seekingPartners || false,
-        category: 'other' as const,
+        category: params.category || 'other',
         status: 'Open',
-      })
+      } as any)
       .select()
       .single()
 
@@ -56,13 +59,14 @@ export async function createEvent(params: CreateEventParams) {
       return { success: false, error: error.message, data: null }
     }
 
-    console.log(`[createEvent] Created event: ${event.id}`)
+    const eventData = event as { id: string } | null
+    console.log(`[createEvent] Created event: ${eventData?.id}`)
 
     // If inviting collaborators, send invitations
-    if (params.inviteCollaborators && params.inviteCollaborators.length > 0 && event) {
+    if (params.inviteCollaborators && params.inviteCollaborators.length > 0 && eventData) {
       const inviteResult = await inviteCollaborators({
         resourceType: 'event',
-        resourceId: event.id,
+        resourceId: eventData.id,
         inviterOrgId: params.orgId,
         inviterUserId: params.organizerId,
         inviteeOrgIds: params.inviteCollaborators,

@@ -201,8 +201,8 @@ export function EventCard({ event }: EventCardProps) {
   }, [supportPanelOpen])
 
   return (
-    <Card className="text-card-foreground flex flex-col gap-6 rounded-xl py-6 border border-border bg-card shadow-sm transition-shadow hover:shadow-md">
-      <div className="p-6">
+    <Card className="text-card-foreground flex flex-col rounded-2xl bg-white border border-gray-100 shadow-md transition-shadow hover:shadow-lg">
+      <div className="p-4">
         <div className="mb-4 flex items-start justify-between">
           <div className="flex items-center gap-3">
             {collaborations.length > 0 ? (
@@ -331,10 +331,7 @@ export function EventCard({ event }: EventCardProps) {
         <div className="border-t border-border pt-4 mt-4 space-y-3">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div className="flex items-center gap-3">
-              <Button
-                variant="ghost"
-                size="sm"
-                className="gap-2 text-muted-foreground hover:text-foreground"
+              <button
                 onClick={() => {
                   const next = !liked
                   setLiked(next)
@@ -343,39 +340,44 @@ export function EventCard({ event }: EventCardProps) {
                     return nextCount < 0 ? 0 : nextCount
                   })
                 }}
+                className="flex items-center gap-1.5 px-2 py-1.5 text-muted-foreground hover:text-foreground transition-colors"
               >
-                <Heart className={cn("h-4 w-4", liked && "text-red-500 fill-red-500")} />
-                <span className="text-xs">{likeCount}</span>
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="gap-2 text-muted-foreground hover:text-foreground"
+                <Heart className={cn(
+                  "h-5 w-5 transition-all duration-200",
+                  liked ? "fill-rose-500 text-rose-500 scale-110" : "hover:scale-110"
+                )} />
+                <span className={cn("text-sm tabular-nums", liked && "text-rose-500 font-medium")}>
+                  {likeCount}
+                </span>
+              </button>
+              <button
                 onClick={() => console.log("Open comments")}
+                className="flex items-center gap-1.5 px-2 py-1.5 text-muted-foreground hover:text-foreground transition-colors"
               >
-                <MessageCircle className="h-4 w-4" />
-                <span className="text-xs">{commentCount}</span>
-              </Button>
+                <MessageCircle className="h-5 w-5" />
+                <span className="text-sm tabular-nums">{commentCount}</span>
+              </button>
             </div>
 
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2">
               <div className="relative">
-                <Button
+                <button
                   ref={supportTriggerRef}
-                  variant={attending ? "default" : "outline"}
-                  size="sm"
                   onClick={handleAttendToggle}
                   className={cn(
-                    "gap-2 border border-blue-200 text-sm font-medium",
-                    attending ? "bg-blue-600 text-white hover:bg-blue-600/90" : "bg-blue-50 text-blue-700 hover:bg-blue-100"
+                    "inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-200",
+                    attending
+                      ? "bg-primary text-primary-foreground shadow-sm"
+                      : "bg-primary/10 border border-primary/30 text-primary hover:bg-primary/20 hover:border-primary/50"
                   )}
                 >
-                  <Check className="h-4 w-4" />
-                  {attending ? "Attending" : "Attend"}
-                  <span className="text-xs font-normal text-blue-100/80 sm:text-sm sm:font-medium sm:text-inherit">
-                    ({event.interestedOrgs?.length || 0})
-                  </span>
-                </Button>
+                  {attending ? (
+                    <Check className="h-4 w-4 transition-transform duration-200 scale-110" />
+                  ) : (
+                    <CalendarPlus className="h-4 w-4" />
+                  )}
+                  {attending ? "Going" : "RSVP"}
+                </button>
                 <AnimatePresence initial={false}>
                   {attending && supportPanelOpen && (
                     <motion.div
@@ -386,7 +388,7 @@ export function EventCard({ event }: EventCardProps) {
                       exit={{ opacity: 0, y: popoverPosition.alignBottom ? 4 : -4, scale: 0.96 }}
                       transition={{ duration: 0.15, ease: [0.16, 1, 0.3, 1] }}
                     className={cn(
-                      "absolute z-30 w-64 rounded-lg border border-blue-200 bg-white p-3 shadow-xl",
+                      "absolute z-30 w-full sm:w-64 max-w-[90vw] rounded-lg border border-blue-200 bg-white p-3 shadow-xl",
                       popoverPosition.alignRight ? "left-0" : "right-0",
                       popoverPosition.alignBottom ? "bottom-full mb-1.5" : "top-full mt-1.5"
                     )}
@@ -394,7 +396,7 @@ export function EventCard({ event }: EventCardProps) {
                       <div className="flex flex-col gap-2.5">
                         <div className="flex items-start justify-between gap-2">
                           <div>
-                            <p className="text-sm font-semibold text-foreground leading-tight">You're in!</p>
+                            <p className="text-sm font-semibold text-foreground leading-tight">You&apos;re in!</p>
                             <p className="text-[11px] leading-tight text-muted-foreground mt-0.5">
                               Pick ways to pitch in (optional)
                             </p>
@@ -530,15 +532,13 @@ export function EventCard({ event }: EventCardProps) {
                   )}
                 </AnimatePresence>
               </div>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="gap-2 text-blue-600 hover:text-blue-700"
+              <button
                 onClick={() => console.log("Navigate to event detail")}
+                className="inline-flex items-center gap-1.5 px-2 py-1.5 text-sm font-medium text-muted-foreground hover:text-primary transition-colors"
               >
                 <CalendarDays className="h-4 w-4" />
                 View event
-              </Button>
+              </button>
             </div>
           </div>
         </div>

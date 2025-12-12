@@ -216,7 +216,7 @@ export function ProjectDetail({ project }: ProjectDetailProps) {
                            <span className="text-sm font-bold text-emerald-700">Milestone Reached</span>
                            <span className="text-xs text-muted-foreground">2 days ago</span>
                         </div>
-                        <p className="text-sm text-foreground">We've successfully secured the location for our main event! Thanks to the City Council for their partnership.</p>
+                        <p className="text-sm text-foreground">We&apos;ve successfully secured the location for our main event! Thanks to the City Council for their partnership.</p>
                      </div>
                   </div>
 
@@ -337,7 +337,7 @@ export function ProjectDetail({ project }: ProjectDetailProps) {
                 {interested ? (
                   <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-3 text-center animate-in fade-in slide-in-from-bottom-2">
                     <p className="text-sm font-medium text-emerald-800 mb-2">Thanks for your interest!</p>
-                    <p className="text-xs text-emerald-600 mb-3">We'll be in touch soon.</p>
+                    <p className="text-xs text-emerald-600 mb-3">We&apos;ll be in touch soon.</p>
                     <Button 
                       size="sm" 
                       variant="outline" 

@@ -10,7 +10,8 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { MultiSelect } from "@/components/ui/multiselect"
 import { ChevronDown, Calendar, Plus, Loader2 } from "lucide-react"
 import { cn } from "@/lib/utils"
-import { createEvent } from "@/lib/actions/events"
+import { createEvent, type EventCategory } from "@/lib/actions/events"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { useRouter } from "next/navigation"
 
 interface CreateEventDialogProps {
@@ -31,6 +32,7 @@ export function CreateEventDialog({ open, onOpenChange, userId, orgId }: CreateE
     date: "",
     time: "",
     location: "",
+    category: "other" as EventCategory,
     cause: "",
     volunteersNeeded: "",
     participantPrograms: "",
@@ -66,6 +68,7 @@ export function CreateEventDialog({ open, onOpenChange, userId, orgId }: CreateE
         location: formData.location,
         organizerId: userId,
         orgId: orgId,
+        category: formData.category,
         cause: formData.cause || undefined,
         volunteersNeeded: formData.volunteersNeeded ? parseInt(formData.volunteersNeeded) : undefined,
         seekingPartners: formData.seekingPartners,
@@ -80,6 +83,7 @@ export function CreateEventDialog({ open, onOpenChange, userId, orgId }: CreateE
           date: "",
           time: "",
           location: "",
+          category: "other" as EventCategory,
           cause: "",
           volunteersNeeded: "",
           participantPrograms: "",
@@ -174,6 +178,25 @@ export function CreateEventDialog({ open, onOpenChange, userId, orgId }: CreateE
                 onChange={(e) => setFormData({ ...formData, location: e.target.value })}
                 required
               />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="category">Event Type *</Label>
+              <Select
+                value={formData.category}
+                onValueChange={(value: EventCategory) => setFormData({ ...formData, category: value })}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select event type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="meeting">Meeting</SelectItem>
+                  <SelectItem value="social">Social</SelectItem>
+                  <SelectItem value="workshop">Workshop</SelectItem>
+                  <SelectItem value="building_event">Building Event</SelectItem>
+                  <SelectItem value="other">Other</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
           </div>
 

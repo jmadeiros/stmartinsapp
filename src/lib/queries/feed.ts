@@ -141,7 +141,7 @@ export async function createPost(
 ) {
   const { data, error } = await supabase
     .from('posts')
-    .insert(post)
+    .insert(post as any)
     .select()
     .single()
 
@@ -168,7 +168,7 @@ export async function rsvpToEvent(
     canPartner?: boolean
   }
 ) {
-  const { data, error } = await supabase.rpc('rsvp_event', {
+  const { data, error } = await (supabase.rpc as any)('rsvp_event', {
     p_event_id: params.eventId,
     p_user_id: params.userId,
     p_org_id: params.orgId,
@@ -181,6 +181,66 @@ export async function rsvpToEvent(
   if (error) {
     console.error('Error RSVP to event:', error)
     return { data: null, error }
+  }
+
+  // Create notification for event organizer
+  try {
+    // Get the event's organizer_id
+    type EventOrganizer = {
+      organizer_id: string
+      title: string
+    }
+
+    const { data: event, error: eventError } = await supabase
+      .from('events')
+      .select('organizer_id, title')
+      .eq('id', params.eventId)
+      .single()
+
+    const typedEvent = event as EventOrganizer | null
+
+    if (eventError || !typedEvent) {
+      console.warn('[rsvpToEvent] Could not fetch event for notification:', eventError)
+    } else if (typedEvent.organizer_id !== params.userId) {
+      // Don't notify if user RSVPs to their own event
+
+      // Get the RSVPing user's name
+      type ProfileResult = {
+        full_name: string
+      }
+
+      const { data: userProfile } = await supabase
+        .from('user_profiles')
+        .select('full_name')
+        .eq('user_id', params.userId)
+        .single()
+
+      const typedProfile = userProfile as ProfileResult | null
+      const userName = typedProfile?.full_name || 'Someone'
+
+      // Create the notification
+      const { error: notifError } = await (supabase
+        .from('notifications') as any)
+        .insert({
+          user_id: typedEvent.organizer_id,
+          actor_id: params.userId,
+          type: 'rsvp',
+          title: `${userName} is attending your event`,
+          reference_type: 'event',
+          reference_id: params.eventId,
+          link: `/events/${params.eventId}`,
+          read: false
+        })
+
+      if (notifError) {
+        console.warn('[rsvpToEvent] Failed to create notification:', notifError)
+      } else {
+        console.log(`[rsvpToEvent] Created notification for event organizer ${typedEvent.organizer_id}`)
+      }
+    }
+  } catch (notifError) {
+    console.warn('[rsvpToEvent] Exception creating notification:', notifError)
+    // Don't fail the RSVP if notification fails
   }
 
   return { data, error: null }
@@ -202,7 +262,7 @@ export async function expressProjectInterest(
     contributeFunding?: boolean
   }
 ) {
-  const { data, error } = await supabase.rpc('express_project_interest', {
+  const { data, error } = await (supabase.rpc as any)('express_project_interest', {
     p_project_id: params.projectId,
     p_user_id: params.userId,
     p_org_id: params.orgId,
@@ -216,6 +276,66 @@ export async function expressProjectInterest(
   if (error) {
     console.error('Error expressing project interest:', error)
     return { data: null, error }
+  }
+
+  // Create notification for project owner
+  try {
+    // Get the project's author_id
+    type ProjectOwner = {
+      author_id: string
+      title: string
+    }
+
+    const { data: project, error: projectError } = await supabase
+      .from('projects')
+      .select('author_id, title')
+      .eq('id', params.projectId)
+      .single()
+
+    const typedProject = project as ProjectOwner | null
+
+    if (projectError || !typedProject) {
+      console.warn('[expressProjectInterest] Could not fetch project for notification:', projectError)
+    } else if (typedProject.author_id !== params.userId) {
+      // Don't notify if user expresses interest in their own project
+
+      // Get the user's name
+      type ProfileResult = {
+        full_name: string
+      }
+
+      const { data: userProfile } = await supabase
+        .from('user_profiles')
+        .select('full_name')
+        .eq('user_id', params.userId)
+        .single()
+
+      const typedProfile = userProfile as ProfileResult | null
+      const userName = typedProfile?.full_name || 'Someone'
+
+      // Create the notification
+      const { error: notifError } = await (supabase
+        .from('notifications') as any)
+        .insert({
+          user_id: typedProject.author_id,
+          actor_id: params.userId,
+          type: 'project_interest',
+          title: `${userName} is interested in your project`,
+          reference_type: 'project',
+          reference_id: params.projectId,
+          link: `/projects/${params.projectId}`,
+          read: false
+        })
+
+      if (notifError) {
+        console.warn('[expressProjectInterest] Failed to create notification:', notifError)
+      } else {
+        console.log(`[expressProjectInterest] Created notification for project owner ${typedProject.author_id}`)
+      }
+    }
+  } catch (notifError) {
+    console.warn('[expressProjectInterest] Exception creating notification:', notifError)
+    // Don't fail the interest expression if notification fails
   }
 
   return { data, error: null }

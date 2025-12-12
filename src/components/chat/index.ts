@@ -4,6 +4,7 @@ export { ChatInput } from './chat-input'
 export { ConversationList } from './conversation-list'
 export { ConversationHeader } from './conversation-header'
 export { MessageBubble } from './message-bubble'
+export { NewDMDialog } from './new-dm-dialog'
 export * from './chat-types'
 export * from './mock-data'
 

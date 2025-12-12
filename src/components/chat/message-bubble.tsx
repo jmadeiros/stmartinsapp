@@ -17,6 +17,7 @@ interface MessageBubbleProps {
   showAvatar: boolean
   onReact?: (messageId: string, emoji: string) => void
   onReply?: (message: Message) => void
+  currentUserId?: string
 }
 
 export function MessageBubble({
@@ -27,6 +28,7 @@ export function MessageBubble({
   showAvatar,
   onReact,
   onReply,
+  currentUserId,
 }: MessageBubbleProps) {
   const [showActions, setShowActions] = useState(false)
   const [showEmojiPicker, setShowEmojiPicker] = useState(false)
@@ -43,15 +45,31 @@ export function MessageBubble({
     return format(date, "MMM d, h:mm a")
   }
 
+  // Check if current user is mentioned in this message
+  const isCurrentUserMentioned = currentUserId && message.mentions?.includes(currentUserId)
+
   // Parse mentions in content
   const renderContent = (content: string) => {
-    const mentionRegex = /@(\w+\s\w+)/g
+    const mentionRegex = /@(\w+(?:\s+\w+)?)/g
     const parts = content.split(mentionRegex)
-    
+
     return parts.map((part, index) => {
       if (index % 2 === 1) {
+        // Check if this mention refers to the current user
+        const isSelfMention = isCurrentUserMentioned && part.toLowerCase().includes(
+          message.mentions?.find(m => m === currentUserId) ? part.toLowerCase() : ''
+        )
+
         return (
-          <span key={index} className="text-primary font-medium cursor-pointer hover:underline">
+          <span
+            key={index}
+            className={cn(
+              "font-medium cursor-pointer hover:underline",
+              isSelfMention
+                ? "text-amber-600 dark:text-amber-400 bg-amber-100 dark:bg-amber-900/30 px-1 rounded"
+                : "text-primary"
+            )}
+          >
             @{part}
           </span>
         )
@@ -68,7 +86,9 @@ export function MessageBubble({
       className={cn(
         "group flex gap-2 px-4",
         isOwn ? "flex-row-reverse" : "flex-row",
-        isFirstInGroup ? "mt-4" : "mt-0.5"
+        isFirstInGroup ? "mt-4" : "mt-0.5",
+        // Highlight messages that mention the current user
+        isCurrentUserMentioned && !isOwn && "bg-amber-50/50 dark:bg-amber-950/20 -mx-4 px-8 py-1"
       )}
       onMouseEnter={() => setShowActions(true)}
       onMouseLeave={() => {

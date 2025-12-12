@@ -84,7 +84,7 @@ export async function POST() {
 
     const { data: createdPosts, error: postsError } = await supabaseAdmin
       .from('posts')
-      .insert(posts)
+      .insert(posts as any)
       .select()
 
     if (postsError) {
@@ -130,7 +130,7 @@ export async function POST() {
 
     const { data: createdEvents, error: eventsError } = await supabaseAdmin
       .from('events')
-      .insert(events)
+      .insert(events as any)
       .select()
 
     if (eventsError) {
@@ -172,7 +172,7 @@ export async function POST() {
 
     const { data: createdProjects, error: projectsError } = await supabaseAdmin
       .from('projects')
-      .insert(projects)
+      .insert(projects as any)
       .select()
 
     if (projectsError) {

@@ -54,7 +54,7 @@ export function WeeklyUpdateDialog({ open, onOpenChange }: WeeklyUpdateDialogPro
                   This Week at The Village
                 </DialogTitle>
                 <DialogDescription className="text-xs text-gray-600 mt-1">
-                  Your quick rundown of what's happening.
+                  Your quick rundown of what&apos;s happening.
                 </DialogDescription>
               </div>
               <Button 

@@ -68,6 +68,7 @@ const MOCK_PEOPLE: PersonProfile[] = [
     skills: ['Leadership', 'Fundraising', 'Strategy'],
     interests: ['Social Policy', 'Urban Planning'],
     linkedin_url: 'https://linkedin.com/in/sarahchen',
+    contact_email: 'sarah.chen@stmartins.org',
     visibility: 'network',
     organization: { id: 'org-1', name: 'St Martins', logo_url: null, primary_color: '#10b981' },
     role: 'st_martins_staff',
@@ -703,6 +704,7 @@ export type PersonProfile = {
   skills: string[] | null
   interests: string[] | null
   linkedin_url: string | null
+  contact_email?: string | null
   visibility: string
   organization: {
     id: string
@@ -738,7 +740,7 @@ export type RecentActivity = {
 export async function getPeopleData(): Promise<PersonProfile[]> {
   const supabase = await createClient()
 
-  // Fetch user profiles with their primary organization membership
+  // Fetch user profiles with organization_id and role directly
   const { data: profiles, error } = await supabase
     .from('user_profiles')
     .select(`
@@ -750,7 +752,10 @@ export async function getPeopleData(): Promise<PersonProfile[]> {
       skills,
       interests,
       linkedin_url,
-      visibility
+      contact_email,
+      visibility,
+      organization_id,
+      role
     `)
     .order('full_name')
 
@@ -759,38 +764,32 @@ export async function getPeopleData(): Promise<PersonProfile[]> {
     return []
   }
 
-  // Fetch memberships for all users
-  const userIds = profiles?.map(p => p.user_id) || []
-  const { data: memberships } = await supabase
-    .from('user_memberships')
-    .select(`
-      user_id,
-      role,
-      is_primary,
-      org_id,
-      organizations (
-        id,
-        name,
-        logo_url,
-        primary_color
-      )
-    `)
-    .in('user_id', userIds)
-    .eq('is_primary', true)
-    .is('left_at', null)
+  // Get unique organization IDs
+  const orgIds = Array.from(new Set((profiles as any[] | null)?.map((p: any) => p.organization_id).filter(Boolean) || []))
 
-  // Create a lookup map for memberships
-  const membershipMap = new Map(
-    memberships?.map(m => [m.user_id, m]) || []
+  // Fetch organizations
+  const { data: organizations } = orgIds.length > 0 ? await supabase
+    .from('organizations')
+    .select('id, name, logo_url, primary_color')
+    .in('id', orgIds)
+  : { data: null }
+
+  // Create a lookup map for organizations
+  const orgMap = new Map(
+    (organizations as any[] | null)?.map((o: any) => [o.id, o]) || []
   )
 
   // Combine profiles with their organization data
-  const result = (profiles || []).map(profile => {
-    const membership = membershipMap.get(profile.user_id)
+  const result = ((profiles || []) as any[]).map((profile: any) => {
+    const org = orgMap.get(profile.organization_id) as any
     return {
       ...profile,
-      organization: membership?.organizations as PersonProfile['organization'] || null,
-      role: membership?.role || null,
+      organization: org ? {
+        id: org.id,
+        name: org.name,
+        logo_url: org.logo_url,
+        primary_color: org.primary_color
+      } : null,
     }
   })
 
@@ -828,18 +827,18 @@ export async function getOrganizationsData(): Promise<OrganizationProfile[]> {
     return []
   }
 
-  // Get member counts for each org
-  const orgIds = organizations?.map(o => o.id) || []
-  const { data: memberCounts } = await supabase
-    .from('user_memberships')
-    .select('org_id')
-    .in('org_id', orgIds)
-    .is('left_at', null)
+  // Get member counts for each org from user_profiles
+  const orgIds = (organizations as any[] | null)?.map((o: any) => o.id) || []
+  const { data: memberCounts } = orgIds.length > 0 ? await supabase
+    .from('user_profiles')
+    .select('organization_id')
+    .in('organization_id', orgIds)
+  : { data: null }
 
   // Count members per org
   const countMap = new Map<string, number>()
-  memberCounts?.forEach(m => {
-    countMap.set(m.org_id, (countMap.get(m.org_id) || 0) + 1)
+  ;(memberCounts as any[] | null)?.forEach((m: any) => {
+    countMap.set(m.organization_id, (countMap.get(m.organization_id) || 0) + 1)
   })
 
   // Check if we have any real member data
@@ -864,12 +863,12 @@ export async function getOrganizationsData(): Promise<OrganizationProfile[]> {
     'Green Spaces Trust': 'org-4',
   }
 
-  const result = (organizations || []).map(org => {
+  const result = ((organizations || []) as any[]).map((org: any) => {
     const realCount = countMap.get(org.id) || 0
     // Use mock count based on org name if no real members
     const mockOrgId = orgNameToMockId[org.name]
     const mockCount = mockOrgId ? (mockCountMap.get(mockOrgId) || 0) : 0
-    
+
     return {
       ...org,
       social_links: org.social_links as Record<string, string> | null,
@@ -908,14 +907,14 @@ export async function getPersonActivity(userId: string): Promise<RecentActivity[
 
   // Combine and sort by created_at, take last 5
   const activities: RecentActivity[] = [
-    ...(events || []).map(e => ({
+    ...((events || []) as any[]).map((e: any) => ({
       id: e.id,
       type: 'event' as const,
       title: e.title,
       created_at: e.created_at,
       status: e.status || undefined,
     })),
-    ...(projects || []).map(p => ({
+    ...((projects || []) as any[]).map((p: any) => ({
       id: p.id,
       type: 'project' as const,
       title: p.title,
@@ -939,25 +938,24 @@ export async function getPersonActivity(userId: string): Promise<RecentActivity[
 export async function getOrganizationMembers(orgId: string): Promise<PersonProfile[]> {
   const supabase = await createClient()
 
-  const { data: memberships } = await supabase
-    .from('user_memberships')
+  // Query user_profiles directly since it has organization_id and role
+  const { data: profiles } = await supabase
+    .from('user_profiles')
     .select(`
       user_id,
-      role,
-      user_profiles (
-        user_id,
-        full_name,
-        avatar_url,
-        bio,
-        job_title,
-        skills,
-        interests,
-        linkedin_url,
-        visibility
-      )
+      full_name,
+      avatar_url,
+      bio,
+      job_title,
+      skills,
+      interests,
+      linkedin_url,
+      visibility,
+      organization_id,
+      role
     `)
-    .eq('org_id', orgId)
-    .is('left_at', null)
+    .eq('organization_id', orgId)
+    .order('full_name')
 
   // Get org details
   const { data: org } = await supabase
@@ -966,13 +964,15 @@ export async function getOrganizationMembers(orgId: string): Promise<PersonProfi
     .eq('id', orgId)
     .single()
 
-  const result = (memberships || [])
-    .filter(m => m.user_profiles)
-    .map(m => ({
-      ...(m.user_profiles as any),
-      organization: org,
-      role: m.role,
-    }))
+  const result = ((profiles || []) as any[]).map((profile: any) => ({
+    ...profile,
+    organization: org ? {
+      id: (org as any).id,
+      name: (org as any).name,
+      logo_url: (org as any).logo_url,
+      primary_color: (org as any).primary_color
+    } : null,
+  }))
 
   // Return mock members if no real data exists
   if (result.length === 0) {

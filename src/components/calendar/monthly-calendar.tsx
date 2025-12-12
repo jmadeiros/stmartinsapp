@@ -81,6 +81,7 @@ export type CalendarEvent = {
 type MonthlyCalendarProps = {
   events: CalendarEvent[]
   initialDate?: Date
+  onMonthChange?: (newMonth: Date) => void
 }
 
 const dayLabels = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
@@ -162,7 +163,7 @@ const formatTimeRange = (start: string, end: string) => {
 
 const toDayKey = (date: Date) => format(date, "yyyy-MM-dd")
 
-export function MonthlyCalendarView({ events, initialDate }: MonthlyCalendarProps) {
+export function MonthlyCalendarView({ events, initialDate, onMonthChange }: MonthlyCalendarProps) {
   const sortedEvents = useMemo(
     () => [...events].sort((a, b) => new Date(a.start).getTime() - new Date(b.start).getTime()),
     [events],
@@ -242,8 +243,12 @@ export function MonthlyCalendarView({ events, initialDate }: MonthlyCalendarProp
 
   const handleGoToday = () => {
     const today = new Date()
+    const todayMonth = startOfMonth(today)
     setSelectedDate(today)
-    setCurrentMonth(startOfMonth(today))
+    if (!isSameMonth(currentMonth, todayMonth)) {
+      setCurrentMonth(todayMonth)
+      onMonthChange?.(todayMonth)
+    }
     const todaysEvents = eventsByDay.get(toDayKey(today))
     setSelectedEventId(todaysEvents?.[0]?.id ?? selectedEventId)
   }
@@ -255,6 +260,7 @@ export function MonthlyCalendarView({ events, initialDate }: MonthlyCalendarProp
       if (isSameMonth(prev, newMonth)) return prev
       return newMonth
     })
+    onMonthChange?.(newMonth)
   }
 
   const handleNextMonth = () => {
@@ -264,12 +270,15 @@ export function MonthlyCalendarView({ events, initialDate }: MonthlyCalendarProp
       if (isSameMonth(prev, newMonth)) return prev
       return newMonth
     })
+    onMonthChange?.(newMonth)
   }
 
   const handleDayClick = (day: Date) => {
     setSelectedDate(day)
     if (!isSameMonth(day, currentMonth)) {
-      setCurrentMonth(startOfMonth(day))
+      const newMonth = startOfMonth(day)
+      setCurrentMonth(newMonth)
+      onMonthChange?.(newMonth)
     }
     const dayEvents = eventsByDay.get(toDayKey(day))
     if (dayEvents?.length) {
@@ -321,23 +330,23 @@ export function MonthlyCalendarView({ events, initialDate }: MonthlyCalendarProp
                 <button
                   type="button"
                   onClick={handlePreviousMonth}
-                  className="p-2 text-white/80 transition hover:text-white focus-visible:outline-none"
+                  className="p-2 min-h-[44px] min-w-[44px] md:p-2 md:min-h-0 md:min-w-0 text-white/80 transition hover:text-white focus-visible:outline-none flex items-center justify-center"
                 >
-                  <ChevronLeft className="h-4 w-4" />
+                  <ChevronLeft className="h-4 w-4 md:h-4 md:w-4" />
                 </button>
                 <div className="h-4 w-px bg-white/20" />
                 <button
                   type="button"
                   onClick={handleNextMonth}
-                  className="p-2 text-white/80 transition hover:text-white focus-visible:outline-none"
+                  className="p-2 min-h-[44px] min-w-[44px] md:p-2 md:min-h-0 md:min-w-0 text-white/80 transition hover:text-white focus-visible:outline-none flex items-center justify-center"
                 >
-                  <ChevronRight className="h-4 w-4" />
+                  <ChevronRight className="h-4 w-4 md:h-4 md:w-4" />
                 </button>
               </div>
               <Button
                 size="sm"
                 onClick={handleGoToday}
-                className="bg-white/20 hover:bg-white/30 text-white border-0 backdrop-blur-sm"
+                className="bg-white/20 hover:bg-white/30 text-white border-0 backdrop-blur-sm min-h-[44px] md:min-h-0 px-4"
               >
                 Today
               </Button>
@@ -565,7 +574,7 @@ export function MonthlyCalendarView({ events, initialDate }: MonthlyCalendarProp
               {/* Who's Going */}
               <div>
                 <div className="flex items-center justify-between mb-3">
-                  <p className="text-xs font-medium uppercase tracking-wide text-primary/60">Who's going</p>
+                  <p className="text-xs font-medium uppercase tracking-wide text-primary/60">Who&apos;s going</p>
                 </div>
                 <div className="flex flex-wrap gap-2">
                   {selectedEvent.attendees

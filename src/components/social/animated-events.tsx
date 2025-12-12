@@ -105,7 +105,7 @@ export function AnimatedEvents({ className }: AnimatedEventsProps) {
   }
 
   return (
-    <div className={cn("w-full overflow-hidden rounded-xl border shadow-sm bg-card text-card-foreground", className)}>
+    <div className={cn("w-full overflow-hidden rounded-2xl bg-white border border-gray-100 shadow-md transition-shadow hover:shadow-lg text-card-foreground", className)}>
       <div className="p-4 space-y-4">
         <div className="relative h-48 w-full rounded-xl overflow-hidden">
           <AnimatePresence mode="wait">

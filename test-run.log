@@ -1,0 +1,20 @@
+[2m[WebServer] [22m [31m[1m⨯[22m[39m Failed to start server
+[2m[WebServer] [22mError: listen EADDRINUSE: address already in use :::3001
+[2m[WebServer] [22m[90m    at Server.setupListenHandle [as _listen2] (node:net:1939:16)[39m
+[2m[WebServer] [22m[90m    at listenInCluster (node:net:1996:12)[39m
+[2m[WebServer] [22m[90m    at Server.listen (node:net:2101:7)[39m
+[2m[WebServer] [22m    at [90m/Users/josh/stmartinsapp/[39mnode_modules/[4mnext[24m/dist/server/lib/start-server.js:280:16
+[2m[WebServer] [22m    at new Promise (<anonymous>)
+[2m[WebServer] [22m    at startServer [90m(/Users/josh/stmartinsapp/[39mnode_modules/[4mnext[24m/dist/server/lib/start-server.js:191:11[90m)[39m
+[2m[WebServer] [22m    at [90m/Users/josh/stmartinsapp/[39mnode_modules/[4mnext[24m/dist/server/lib/start-server.js:310:52
+[2m[WebServer] [22m    at Span.traceAsyncFn [90m(/Users/josh/stmartinsapp/[39mnode_modules/[4mnext[24m/dist/trace/trace.js:154:26[90m)[39m
+[2m[WebServer] [22m    at process.<anonymous> [90m(/Users/josh/stmartinsapp/[39mnode_modules/[4mnext[24m/dist/server/lib/start-server.js:310:35[90m)[39m
+[2m[WebServer] [22m[90m    at process.emit (node:events:518:28)[39m {
+[2m[WebServer] [22m  code: [32m'EADDRINUSE'[39m,
+[2m[WebServer] [22m  errno: [33m-48[39m,
+[2m[WebServer] [22m  syscall: [32m'listen'[39m,
+[2m[WebServer] [22m  address: [32m'::'[39m,
+[2m[WebServer] [22m  port: [33m3001[39m
+[2m[WebServer] [22m}
+Error: Process from config.webServer exited early.
+

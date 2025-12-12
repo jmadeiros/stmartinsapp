@@ -156,8 +156,11 @@ ALTER TABLE table_name ENABLE ROW LEVEL SECURITY;
 | Feature | RLS Rule | When to Add |
 |---------|----------|-------------|
 | Post reactions | Users can only delete own | After 2.9 works |
+| Posts | Users can only edit/delete own posts | After 2.10 works |
 | Post comments | Users can only edit/delete own | After 2.10 works |
+| Events | Organizers can edit/delete own events | After 3.6 works |
 | Event comments | Users can only edit/delete own | After 3.4 works |
+| Projects | Owners can edit/delete own projects | After 3.12 works |
 | User profiles | Users can only edit own | After 3.9 works |
 | Feedback | Users can only see own submissions | After 3.18 works |
 
@@ -176,8 +179,8 @@ Most RLS already exists for core tables. The above are additions for new feature
 | 1.4 | **Fix hardcoded `isManager: true`** | `components/social/main-feed.tsx:245` | 🟢 Small | - |
 | 1.5 | **Fix "Current User" hardcoded** - Alert sender | `components/social/main-feed.tsx:230-231` | 🟢 Small | - |
 | 1.6 | **Regenerate TypeScript types** | `lib/database.types.ts` | 🟢 Small | - |
-| 1.7 | **Add event category picker** - Currently hardcodes 'other' | `create-event-dialog.tsx`, `lib/actions/events.ts:48` | 🟢 Small | Auto-tag |
-| 1.8 | **Wire up Create Post** - Currently only console.logs | `main-feed.tsx` → call `createPost()` | 🟢 Small | Auto-tag |
+| 1.7 | **Add event category picker** - Currently hardcodes 'other' | `create-event-dialog.tsx`, `lib/actions/events.ts:48` | 🟢 Small | - |
+| 1.8 | **Wire up Create Post** - Currently only console.logs | `main-feed.tsx` → call `createPost()` | 🟢 Small | - |
 
 ---
 
@@ -192,10 +195,10 @@ Most RLS already exists for core tables. The above are additions for new feature
 | 2.4 | **Wire up Priority Alerts** - Hardcoded → announcements. **Send restricted to st_martins_staff/admin only** (everyone views + acks) | `right-sidebar.tsx`, `send-alert-dialog.tsx` | 🟡 Medium | Smart alerts |
 | 2.5 | **Wire up Badge Counts** - Hardcoded "3" → real unread counts | `header.tsx:14,88-91` | 🟡 Medium | - |
 | 2.6 | **Remove mock fallback from Dashboard** | `dashboard/actions.ts:8-165` | 🟢 Small | - |
-| 2.7 | **Wire up Community Highlights** - Real metrics from DB | `left-sidebar.tsx:58-83` | 🟡 Medium | Weekly summary |
+| 2.7 | **Wire up Community Highlights** - Real metrics from DB (events this week, pinned posts, active projects) | `left-sidebar.tsx:58-83` | 🟡 Medium | - |
 | 2.8 | **Remove mock projects** - Once real data exists | `projects/page.tsx:9-155` | 🟢 Small | - |
 | 2.9 | **Wire up Post Reactions** - Heart button → `post_reactions` table | `post-card.tsx`, new action | 🟢 Small | - |
-| 2.10 | **Wire up Post Comments** - Schema exists, build UI + backend | `post-card.tsx`, new component | 🟡 Medium | - |
+| 2.10 | **Wire up Post Comments** - Schema exists, build UI + backend. **Include edit/delete own posts & comments** | `post-card.tsx`, new component | 🟡 Medium | - |
 | 2.11 | **Persist @Mentions** - Currently visual only, save to DB | `main-feed.tsx`, posts table | 🟢 Small | - |
 
 ---
@@ -207,16 +210,16 @@ Most RLS already exists for core tables. The above are additions for new feature
 |---|------|-------|------------|------------|
 | 3.1 | **Integrate NotificationsDropdown** - Built but not in header | `notifications-dropdown.tsx` → `header.tsx` | 🟢 Small | Smart notifs |
 | 3.2 | **Use ActionCTA in RSVP flow** - Orphaned component | `action-cta.tsx` → `event-card.tsx`, `project-card.tsx` | 🟡 Medium | - |
-| 3.3 | **Use ExpressInterestButton** - Built but unused | `express-interest-button.tsx` → cards | 🟢 Small | Org matcher |
+| 3.3 | **Use ExpressInterestButton** - Built but unused | `express-interest-button.tsx` → cards | 🟢 Small | - |
 | 3.4 | **Event Comments System** - console.log → real comments | `event-card.tsx:354`, new component | 🟡 Medium | - |
 | 3.5 | **Project Comments System** - Share infra with events | `project-card.tsx:440` | 🟢 Small | - |
-| 3.6 | **Event Detail Page** - `/events/[id]` route | New route + page | 🟡 Medium | Event-Project link |
+| 3.6 | **Event Detail Page** - `/events/[id]` route. **Include RSVP attendee list + edit/delete own events** | New route + page | 🟡 Medium | Event-Project link |
 | 3.7 | **Build Opportunities Page** - Merge jobs + opportunity posts | New `/opportunities` route | 🟡 Medium | - |
-| 3.8 | **Build Search** - Header search non-functional | `header.tsx:117-125`, new components | 🔴 Large | Semantic search |
-| 3.9 | **Build Profile Page** - View/edit profile, add skills/interests/bio, bookmarks | New `/profile` route | 🟡 Medium | - |
-| 3.10 | **Build Settings Page** - Preferences | New `/settings` route | 🟡 Medium | AI opt-out |
-| 3.11 | **Build Admin Page** - Org/user management, user approval queue, website approval queue | New `/admin` route | 🔴 Large | Data health |
-| 3.12 | **Collaboration Post-Acceptance** - Roles, permissions, removal | `lib/actions/collaboration.ts`, cards | 🔴 Large | Org matcher |
+| 3.8 | **Build Search** - Header search non-functional (keyword search) | `header.tsx:117-125`, new components | 🔴 Large | - |
+| 3.9 | **Build Profile Page** - View/edit profile, add skills/interests/bio, **social links (LinkedIn, etc.)**, bookmarks | New `/profile` route | 🟡 Medium | - |
+| 3.10 | **Build Settings Page** - Preferences, **notification preferences (email frequency, what to notify)** | New `/settings` route | 🟡 Medium | - |
+| 3.11 | **Build Admin Page** - Org/user management, user approval queue, website approval queue | New `/admin` route | 🔴 Large | - |
+| 3.12 | **Collaboration Post-Acceptance** - Roles, permissions, removal. **Add individual user collaborators (not just orgs) for events/projects** | `lib/actions/collaboration.ts`, cards | 🔴 Large | - |
 | 3.13 | **Meeting Notes on Events** - Attach to calendar events | Calendar detail panel | 🟡 Medium | Notes summary |
 | 3.14 | **Acknowledge Button** - Save to DB (depends on 2.4) | `right-sidebar.tsx:17` | 🟢 Small | - |
 | 3.15 | **Post Pinning** - Admin-only pin/unpin posts (schema exists) | `post-card.tsx`, `PostMenu`, actions | 🟢 Small | - |
@@ -231,12 +234,12 @@ Most RLS already exists for core tables. The above are additions for new feature
 
 | # | Task | Files | Complexity | 🤖 AI Hook |
 |---|------|-------|------------|------------|
-| 4.1 | **Re-enable auth check** - Currently commented out | `(authenticated)/layout.tsx:11-14` | 🟢 Small | - |
+| 4.1 | **Re-enable auth check** - Currently commented out. **Add logout button to header/settings** | `(authenticated)/layout.tsx:11-14`, `header.tsx` | 🟢 Small | - |
 | 4.2 | **Remove all console.log** - ~24 occurrences | Multiple files | 🟡 Medium | - |
 | 4.3 | **Remove TODO comments** - Replace with implementations | `post-card.tsx`, `main-feed.tsx` | 🟢 Small | - |
 | 4.4 | **Clean up old routes** - Delete/redirect /board, /events, /jobs, /menu | Route files | 🟢 Small | - |
 | 4.5 | **Real-time subscriptions** - Live updates for chat, feed, notifications | Chat, feed, notifications | 🟡 Medium | - |
-| 4.6 | **File uploads** - Supabase Storage | Post creation, profiles | 🟡 Medium | - |
+| 4.6 | **File uploads** - Supabase Storage. **Posts: images/docs. Profiles: avatar. Events: attachments** | Post creation, profiles, events | 🟡 Medium | - |
 | 4.7 | **OAuth + User Onboarding** - Configure providers + post-OAuth profile/membership creation | Supabase config, DB trigger | 🟡 Medium | - |
 | 4.8 | **Mobile responsiveness** - Audit all components | All components | 🟡 Medium | - |
 | 4.9 | **Error handling & loading states** | All pages | 🟡 Medium | - |
@@ -268,24 +271,18 @@ Most RLS already exists for core tables. The above are additions for new feature
 
 ---
 
-## 🤖 AI Integration Points
+## 🤖 AI Integration Points (Nice-to-Have)
 
-The `🤖 AI Hook` column indicates where AI features from [AI_FEATURES_ROADMAP.md](./AI_FEATURES_ROADMAP.md) can be added later. These are **not blockers** - build the feature first, then optionally enhance with AI.
+The `🤖 AI Hook` column indicates where AI features could be added later. These are **optional enhancements** - build the feature first with coded logic, then optionally add AI.
 
-| AI Hook | Feature | Tasks That Can Use It |
-|---------|---------|----------------------|
-| **Auto-tag** | Suggests category/cause during creation | 1.7, 1.8 |
-| **Smart alerts** | "Based on your interests..." notifications | 2.4 |
-| **Weekly summary** | AI-generated community highlights | 2.7 |
-| **Smart notifs** | Personalized notification prioritization | 3.1 |
-| **Org matcher** | "These orgs work on similar causes" | 3.3, 3.12 |
-| **Event-Project link** | "This event relates to that project" | 3.6 |
-| **Semantic search** | Natural language search across content | 3.8 |
-| **AI opt-out** | User preference to disable AI features | 3.10 |
-| **Data health** | "This project has no activity" alerts | 3.11 |
-| **Notes summary** | Auto-generates action items from notes | 3.13 |
+| AI Hook | Feature | Task | Notes |
+|---------|---------|------|-------|
+| **Smart alerts** | "Based on your interests..." | 2.4 | Could personalize which alerts show first |
+| **Smart notifs** | Personalized notification prioritization | 3.1 | Could rank notifications by relevance |
+| **Event-Project link** | "This event relates to that project" | 3.6 | Could auto-suggest linking |
+| **Notes summary** | Auto-generates action items from notes | 3.13 | Could parse meeting notes |
 
-**When to build AI:** After Phase 4 is complete, or earlier if a specific feature would benefit significantly. See Phase 5 below.
+**When to build AI:** After Phase 4 is complete, if/when you add an API. Not required for MVP.
 
 ---
 
@@ -440,20 +437,39 @@ CREATE TABLE user_feedback (
 
 ---
 
-## PHASE 5: AI Features (Future)
+## PHASE 5: AI Features (Future / Optional)
 
-*See [AI_FEATURES_ROADMAP.md](./AI_FEATURES_ROADMAP.md) for full details*
+*Only if you add an API later. See [AI_FEATURES_ROADMAP.md](./AI_FEATURES_ROADMAP.md) for implementation details.*
 
 | Feature | What It Does | Priority |
 |---------|--------------|----------|
-| Auto-tagging | Suggests category/cause on create | High |
-| Event-Project Linking | "This event relates to that project" | High |
-| Smart Notifications | "Based on your interests..." | Medium |
-| Weekly/Monthly Highlights | AI community summary | Medium |
-| Meeting Notes Summary | Auto-generates action items | Medium |
-| Data Health Analyzer | "This project has no activity" | Low |
+| Smart Notifications | "Based on your interests, check this event" | Nice-to-have |
+| Event-Project Linking | "This event seems related to that project" | Nice-to-have |
+| Meeting Notes Summary | Auto-generates action items from notes | Nice-to-have |
 
-**Estimated Cost:** ~$8/month for medium usage (100-500 users)
+**Note:** Community highlights (task 2.7) is **coded**, not AI - shows real metrics like "3 events this week", pinned posts, etc.
+
+---
+
+## 🅿️ Parking Lot (Questions to Resolve Later)
+
+### Architecture Gaps
+| Question | Context | Priority |
+|----------|---------|----------|
+| Add `user_bookmarks` table? | Task 3.9 mentions bookmarks but no schema defined | Low |
+| Standardize collab terminology? | Projects use `partner_orgs[]`, `collaborators[]`, `interested_orgs[]` - inconsistent | Low |
+| Direct Project → Meeting Notes link? | Currently Project → Event → Meeting Note (indirect) | Low |
+| Use skills/interests for anything? | Users have `skills[]` and `interests[]` but nothing queries them | Low |
+| Duplicate event detection? | "This event looks similar to X" when creating | Low |
+| Remove `connection_requests` table? | Everyone implicitly connected in building community - may not be needed | Low |
+
+### Self-Improving AI Infrastructure
+Not applicable for this project. True self-improving AI would require:
+- Tracking accept/dismiss on recommendations
+- Learning from user behavior over time
+- ML model retraining pipelines
+
+This is enterprise-level complexity. For Village Hub, simple coded logic + optional AI enhancements (Phase 5) is the right approach.
 
 ---
 

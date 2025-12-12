@@ -55,22 +55,24 @@ export function PeoplePage({ people, organizations, currentUserId }: PeoplePageP
     <div className="min-h-screen bg-background">
       <SocialHeader />
       
-      <div className="mx-auto max-w-[1400px] px-4 py-6">
+      <div className="mx-auto max-w-[1400px] px-4 py-6 overflow-x-hidden">
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-[280px_1fr_320px]">
-          {/* Left Sidebar */}
-          <PeopleLeftSidebar 
-            people={people}
-            organizations={organizations}
-            activeTab={activeTab}
-            selectedOrgId={activeTab === "organizations" ? selectedOrg?.id || null : filterOrgId}
-            searchQuery={searchQuery}
-            onSearchChange={setSearchQuery}
-            onSelectOrg={handleSelectOrg}
-            onSelectPerson={setSelectedPerson}
-          />
+          {/* Left Sidebar - hidden below 1024px */}
+          <div className="hidden lg:block">
+            <PeopleLeftSidebar 
+              people={people}
+              organizations={organizations}
+              activeTab={activeTab}
+              selectedOrgId={activeTab === "organizations" ? selectedOrg?.id || null : filterOrgId}
+              searchQuery={searchQuery}
+              onSearchChange={setSearchQuery}
+              onSelectOrg={handleSelectOrg}
+              onSelectPerson={setSelectedPerson}
+            />
+          </div>
 
           {/* Main Content */}
-          <main className="min-w-0">
+          <main className="min-w-0 overflow-x-hidden">
             <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
               {/* Mobile Header */}
               <div className="lg:hidden mb-4">
@@ -121,13 +123,15 @@ export function PeoplePage({ people, organizations, currentUserId }: PeoplePageP
             </Tabs>
           </main>
 
-          {/* Right Sidebar - Person Info Panel */}
-          <PersonInfoPanel 
-            person={selectedPerson}
-            allPeople={people}
-            onClose={() => setSelectedPerson(null)}
-            onSelectPerson={setSelectedPerson}
-          />
+          {/* Right Sidebar - Person Info Panel - hidden below 1024px */}
+          <div className="hidden lg:block">
+            <PersonInfoPanel 
+              person={selectedPerson}
+              allPeople={people}
+              onClose={() => setSelectedPerson(null)}
+              onSelectPerson={setSelectedPerson}
+            />
+          </div>
         </div>
       </div>
     </div>

@@ -1,7 +1,8 @@
 # St Martins Village Hub - Architecture Map
 
 > **Created:** December 9, 2024
-> **Related Docs:** [MASTER_PLAN_DEC2024.md](./MASTER_PLAN_DEC2024.md), [DATABASE_SCHEMA.md](./DATABASE_SCHEMA.md)
+> **Last Updated:** December 9, 2024
+> **Related Docs:** [MASTER_PLAN_DEC2024.md](./MASTER_PLAN_DEC2024.md), [DATABASE_SCHEMA.md](./DATABASE_SCHEMA.md), [AI_FEATURES_ROADMAP.md](./AI_FEATURES_ROADMAP.md)
 
 ---
 
@@ -23,9 +24,13 @@
 │  │  - full_name    │    │  - user_id          │    │  - user_id      │       │
 │  │  - avatar_url   │    │  - org_id           │──┐ │  - theme        │       │
 │  │  - bio          │    │  - role (enum)      │  │ │  - timezone     │       │
-│  │  - job_title    │    │  - is_primary       │  │ └─────────────────┘       │
-│  │  - skills[]     │    └─────────────────────┘  │                           │
+│  │  - job_title    │    │  - is_primary       │  │ │  - notif_prefs  │       │
+│  │  - skills[]     │    └─────────────────────┘  │ └─────────────────┘       │
 │  │  - interests[]  │                             │                           │
+│  │  - social_links │                             │                           │
+│  │  - phone        │                             │                           │
+│  │  - account_status│ ← pending/approved/rejected│                           │
+│  │  - gdpr_consent │                             │                           │
 │  └─────────────────┘                             │                           │
 └──────────────────────────────────────────────────┼───────────────────────────┘
                                                    │
@@ -57,7 +62,9 @@
 │ - linked_event_id│    │ - category       │    │ - progress       │
 │ - linked_project │    │ - parent_project │    │ - partner_orgs[] │
 │ - cause          │    │ - collab_orgs[]  │    │ - collaborators[]│
-│ - is_pinned      │    │ - volunteers     │    │ - interested[]   │
+│ - is_pinned      │    │ - collab_users[] │    │ - interested[]   │
+│ - website_status │    │ - website_status │    │ - website_status │
+│ - poll_options[] │    │                  │    │                  │
 └────────┬─────────┘    └────────┬─────────┘    └────────┬─────────┘
          │                       │                       │
          ▼                       ▼                       ▼
@@ -76,11 +83,14 @@
 | **User** | Organizations | Many-to-many via join table | `user_memberships` |
 | **Posts** | Events | Optional 1:1 link | `linked_event_id` |
 | **Posts** | Projects | Optional 1:1 link | `linked_project_id` |
+| **Posts** | Polls | One-to-many | `poll_options[]` → `poll_votes` |
 | **Events** | Projects | Parent relationship | `parent_project_id` |
 | **Events** | Other Orgs | Collaboration | `collaborating_orgs[]` |
+| **Events** | Users | Individual collaborators | `collaborating_users[]` |
 | **Projects** | Other Orgs | Partnership | `partner_orgs[]`, `interested_orgs[]` |
 | **Meeting Notes** | Events | Link | `linked_event_id` |
-| **Users** | Users | Connection requests | `connection_requests` table |
+| **Users** | Users | Connection requests | `connection_requests` table *(may not be needed - all users implicitly connected in building community)* |
+| **All Content** | Website | Publish approval | `website_status` (pending/approved/rejected) |
 
 ---
 
@@ -93,8 +103,13 @@
 | Calendar | `/calendar` | events | event_rsvps | ❌ MOCK DATA |
 | Projects | `/projects` | projects | project_interest | Partial (mock mixed) |
 | Project Detail | `/projects/[id]` | projects | events (linked), project_interest | ❌ BUG: getProjectById missing |
-| Chat | `/chat` | conversations, messages | user_profiles | ❌ 100% MOCK |
+| Chat | `/chat` | conversations, messages | user_profiles | UI built, mock data |
 | Opportunities | `/opportunities` | jobs, posts (category=opportunities) | - | ❌ NOT BUILT |
+| Profile | `/profile` | user_profiles | user_settings | ❌ NOT BUILT |
+| Settings | `/settings` | user_settings | - | ❌ NOT BUILT |
+| Admin | `/admin` | all tables | user_feedback | ❌ NOT BUILT |
+| Event Detail | `/events/[id]` | events, event_rsvps | - | ❌ NOT BUILT |
+| Onboarding | `/onboarding` | user_profiles | organizations | ❌ NOT BUILT |
 
 ---
 
@@ -121,12 +136,15 @@ admin
 | Capability | Volunteer | Partner Staff | St Martins Staff | Admin |
 |------------|-----------|---------------|------------------|-------|
 | View content | ✅ | ✅ | ✅ | ✅ |
-| Create posts | ❌ | ✅ | ✅ | ✅ |
+| Create posts | ✅ | ✅ | ✅ | ✅ |
 | Create events | ❌ | ✅ | ✅ | ✅ |
-| Edit own content | ❌ | ✅ | ✅ | ✅ |
+| Edit own content | ✅ | ✅ | ✅ | ✅ |
 | Edit any content | ❌ | ❌ | ✅ | ✅ |
 | Delete any content | ❌ | ❌ | ✅ | ✅ |
+| Send priority alerts | ❌ | ❌ | ✅ | ✅ |
 | Pin content | ❌ | ❌ | ✅ | ✅ |
+| Approve website publish | ❌ | ❌ | ❌ | ✅ |
+| Approve new users | ❌ | ❌ | ❌ | ✅ |
 | Manage users | ❌ | ❌ | ❌ | ✅ |
 | Manage orgs | ❌ | ❌ | ❌ | ✅ |
 
@@ -147,18 +165,20 @@ admin
 
 ### Post Features Implementation Status
 
-| Feature | DB Schema | Backend | UI | Notes |
-|---------|-----------|---------|-----|-------|
-| Text content | ✅ | ✅ | ✅ | Working |
-| Categories | ✅ | ✅ | ✅ | 6 types |
-| Link to Event | ✅ | ✅ | ✅ | `linked_event_id` |
-| Link to Project | ✅ | ✅ | ✅ | `linked_project_id` |
-| Images | ✅ | ❌ | Button only | Upload not implemented |
-| Polls | ❌ | ❌ | Button only | Not implemented |
-| @Mentions | Partial | ❌ | ✅ | UI works, not persisted |
-| Reactions | ✅ | ❌ | ✅ | No DB calls |
-| Comments | ✅ | ❌ | Minimal | Schema exists, no UI |
-| Pin Posts | ✅ | ❌ | ❌ | Schema exists, no UI |
+| Feature | DB Schema | Backend | UI | Task | Notes |
+|---------|-----------|---------|-----|------|-------|
+| Text content | ✅ | ✅ | ✅ | - | Working |
+| Categories | ✅ | ✅ | ✅ | - | 6 types |
+| Link to Event | ✅ | ✅ | ✅ | - | `linked_event_id` |
+| Link to Project | ✅ | ✅ | ✅ | - | `linked_project_id` |
+| Images/Docs | ✅ | ❌ | Button only | 4.6 | Upload not implemented |
+| Polls | ❌ | ❌ | Button only | 3.16 | Schema needed |
+| @Mentions | Partial | ❌ | ✅ | 2.11 | UI works, not persisted |
+| Reactions | ✅ | ❌ | ✅ | 2.9 | No DB calls |
+| Comments | ✅ | ❌ | Minimal | 2.10 | Schema exists, no UI |
+| Pin Posts | ✅ | ❌ | ❌ | 3.15 | Schema exists, no UI |
+| Edit/Delete | ✅ | ❌ | ❌ | 2.10 | Users edit own |
+| Website Publish | ❌ | ❌ | ❌ | 3.17 | Admin approval needed |
 
 ---
 
@@ -289,23 +309,24 @@ Org A creates Project
 └───────────────────┘
 ```
 
-### What's Missing
+### What's Missing (Task 3.12)
 - Post-acceptance permissions (what can collaborators do?)
 - Remove collaborator function
-- Collaboration role levels
+- Collaboration role levels (owner, co-organizer, supporter)
 - "My collaborations" view
+- Individual user collaborators (not just orgs) for events
 
 ---
 
 ## 11. Orphaned Components
 
-| Component | Location | Status | Action |
-|-----------|----------|--------|--------|
-| `notifications-dropdown.tsx` | `/components/social/` | Built, not imported | Integrate into header |
-| `express-interest-button.tsx` | `/components/social/` | Built, not imported | Use on cards |
-| `action-cta.tsx` | `/components/ui/` | Built, never imported | Use in RSVP flow |
-| `sidebar.tsx` | `/components/layout/` | Old, never imported | DELETE |
-| `header.tsx` | `/components/layout/` | Old, never imported | DELETE |
+| Component | Location | Status | Task |
+|-----------|----------|--------|------|
+| `notifications-dropdown.tsx` | `/components/social/` | Built, not imported | 3.1 |
+| `express-interest-button.tsx` | `/components/social/` | Built, not imported | 3.3 |
+| `action-cta.tsx` | `/components/ui/` | Built, never imported | 3.2 |
+| `sidebar.tsx` | `/components/layout/` | Old, never imported | 1.3 DELETE |
+| `header.tsx` | `/components/layout/` | Old, never imported | 1.3 DELETE |
 
 ---
 
@@ -340,10 +361,52 @@ Org A creates Project
 | `job_type` | paid_staff, volunteer, internship | jobs |
 | `meeting_note_status` | draft, published, archived | meeting_notes |
 | `reaction_type` | like | post_reactions |
+| `account_status` | pending, approved, rejected | user_profiles |
+| `website_status` | pending, approved, rejected | posts, events, projects |
 
 ---
 
-## 14. Key Files Reference
+## 14. New Schemas (To Build)
+
+### Polls (Task 3.16)
+```sql
+poll_options
+├── id, post_id, option_text, position
+
+poll_votes
+├── poll_option_id, user_id, voted_at
+├── PRIMARY KEY (poll_option_id, user_id)  -- one vote per user
+```
+
+### User Feedback (Task 3.18)
+```sql
+user_feedback
+├── id, user_id, description, page_url
+├── screenshot_url, status (new/reviewed/resolved)
+├── created_at
+```
+
+### Website Publishing (Task 3.17)
+Fields added to posts, events, projects:
+```sql
+├── publish_to_website (boolean)
+├── website_status (pending/approved/rejected)
+├── website_approved_at, website_approved_by
+├── website_rejected_reason
+```
+
+### User Profile Additions (Task 4.7)
+Fields added to user_profiles:
+```sql
+├── phone, social_links (JSONB)
+├── account_status (pending/approved/rejected)
+├── approved_at, approved_by
+├── gdpr_consent (boolean), gdpr_consent_at
+```
+
+---
+
+## 15. Key Files Reference
 
 ### Database & Types
 | File | Purpose |
@@ -367,6 +430,77 @@ Org A creates Project
 | `src/components/social/left-sidebar.tsx` | Nav + My Team + Highlights |
 | `src/components/social/right-sidebar.tsx` | Alerts + Events carousel |
 | `src/components/social/header.tsx` | Header with nav |
+
+---
+
+## 16. Ideas Backlog (Future Enhancements)
+
+*Features to consider after MVP. Need design/implementation decisions before building.*
+
+### Community Engagement Features
+
+| Idea | Description | Implementation Questions |
+|------|-------------|-------------------------|
+| **Smart Reactions** | Reactions with meaning: "I can help" 🙋, "I have a connection" 🔗, "Bookmark" ⭐ | How do these trigger backend actions? Need reaction_type enum extension + action handlers |
+| **Coffee Roulette** | Weekly random cross-org pairing for informal 1:1s | Opt-in system, matching algorithm, notification timing |
+| **"New to Community" Badge** | Temporary badge for new members (invites welcomes) | Duration? Auto-remove after X days? Ties to onboarding completion |
+| **Building Pulse** | "Who's in the building today" - see active/present users | Check-in system? Last-active timestamp? Privacy considerations |
+| **Post-Event Photo Gallery** | Attendees share photos after events | Add to event detail page (Task 3.6), moderation needed? |
+
+### Content & Insights Features
+
+| Idea | Description | Implementation Questions |
+|------|-------------|-------------------------|
+| **Weekly Narrative Digest** | Auto-generated "This Week in Village Hub" story post | Cron job + AI or template? When to post? Who authors it? |
+| **Impact Stories Template** | Structured post type for sharing outcomes with metrics | New post category or template? Fields: beneficiaries, outcome, metric |
+| **Cross-Org Collaboration Metrics** | Track joint projects and outcomes | Dashboard view in admin? What metrics matter? |
+| **Community Health Score** | Engagement trends over time | Admin-only? What signals indicate health? |
+
+### Resource Sharing Features
+
+| Idea | Description | Implementation Questions |
+|------|-------------|-------------------------|
+| **Skills Marketplace** | "I need X" / "I can offer Y" exchange board | Separate `/exchange` page? New `exchange_posts` table with type (need/offer) |
+| **Shared Resources / Resource Lending** | Equipment/venue booking between orgs | New `shared_resources` table with booking system. Who owns what? Approval workflow? |
+
+### Skills Marketplace Page Concept
+```
+/exchange or /marketplace
+┌─────────────────────────────────────────────────────┐
+│  🔄 Community Exchange                              │
+├─────────────────────────────────────────────────────┤
+│  [+ Post Need]  [+ Post Offer]    [Filter: All ▼]  │
+├─────────────────────────────────────────────────────┤
+│  NEEDS                                              │
+│  ┌───────────────────────────────────────────────┐ │
+│  │ 🙋 Food Bank needs: Grant Writer              │ │
+│  │    For December application deadline          │ │
+│  │    Skills: grant-writing, fundraising         │ │
+│  │    [I can help]                               │ │
+│  └───────────────────────────────────────────────┘ │
+│                                                     │
+│  OFFERS                                             │
+│  ┌───────────────────────────────────────────────┐ │
+│  │ 🎁 Youth Center offers: Free venue Tuesdays   │ │
+│  │    After 5pm, capacity 30 people              │ │
+│  │    [Request this]                             │ │
+│  └───────────────────────────────────────────────┘ │
+└─────────────────────────────────────────────────────┘
+```
+
+### Shared Resources Schema Concept
+```sql
+shared_resources
+├── id, org_id (owner), name, description
+├── resource_type (equipment/venue/service)
+├── availability_notes, image_url
+├── is_active
+
+resource_bookings
+├── id, resource_id, requester_org_id
+├── requested_date, status (pending/approved/rejected)
+├── notes, approved_by
+```
 
 ---
 

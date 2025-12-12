@@ -5,25 +5,29 @@ import { cn } from "@/lib/utils"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { 
-  Search, 
-  Hash, 
-  Plus, 
-  ChevronDown, 
+import {
+  Search,
+  Hash,
+  Plus,
+  ChevronDown,
   ChevronRight,
   Users,
   Pin,
   Volume2,
-  VolumeX
+  VolumeX,
+  MessageCirclePlus
 } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
 import type { Conversation, ChatUser } from "./chat-types"
+import { NewDMDialog } from "./new-dm-dialog"
 
 interface ConversationListProps {
   conversations: Conversation[]
   activeConversationId: string | null
   onSelectConversation: (conversation: Conversation) => void
   currentUser: ChatUser
+  onNewDM?: (userId: string) => void
+  orgId?: string
 }
 
 export function ConversationList({
@@ -31,10 +35,13 @@ export function ConversationList({
   activeConversationId,
   onSelectConversation,
   currentUser,
+  onNewDM,
+  orgId,
 }: ConversationListProps) {
   const [searchQuery, setSearchQuery] = useState("")
   const [channelsExpanded, setChannelsExpanded] = useState(true)
   const [dmsExpanded, setDmsExpanded] = useState(true)
+  const [showNewDM, setShowNewDM] = useState(false)
 
   // Filter conversations by search
   const filteredConversations = conversations.filter((conv) =>
@@ -53,14 +60,27 @@ export function ConversationList({
     return undefined
   }
 
+  const handleNewDMSelect = (user: ChatUser) => {
+    if (onNewDM) {
+      onNewDM(user.id)
+    }
+    setShowNewDM(false)
+  }
+
   return (
     <div className="flex flex-col h-full bg-card border-r border-border/50">
       {/* Header */}
       <div className="p-4 border-b border-border/50">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-bold text-foreground">Messages</h2>
-          <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg">
-            <Plus className="h-4 w-4" />
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8 rounded-lg"
+            onClick={() => setShowNewDM(true)}
+            title="New message"
+          >
+            <MessageCirclePlus className="h-4 w-4" />
           </Button>
         </div>
         
@@ -157,6 +177,17 @@ export function ConversationList({
           </AnimatePresence>
         </div>
       </div>
+
+      {/* New DM Dialog */}
+      {orgId && (
+        <NewDMDialog
+          open={showNewDM}
+          onOpenChange={setShowNewDM}
+          onSelectUser={handleNewDMSelect}
+          orgId={orgId}
+          currentUserId={currentUser.id}
+        />
+      )}
     </div>
   )
 }

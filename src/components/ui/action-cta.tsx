@@ -152,7 +152,7 @@ export function ActionCTA({ type, needs, onAction, className, buttonLabel }: Act
                   <div className="flex-1">
                     <div className="flex items-center gap-2">
                       <Building2 className="h-3.5 w-3.5 text-purple-600" />
-                      <span className="text-sm font-medium text-foreground">We'd love to collaborate!</span>
+                      <span className="text-sm font-medium text-foreground">We&apos;d love to collaborate!</span>
                     </div>
                   </div>
                 </label>

@@ -132,9 +132,9 @@ export function ChatInput({
       // Extract mentions from message
       const mentionRegex = /@(\w+\s\w+)/g
       const mentions: string[] = []
-      let match
+      let match: RegExpExecArray | null
       while ((match = mentionRegex.exec(message)) !== null) {
-        const mentionedUser = users.find(u => u.name === match[1])
+        const mentionedUser = users.find(u => u.name === match![1])
         if (mentionedUser) {
           mentions.push(mentionedUser.id)
         }

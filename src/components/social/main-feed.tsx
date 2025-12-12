@@ -19,44 +19,48 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { WeeklyUpdateDialog } from "@/components/social/weekly-update-dialog"
-import { Sparkles, Send, Image as ImageIcon, Smile, Calendar, Target, BarChart3, Paperclip, Tag, X, Plus, AlertTriangle } from "lucide-react"
+import { Sparkles, Send, Image as ImageIcon, Smile, Calendar, Target, BarChart3, Paperclip, Tag, X, Plus, AlertTriangle, Loader2, User, ChevronDown } from "lucide-react"
 import { useState, useRef, useEffect } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import type { FeedItem, FilterType, PostCategory } from "@/lib/types"
 import { CategorySelector } from "@/components/ui/category-selector"
-
-// Mock existing items for selection modal
-const existingEvents = [
-  { id: "event-1", title: "Community Food Drive & Distribution", date: "Dec 15" },
-  { id: "event-2", title: "After-School Program Launch", date: "Dec 18" },
-  { id: "event-3", title: "Health Screening Day", date: "Jan 10" },
-]
-
-const existingProjects = [
-  { id: "project-1", title: "Urban Tree Planting Initiative", date: "March 2025" },
-  { id: "project-2", title: "Mobile Health Clinic Outreach", date: "Feb 2025" },
-  { id: "project-3", title: "Youth Mentorship Program", date: "Ongoing" },
-]
-
-const existingOrganizations = [
-  { id: "org-1", name: "Hope Foundation" },
-  { id: "org-2", name: "Green Earth Alliance" },
-  { id: "org-3", name: "Community Outreach Network" },
-  { id: "org-4", name: "City Food Bank" },
-  { id: "org-5", name: "Youth Development Alliance" },
-  { id: "org-6", name: "Neighborhood Alliance" },
-]
+import { createPost } from "@/lib/actions/posts"
+import { useRouter } from "next/navigation"
+import { createClient } from "@/lib/supabase/client"
 
 const filterOptions: FilterType[] = ["All", "Events", "Projects", "Posts"]
 const sortOptions = ["Latest", "Shared by", "Shared with"]
+
+type UserRole = 'admin' | 'st_martins_staff' | 'partner_staff' | 'volunteer'
+
+// Type for user profiles in mention dropdown
+type UserProfile = {
+  user_id: string
+  full_name: string
+  avatar_url?: string | null
+  job_title?: string | null
+  organization_name?: string | null
+}
+
+// Type for mentionable items (now includes users)
+type MentionableItem = {
+  id: string
+  title: string
+  type: 'event' | 'project' | 'organization' | 'user'
+  date?: string
+  subtitle?: string
+  avatarUrl?: string | null
+}
 
 interface MainFeedProps {
   initialFeedItems?: FeedItem[]
   userId?: string
   orgId?: string
+  userRole?: UserRole
+  userName?: string
 }
 
-export function MainFeed({ initialFeedItems = [], userId, orgId }: MainFeedProps) {
+export function MainFeed({ initialFeedItems = [], userId, orgId, userRole = 'volunteer', userName = 'User' }: MainFeedProps) {
   const [feedItems, setFeedItems] = useState<FeedItem[]>(initialFeedItems)
   const [activeFilter, setActiveFilter] = useState<FilterType>("All")
   const [activeSort, setActiveSort] = useState("Latest")
@@ -67,9 +71,109 @@ export function MainFeed({ initialFeedItems = [], userId, orgId }: MainFeedProps
   const [mentionSearch, setMentionSearch] = useState("")
   const [showMentionDropdown, setShowMentionDropdown] = useState(false)
   const [cursorPosition, setCursorPosition] = useState(0)
-  const [linkedItems, setLinkedItems] = useState<Array<{ id: string; title: string; type: 'event' | 'project' | 'organization' }>>([])
+  const [linkedItems, setLinkedItems] = useState<Array<{ id: string; title: string; type: 'event' | 'project' | 'organization' | 'user' }>>([])
+  const [mentionedUserIds, setMentionedUserIds] = useState<string[]>([])
+  const [availableUsers, setAvailableUsers] = useState<UserProfile[]>([])
+  const [existingEvents, setExistingEvents] = useState<Array<{ id: string; title: string; date?: string }>>([])
+  const [existingProjects, setExistingProjects] = useState<Array<{ id: string; title: string; date?: string }>>([])
+  const [existingOrganizations, setExistingOrganizations] = useState<Array<{ id: string; name: string }>>([])
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const tagSelectorRef = useRef<HTMLDivElement>(null)
+
+  // Fetch available users for @mention autocomplete
+  useEffect(() => {
+    async function fetchUsers() {
+      const supabase = createClient()
+      const { data, error } = await supabase
+        .from('people')  // Using the 'people' view which includes organization_name
+        .select('id, full_name, avatar_url, job_title, organization_name')
+        .order('full_name')
+
+      if (error) {
+        console.error('Error fetching users for mentions:', error)
+        return
+      }
+
+      if (data) {
+        // Map the 'people' view structure to UserProfile
+        type PeopleViewRow = { id: string; full_name: string; avatar_url: string | null; job_title: string | null; organization_name: string | null }
+        const users: UserProfile[] = (data as PeopleViewRow[]).map(p => ({
+          user_id: p.id || '',
+          full_name: p.full_name || '',
+          avatar_url: p.avatar_url,
+          job_title: p.job_title,
+          organization_name: p.organization_name
+        }))
+        setAvailableUsers(users)
+      }
+    }
+
+    fetchUsers()
+  }, [])
+
+  // Fetch events, projects, and organizations for tag selector
+  useEffect(() => {
+    async function fetchTaggableItems() {
+      if (!orgId) return
+
+      const supabase = createClient()
+
+      // Fetch recent events
+      const { data: eventsData, error: eventsError } = await supabase
+        .from('events')
+        .select('id, title, start_time')
+        .eq('org_id', orgId)
+        .is('deleted_at', null)
+        .order('start_time', { ascending: true })
+        .limit(5)
+
+      if (eventsError) {
+        console.error('Error fetching events:', eventsError)
+      } else if (eventsData && eventsData.length > 0) {
+        setExistingEvents((eventsData as Array<{ id: string; title: string; start_time: string }>).map(e => ({
+          id: e.id,
+          title: e.title,
+          date: new Date(e.start_time).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+        })))
+      }
+
+      // Fetch recent projects
+      const { data: projectsData, error: projectsError } = await supabase
+        .from('projects')
+        .select('id, title, target_date')
+        .eq('org_id', orgId)
+        .is('deleted_at', null)
+        .order('created_at', { ascending: false })
+        .limit(5)
+
+      if (projectsError) {
+        console.error('Error fetching projects:', projectsError)
+      } else if (projectsData && projectsData.length > 0) {
+        setExistingProjects((projectsData as Array<{ id: string; title: string; target_date: string | null }>).map(p => ({
+          id: p.id,
+          title: p.title,
+          date: p.target_date
+            ? new Date(p.target_date).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })
+            : 'Ongoing'
+        })))
+      }
+
+      // Fetch organizations
+      const { data: orgsData, error: orgsError } = await supabase
+        .from('organizations')
+        .select('id, name')
+        .order('name')
+        .limit(10)
+
+      if (orgsError) {
+        console.error('Error fetching organizations:', orgsError)
+      } else if (orgsData && orgsData.length > 0) {
+        setExistingOrganizations(orgsData as Array<{ id: string; name: string }>)
+      }
+    }
+
+    fetchTaggableItems()
+  }, [orgId])
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -90,6 +194,9 @@ export function MainFeed({ initialFeedItems = [], userId, orgId }: MainFeedProps
   const [showProjectDialog, setShowProjectDialog] = useState(false)
   const [showAlertDialog, setShowAlertDialog] = useState(false)
   const [showWeeklyUpdate, setShowWeeklyUpdate] = useState(false)
+  const [isPostSubmitting, setIsPostSubmitting] = useState(false)
+  const [postError, setPostError] = useState<string | null>(null)
+  const router = useRouter()
 
   useEffect(() => {
     function handleWeeklyUpdateOpen(event: Event) {
@@ -121,16 +228,54 @@ export function MainFeed({ initialFeedItems = [], userId, orgId }: MainFeedProps
     return true
   })
 
-  const handlePostSubmit = () => {
-    console.log("Creating post:", { 
-      content: postContent,
-      category: postCategory,
-      linkedItems: linkedItems
-    })
-    setPostContent("")
-    setPostCategory("general")
-    setLinkedItems([])
-    setPostFocused(false)
+  const handlePostSubmit = async () => {
+    if (!userId || !orgId) {
+      setPostError("User ID or Organization ID is missing")
+      return
+    }
+
+    setIsPostSubmitting(true)
+    setPostError(null)
+
+    try {
+      // Find linked event/project IDs
+      const linkedEvent = linkedItems.find(item => item.type === 'event')
+      const linkedProject = linkedItems.find(item => item.type === 'project')
+
+      // Get mentioned user IDs from linked items (users selected via UI)
+      const uiMentionedUserIds = linkedItems
+        .filter(item => item.type === 'user')
+        .map(item => item.id)
+
+      // Combine UI-selected mentions with any tracked mentions
+      const allMentionedUserIds = Array.from(new Set([...uiMentionedUserIds, ...mentionedUserIds]))
+
+      const result = await createPost({
+        content: postContent,
+        authorId: userId,
+        orgId: orgId,
+        category: postCategory,
+        linkedEventId: linkedEvent?.id,
+        linkedProjectId: linkedProject?.id,
+        mentionedUserIds: allMentionedUserIds.length > 0 ? allMentionedUserIds : undefined,
+      })
+
+      if (result.success) {
+        setPostContent("")
+        setPostCategory("general")
+        setLinkedItems([])
+        setMentionedUserIds([])
+        setPostFocused(false)
+        // Refresh to show new post
+        router.refresh()
+      } else {
+        setPostError(result.error || "Failed to create post")
+      }
+    } catch (err) {
+      setPostError(err instanceof Error ? err.message : "An unexpected error occurred")
+    } finally {
+      setIsPostSubmitting(false)
+    }
   }
 
   // Handle @mention detection
@@ -160,31 +305,46 @@ export function MainFeed({ initialFeedItems = [], userId, orgId }: MainFeedProps
   }
 
   // Insert mention
-  const insertMention = (item: { id: string; title: string; type: 'event' | 'project' | 'organization' }) => {
+  const insertMention = (item: { id: string; title: string; type: 'event' | 'project' | 'organization' | 'user' }) => {
     const textBeforeCursor = postContent.slice(0, cursorPosition)
     const textAfterCursor = postContent.slice(cursorPosition)
     const lastAtIndex = textBeforeCursor.lastIndexOf('@')
-    
-    const newText = textBeforeCursor.slice(0, lastAtIndex) + `@${item.title}` + textAfterCursor
+
+    // For user mentions, use @[Full Name] format to support names with spaces
+    const mentionText = item.type === 'user' && item.title.includes(' ')
+      ? `@[${item.title}]`
+      : `@${item.title}`
+
+    const newText = textBeforeCursor.slice(0, lastAtIndex) + mentionText + ' ' + textAfterCursor
     setPostContent(newText)
     setShowMentionDropdown(false)
-    
+
     // Add to linked items if not already there
     if (!linkedItems.find(i => i.id === item.id)) {
       setLinkedItems([...linkedItems, item])
     }
-    
+
+    // Track user IDs for mentions
+    if (item.type === 'user' && !mentionedUserIds.includes(item.id)) {
+      setMentionedUserIds([...mentionedUserIds, item.id])
+    }
+
     // Focus back on textarea
     textareaRef.current?.focus()
   }
 
   // Handle tag button click
-  const handleTagClick = (item: { id: string; title: string; type: 'event' | 'project' | 'organization' }) => {
+  const handleTagClick = (item: { id: string; title: string; type: 'event' | 'project' | 'organization' | 'user' }) => {
     // Just add to linked items, don't insert @ in text
     if (!linkedItems.find(i => i.id === item.id)) {
       setLinkedItems([...linkedItems, item])
     }
-    
+
+    // Track user IDs for mentions
+    if (item.type === 'user' && !mentionedUserIds.includes(item.id)) {
+      setMentionedUserIds([...mentionedUserIds, item.id])
+    }
+
     setShowTagSelector(false)
     textareaRef.current?.focus()
   }
@@ -193,19 +353,41 @@ export function MainFeed({ initialFeedItems = [], userId, orgId }: MainFeedProps
   const removeLinkedItem = (id: string) => {
     const item = linkedItems.find(i => i.id === id)
     setLinkedItems(linkedItems.filter(i => i.id !== id))
-    
+
+    // Remove from mentioned user IDs if it's a user
+    if (item?.type === 'user') {
+      setMentionedUserIds(mentionedUserIds.filter(uid => uid !== id))
+    }
+
     // Only remove @mention from text if it exists
-    if (item && postContent.includes(`@${item.title}`)) {
-      const newText = postContent.replace(`@${item.title}`, '').trim()
-      setPostContent(newText)
+    if (item) {
+      // Try both formats: @Name and @[Name]
+      let newText = postContent
+      if (postContent.includes(`@[${item.title}]`)) {
+        newText = postContent.replace(`@[${item.title}]`, '').trim()
+      } else if (postContent.includes(`@${item.title}`)) {
+        newText = postContent.replace(`@${item.title}`, '').trim()
+      }
+      if (newText !== postContent) {
+        setPostContent(newText)
+      }
     }
   }
 
-  // Filter items for mention dropdown
-  const mentionableItems = [
-    ...existingEvents.map(e => ({ ...e, title: e.title, type: 'event' as const })),
-    ...existingProjects.map(p => ({ ...p, title: p.title, type: 'project' as const })),
-    ...existingOrganizations.map(o => ({ ...o, title: o.name, type: 'organization' as const }))
+  // Filter items for mention dropdown - includes users from database
+  const mentionableItems: MentionableItem[] = [
+    // Add users from database
+    ...availableUsers.map(u => ({
+      id: u.user_id,
+      title: u.full_name,
+      type: 'user' as const,
+      subtitle: u.job_title || u.organization_name || undefined,
+      avatarUrl: u.avatar_url
+    })),
+    // Add events, projects, organizations
+    ...existingEvents.map(e => ({ id: e.id, title: e.title, type: 'event' as const, date: e.date })),
+    ...existingProjects.map(p => ({ id: p.id, title: p.title, type: 'project' as const, date: p.date })),
+    ...existingOrganizations.map(o => ({ id: o.id, title: o.name, type: 'organization' as const }))
   ].filter(item => item.title.toLowerCase().includes(mentionSearch))
 
   const handleEventClick = () => {
@@ -223,13 +405,16 @@ export function MainFeed({ initialFeedItems = [], userId, orgId }: MainFeedProps
     audience: string
   }) => {
     // Create alert with current user info
+    const roleDisplay = userRole === 'admin' ? 'Admin' :
+                        userRole === 'st_martins_staff' ? 'St Martins Staff' :
+                        userRole === 'partner_staff' ? 'Partner Staff' : 'Staff'
     setActiveAlert({
       id: `alert-${Date.now()}`,
       ...alertData,
       author: {
-        name: "Current User", // TODO: Replace with actual user data
-        role: "Manager", // TODO: Replace with actual user role
-        avatar: "/professional-woman.png"
+        name: userName,
+        role: roleDisplay,
+        avatar: "/placeholder.svg"
       },
       timeAgo: "just now"
     })
@@ -241,8 +426,8 @@ export function MainFeed({ initialFeedItems = [], userId, orgId }: MainFeedProps
     setActiveAlert(null)
   }
 
-  // TODO: Replace with actual role check from auth
-  const isManager = true // For now, always show for demo
+  // Check if user can send alerts (admin or st_martins_staff only)
+  const canSendAlerts = userRole === 'admin' || userRole === 'st_martins_staff'
 
   return (
     <main className="space-y-6">
@@ -254,13 +439,13 @@ export function MainFeed({ initialFeedItems = [], userId, orgId }: MainFeedProps
         />
       )}
       
-      {/* Create Post Card */}
+      {/* Welcome + Post Composer Card */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4 }}
       >
-        <Card className="bg-white rounded-2xl p-8 shadow-md border border-gray-100 hover:shadow-lg transition-shadow">
+        <Card className="bg-white rounded-2xl p-4 shadow-md border border-gray-100 hover:shadow-lg transition-shadow">
           {/* Welcome Header */}
           <div className="flex items-start gap-4 mb-6">
             <div className="p-2 rounded-xl bg-gradient-to-br from-primary/20 to-primary/10 shrink-0">
@@ -269,7 +454,7 @@ export function MainFeed({ initialFeedItems = [], userId, orgId }: MainFeedProps
             <div className="flex-1 min-w-0">
               <h2 className="text-2xl font-bold text-gray-900 tracking-tight mb-2">Welcome to The Village!</h2>
               <p className="text-sm text-gray-600 leading-relaxed">
-                Discover collaboration opportunities, upcoming events, and initiatives from charities in your network. 
+                Discover collaboration opportunities, upcoming events, and initiatives from charities in your network.
                 Together, we can make a greater impact.
               </p>
             </div>
@@ -278,19 +463,12 @@ export function MainFeed({ initialFeedItems = [], userId, orgId }: MainFeedProps
               className="shrink-0 gap-2 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white shadow-lg shadow-purple-500/30 transition-all relative overflow-hidden group"
             >
               {/* Continuous animated shine effect */}
-              <div 
+              <div
                 className="absolute inset-0 bg-gradient-to-r from-transparent via-white/40 to-transparent animate-shine"
                 style={{
                   animation: 'shine 8s ease-in-out infinite'
                 }}
               />
-              <style jsx>{`
-                @keyframes shine {
-                  0% { transform: translateX(-100%); }
-                  20% { transform: translateX(100%); }
-                  100% { transform: translateX(100%); }
-                }
-              `}</style>
               <Sparkles className="h-4 w-4 relative z-10 group-hover:rotate-12 transition-transform" />
               <span className="hidden sm:inline relative z-10">This Week at the Village</span>
               <span className="sm:hidden relative z-10">This Week</span>
@@ -319,7 +497,8 @@ export function MainFeed({ initialFeedItems = [], userId, orgId }: MainFeedProps
                       minHeight: '72px'
                     }}
                   >
-                    {postContent.split(/(@[\w\s-]+)/g).map((part, i) => (
+                    {/* Split on both @[Name] and @Name patterns */}
+                    {postContent.split(/(@\[[^\]]+\]|@\w+)/g).map((part, i) => (
                       <span
                         key={i}
                         className={part.startsWith('@') ? 'text-blue-600 font-medium' : ''}
@@ -328,10 +507,10 @@ export function MainFeed({ initialFeedItems = [], userId, orgId }: MainFeedProps
                       </span>
                     ))}
                   </div>
-                  
+
                 <textarea
                     ref={textareaRef}
-                    placeholder="Share an update with your community... (Type @ to mention events, projects, or organizations)"
+                    placeholder="Share an update with your community... (Type @ to mention people, events, or projects)"
                   value={postContent}
                     onChange={handleContentChange}
                     onFocus={() => setPostFocused(true)}
@@ -361,7 +540,7 @@ export function MainFeed({ initialFeedItems = [], userId, orgId }: MainFeedProps
                       >
                         <div className="p-2">
                           <div className="text-xs text-gray-500 px-3 py-2 font-medium">
-                            Tag Event, Project, or Organization
+                            Mention a person, event, project, or organization
                           </div>
                           {mentionableItems.slice(0, 8).map((item) => (
                             <button
@@ -369,7 +548,20 @@ export function MainFeed({ initialFeedItems = [], userId, orgId }: MainFeedProps
                               onClick={() => insertMention(item)}
                               className="w-full flex items-center gap-3 px-3 py-2 hover:bg-gray-50 rounded-md transition-colors text-left"
                             >
-                              {item.type === 'event' ? (
+                              {item.type === 'user' ? (
+                                item.avatarUrl ? (
+                                  <Avatar className="h-6 w-6 flex-shrink-0">
+                                    <AvatarImage src={item.avatarUrl} alt={item.title} />
+                                    <AvatarFallback className="text-xs bg-orange-100 text-orange-700">
+                                      {item.title.split(' ').map(n => n[0]).join('').slice(0, 2)}
+                                    </AvatarFallback>
+                                  </Avatar>
+                                ) : (
+                                  <div className="h-6 w-6 rounded-full bg-orange-100 flex items-center justify-center flex-shrink-0">
+                                    <User className="h-3 w-3 text-orange-600" />
+                                  </div>
+                                )
+                              ) : item.type === 'event' ? (
                                 <Calendar className="h-4 w-4 text-blue-600 flex-shrink-0" />
                               ) : item.type === 'project' ? (
                                 <Target className="h-4 w-4 text-emerald-600 flex-shrink-0" />
@@ -381,8 +573,8 @@ export function MainFeed({ initialFeedItems = [], userId, orgId }: MainFeedProps
                                   {item.title}
                                 </div>
                                 <div className="text-xs text-gray-500 capitalize">
-                                  {item.type}
-                                  {'date' in item && item.date && ` • ${item.date}`}
+                                  {item.type === 'user' ? (item.subtitle || 'Person') : item.type}
+                                  {item.date && ` - ${item.date}`}
                                 </div>
                               </div>
                             </button>
@@ -408,10 +600,12 @@ export function MainFeed({ initialFeedItems = [], userId, orgId }: MainFeedProps
                             key={item.id}
                             className={cn(
                               "flex items-center gap-1.5 px-2 py-1 rounded-full border text-xs font-medium",
-                              item.type === 'event' 
-                                ? "bg-blue-50 border-blue-200 text-blue-700" 
+                              item.type === 'event'
+                                ? "bg-blue-50 border-blue-200 text-blue-700"
                                 : item.type === 'project'
                                 ? "bg-emerald-50 border-emerald-200 text-emerald-700"
+                                : item.type === 'user'
+                                ? "bg-orange-50 border-orange-200 text-orange-700"
                                 : "bg-purple-50 border-purple-200 text-purple-700"
                             )}
                           >
@@ -419,6 +613,8 @@ export function MainFeed({ initialFeedItems = [], userId, orgId }: MainFeedProps
                               <Calendar className="h-3 w-3" />
                             ) : item.type === 'project' ? (
                               <Target className="h-3 w-3" />
+                            ) : item.type === 'user' ? (
+                              <User className="h-3 w-3" />
                             ) : (
                               <Sparkles className="h-3 w-3" />
                             )}
@@ -520,7 +716,7 @@ export function MainFeed({ initialFeedItems = [], userId, orgId }: MainFeedProps
                                 initial={{ opacity: 0, y: -10 }}
                                 animate={{ opacity: 1, y: 0 }}
                                 exit={{ opacity: 0, y: -10 }}
-                                className="absolute right-0 top-full mt-2 w-80 bg-white rounded-lg shadow-lg border border-gray-200 z-50"
+                                className="absolute right-0 top-full mt-2 w-full sm:w-80 bg-white rounded-lg shadow-lg border border-gray-200 z-50"
                               >
                                 <div className="p-3">
                                   <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
@@ -638,8 +834,8 @@ export function MainFeed({ initialFeedItems = [], userId, orgId }: MainFeedProps
                         <span>Create Project</span>
                       </DropdownMenuItem>
                       
-                      {/* Manager-only options */}
-                      {isManager && (
+                      {/* Staff/Admin-only options */}
+                      {canSendAlerts && (
                         <>
                           <DropdownMenuSeparator />
                           <DropdownMenuItem
@@ -655,12 +851,16 @@ export function MainFeed({ initialFeedItems = [], userId, orgId }: MainFeedProps
                   </DropdownMenu>
                     <Button
                       size="sm"
-                      disabled={!postContent.trim()}
-                    onClick={handlePostSubmit}
+                      disabled={!postContent.trim() || isPostSubmitting}
+                      onClick={handlePostSubmit}
                       className="gap-2 bg-primary hover:bg-primary/90 disabled:opacity-40 h-9 px-4"
                     >
-                      <Send className="h-4 w-4" />
-                      <span className="text-sm">Post</span>
+                      {isPostSubmitting ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <Send className="h-4 w-4" />
+                      )}
+                      <span className="text-sm">{isPostSubmitting ? "Posting..." : "Post"}</span>
                     </Button>
                 </div>
               </div>
@@ -673,41 +873,46 @@ export function MainFeed({ initialFeedItems = [], userId, orgId }: MainFeedProps
       <div className="flex items-center justify-between gap-4 pb-4 border-b border-border/50">
         <div className="flex items-center gap-2">
           {filterOptions.map((filter) => (
-          <Button
-            key={filter}
-            variant={activeFilter === filter ? "default" : "ghost"}
-            size="sm"
-            onClick={() => setActiveFilter(filter)}
-            className={cn(
-              "transition-all",
-              activeFilter === filter
-                ? "bg-primary text-primary-foreground shadow-sm"
-                  : "hover:bg-muted",
-            )}
-          >
-            {filter}
-          </Button>
-        ))}
-      </div>
-
-        <div className="flex items-center gap-2">
-          {sortOptions.map((sort) => (
             <Button
-              key={sort}
-              variant={activeSort === sort ? "default" : "ghost"}
+              key={filter}
+              variant={activeFilter === filter ? "default" : "ghost"}
               size="sm"
-              onClick={() => setActiveSort(sort)}
+              onClick={() => setActiveFilter(filter)}
               className={cn(
-                "transition-all text-xs",
-                activeSort === sort
+                "transition-all",
+                activeFilter === filter
                   ? "bg-primary text-primary-foreground shadow-sm"
                   : "hover:bg-muted",
               )}
             >
-              {sort}
+              {filter}
             </Button>
           ))}
         </div>
+
+        {/* Sort Dropdown */}
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" size="sm" className="gap-1.5 text-muted-foreground hover:text-foreground">
+              <span className="text-xs">{activeSort}</span>
+              <ChevronDown className="h-3.5 w-3.5" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-36">
+            {sortOptions.map((sort) => (
+              <DropdownMenuItem
+                key={sort}
+                onClick={() => setActiveSort(sort)}
+                className={cn(
+                  "text-sm cursor-pointer",
+                  activeSort === sort && "bg-muted font-medium"
+                )}
+              >
+                {sort}
+              </DropdownMenuItem>
+            ))}
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
 
       {/* Feed Items */}

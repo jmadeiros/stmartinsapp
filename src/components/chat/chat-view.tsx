@@ -121,6 +121,7 @@ export function ChatView({
                         showAvatar={showAvatar}
                         onReact={onReact}
                         onReply={(msg) => setReplyingTo(msg)}
+                        currentUserId={currentUser.id}
                       />
                     )
                   })}

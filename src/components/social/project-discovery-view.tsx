@@ -73,10 +73,10 @@ export function ProjectDiscoveryView({ initialProjects, userOrgId }: ProjectDisc
   const spotlightProject = filteredProjects[0] || initialProjects[0]
 
   return (
-    <div className="min-h-screen bg-slate-50/50 selection:bg-emerald-100 selection:text-emerald-900">
+    <div className="min-h-screen bg-slate-50/50 selection:bg-emerald-100 selection:text-emerald-900 overflow-x-hidden">
       
       {/* 1. Light & Airy Hero Section */}
-      <div className="relative w-full bg-white border-b border-slate-100 pb-16 pt-12 overflow-hidden">
+      <div className="relative w-full bg-white border-b border-slate-100 pb-16 pt-12 overflow-hidden max-w-full">
         
         {/* Subtle Background Elements */}
         <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-gradient-to-bl from-blue-50/50 to-transparent rounded-full blur-3xl -translate-y-1/2 translate-x-1/3 pointer-events-none" />
@@ -97,13 +97,13 @@ export function ProjectDiscoveryView({ initialProjects, userOrgId }: ProjectDisc
             </div>
 
              {/* Search & Action */}
-             <div className="w-full lg:w-auto flex flex-col gap-3 min-w-[320px]">
-                <div className="relative group">
+             <div className="w-full lg:w-auto flex flex-col gap-3 min-w-0 max-w-full">
+                <div className="relative group w-full">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 group-focus-within:text-emerald-600 transition-colors" />
                   <input 
                     type="text"
                     placeholder="Search causes, skills, or needs..." 
-                    className="w-full bg-white border border-slate-200 text-slate-900 placeholder-slate-400 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 pl-10 pr-4 py-2.5 text-sm rounded-xl shadow-sm transition-all"
+                    className="w-full max-w-full bg-white border border-slate-200 text-slate-900 placeholder-slate-400 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 pl-10 pr-4 py-2.5 text-sm rounded-xl shadow-sm transition-all"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                   />
@@ -145,8 +145,8 @@ export function ProjectDiscoveryView({ initialProjects, userOrgId }: ProjectDisc
              </div>
           </div>
 
-          {/* Stats Grid - Cleaner, Minimal */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-8 mb-12">
+          {/* Stats Grid - Cleaner, Minimal - Stack on mobile, 2x2 on tablet, 4 columns on desktop */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 lg:gap-8 mb-12">
              <StatCard 
                value={activeProjects} 
                label="Active Projects" 
@@ -192,7 +192,7 @@ export function ProjectDiscoveryView({ initialProjects, userOrgId }: ProjectDisc
                    <div className="p-8 md:p-10 flex-1 relative z-10">
                       <div className="flex items-center gap-3 mb-5">
                          <Badge className="bg-emerald-100 text-emerald-800 hover:bg-emerald-200 border-0 px-3 py-1 font-medium">
-                            Editor's Choice
+                            Editor&apos;s Choice
                          </Badge>
                          <span className="text-sm font-medium text-slate-500">
                             Updates 2h ago
@@ -231,13 +231,13 @@ export function ProjectDiscoveryView({ initialProjects, userOrgId }: ProjectDisc
                          <div className="font-medium text-slate-900 text-base leading-snug">{spotlightProject.impactGoal}</div>
                       </div>
                       
-                      <div className="space-y-3">
+                      <div className="space-y-3 min-w-0">
                          <div className="flex justify-between text-sm">
                             <span className="text-slate-500 font-medium">Progress</span>
                             <span className="font-bold text-slate-900">35%</span>
                          </div>
-                         <div className="h-2 bg-slate-200 rounded-full overflow-hidden">
-                            <div className="h-full bg-emerald-500 w-[35%] rounded-full"></div>
+                         <div className="h-2 bg-slate-200 rounded-full overflow-hidden w-full">
+                            <div className="h-full bg-emerald-500 rounded-full" style={{ width: '35%', maxWidth: '100%' }}></div>
                          </div>
                       </div>
 
@@ -294,7 +294,7 @@ export function ProjectDiscoveryView({ initialProjects, userOrgId }: ProjectDisc
                <Search className="h-8 w-8 text-slate-300" />
             </div>
             <h3 className="text-lg font-semibold text-slate-900 mb-1">No projects found</h3>
-            <p className="text-slate-500 mb-6 max-w-sm mx-auto">We couldn't find any projects matching your current filters. Try adjusting your search.</p>
+            <p className="text-slate-500 mb-6 max-w-sm mx-auto">We couldn&apos;t find any projects matching your current filters. Try adjusting your search.</p>
             <Button variant="outline" onClick={() => {setFilterMode("all"); setSearchQuery("")}}>Clear Filters</Button>
           </div>
         ) : (

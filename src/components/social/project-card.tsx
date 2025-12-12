@@ -19,7 +19,8 @@ import {
   DollarSign,
   ClipboardList,
   X,
-  MoreHorizontal
+  MoreHorizontal,
+  Sparkles
 } from "lucide-react"
 import { ContentBadge } from "@/components/ui/content-badge"
 import { NeedsChips } from "@/components/ui/needs-chip"
@@ -222,8 +223,8 @@ export function ProjectCard({ project }: ProjectCardProps) {
   }, [supportPanelOpen])
 
   return (
-    <Card className="text-card-foreground flex flex-col gap-6 rounded-xl py-6 border border-border bg-card shadow-sm transition-shadow hover:shadow-md">
-      <div className="p-6">
+    <Card className="text-card-foreground flex flex-col rounded-2xl bg-white border border-gray-100 shadow-md transition-shadow hover:shadow-lg">
+      <div className="p-4">
         {/* Header */}
         <div className="mb-4 flex items-start justify-between">
           <div className="flex items-center gap-3">
@@ -300,17 +301,17 @@ export function ProjectCard({ project }: ProjectCardProps) {
 
         {/* Progress Bar (if progress tracking enabled) */}
         {project.progress && (
-        <div className="mb-4">
+        <div className="mb-4 min-w-0 overflow-hidden">
           <div className="flex items-center justify-between mb-2">
               <span className="text-xs font-medium text-muted-foreground">Progress</span>
               <span className="text-xs font-bold text-primary">
                 {Math.round((project.progress.current / project.progress.target) * 100)}%
               </span>
           </div>
-            <div className="h-2 bg-muted rounded-full overflow-hidden">
+            <div className="h-2 bg-muted rounded-full overflow-hidden w-full">
             <div 
               className="h-full bg-gradient-to-r from-emerald-500 to-teal-500 rounded-full transition-all duration-500"
-                style={{ width: `${Math.min((project.progress.current / project.progress.target) * 100, 100)}%` }}
+                style={{ width: `${Math.min((project.progress.current / project.progress.target) * 100, 100)}%`, maxWidth: '100%' }}
             />
             </div>
             <p className="text-xs text-muted-foreground mt-1.5">
@@ -420,54 +421,51 @@ export function ProjectCard({ project }: ProjectCardProps) {
           <div className="flex flex-wrap items-center justify-between gap-3">
             {/* Left: Like / Comment */}
             <div className="flex items-center gap-3">
-              <Button
-                variant="ghost"
-                size="sm"
-                className="gap-2 text-muted-foreground hover:text-foreground"
+              <button
                 onClick={() => {
                   const next = !liked
                   setLiked(next)
                   setLikeCount((c) => c + (next ? 1 : -1))
                 }}
+                className="flex items-center gap-1.5 px-2 py-1.5 text-muted-foreground hover:text-foreground transition-colors"
               >
-                <Heart className={"h-4 w-4 " + (liked ? "text-red-500 fill-red-500" : "")} />
-                <span className="text-xs">{likeCount}</span>
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="gap-2 text-muted-foreground hover:text-foreground"
+                <Heart className={cn(
+                  "h-5 w-5 transition-all duration-200",
+                  liked ? "fill-rose-500 text-rose-500 scale-110" : "hover:scale-110"
+                )} />
+                <span className={cn("text-sm tabular-nums", liked && "text-rose-500 font-medium")}>
+                  {likeCount}
+                </span>
+              </button>
+              <button
                 onClick={() => console.log("Open comments")}
+                className="flex items-center gap-1.5 px-2 py-1.5 text-muted-foreground hover:text-foreground transition-colors"
               >
-                <MessageCircle className="h-4 w-4" />
-                <span className="text-xs">{commentCount}</span>
-              </Button>
-              </div>
+                <MessageCircle className="h-5 w-5" />
+                <span className="text-sm tabular-nums">{commentCount}</span>
+              </button>
+            </div>
 
             {/* Right: Interested + View */}
             <div className="flex items-center gap-3">
               <div className="relative">
-                <Button
+                <button
                   ref={supportTriggerRef}
-                  variant="ghost"
-                  size="sm"
                   onClick={handleInterestedToggle}
                   className={cn(
-                    "gap-2 text-sm font-medium transition-all border border-transparent",
+                    "inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-200",
                     interested
-                      ? "bg-emerald-600 text-white hover:bg-emerald-600/90 border border-emerald-600"
-                      : "text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 hover:border-emerald-200"
+                      ? "bg-primary text-primary-foreground shadow-sm"
+                      : "bg-primary/10 border border-primary/30 text-primary hover:bg-primary/20 hover:border-primary/50"
                   )}
                 >
-                  {interested && <Check className="h-4 w-4" />}
-                  {interested ? "Interested" : "I'm interested"}
-                  <span className={cn(
-                    "text-xs font-normal",
-                    interested ? "text-emerald-100/80" : "text-emerald-600/70"
-                  )}>
-                    ({project.interestedOrgs?.length || 0})
-                  </span>
-                </Button>
+                  {interested ? (
+                    <Check className="h-4 w-4 transition-transform duration-200 scale-110" />
+                  ) : (
+                    <Sparkles className="h-4 w-4" />
+                  )}
+                  {interested ? "Following" : "Interested"}
+                </button>
                 <AnimatePresence initial={false}>
                   {interested && supportPanelOpen && (
                     <motion.div
@@ -478,7 +476,7 @@ export function ProjectCard({ project }: ProjectCardProps) {
                       exit={{ opacity: 0, y: popoverPosition.alignBottom ? 4 : -4, scale: 0.96 }}
                       transition={{ duration: 0.15, ease: [0.16, 1, 0.3, 1] }}
                       className={cn(
-                        "absolute z-30 w-64 rounded-lg border border-emerald-200 bg-white p-3 shadow-xl",
+                        "absolute z-30 w-full sm:w-64 max-w-[90vw] rounded-lg border border-emerald-200 bg-white p-3 shadow-xl",
                         popoverPosition.alignRight ? "left-0" : "right-0",
                         popoverPosition.alignBottom ? "bottom-full mb-1.5" : "top-full mt-1.5"
                       )}
@@ -678,18 +676,16 @@ export function ProjectCard({ project }: ProjectCardProps) {
                   )}
                 </AnimatePresence>
               </div>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="gap-2 text-emerald-600 hover:text-emerald-700"
+              <button
                 onClick={() => {
                   console.log("Navigating to project:", project.id)
                   router.push(`/projects/${project.id}`)
                 }}
+                className="inline-flex items-center gap-1.5 px-2 py-1.5 text-sm font-medium text-muted-foreground hover:text-primary transition-colors"
               >
                 <Target className="h-4 w-4" />
                 View project
-              </Button>
+              </button>
               </div>
           </div>
         </div>

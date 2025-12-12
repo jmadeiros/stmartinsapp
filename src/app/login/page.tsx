@@ -717,7 +717,7 @@ export default function SignInPage() {
                 </div>
 
                 <p className="text-xs text-slate-400 text-center pt-6">
-                  By signing in, you agree to Aitrium's{" "}
+                  By signing in, you agree to Aitrium&apos;s{" "}
                   <Link href="/terms" className="underline hover:text-slate-600 transition-colors">
                     Terms of Service
                   </Link>{" "}
@@ -816,7 +816,7 @@ export default function SignInPage() {
               </div>
 
               <p className="text-xs text-slate-400 text-center pt-10">
-                By signing in, you agree to Aitrium's{" "}
+                By signing in, you agree to Aitrium&apos;s{" "}
                 <Link href="/terms" className="underline hover:text-slate-600 transition-colors">
                   Terms
                 </Link>{" "}
@@ -838,7 +838,7 @@ export default function SignInPage() {
             >
               <div className="space-y-2">
                 <h1 className="text-[2.5rem] font-semibold leading-[1.1] tracking-tight text-slate-900">
-                  You're in!
+                  You&apos;re in!
                 </h1>
                 <p className="text-lg text-slate-600">Welcome to Aitrium</p>
               </div>

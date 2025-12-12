@@ -1,13 +1,12 @@
 import { createServerClient } from '@supabase/ssr'
-import type { SupabaseClient } from '@supabase/supabase-js'
 import { cookies } from 'next/headers'
 import type { Database } from '@/lib/database.types'
 import { shouldUseMockSupabase, supabaseEnv } from '@/lib/supabase/env'
 import { createMockSupabaseClient } from '@/lib/supabase/mock'
 
-export async function createClient(): Promise<SupabaseClient<Database>> {
+export async function createClient() {
   if (shouldUseMockSupabase) {
-    return createMockSupabaseClient() as SupabaseClient<Database>
+    return createMockSupabaseClient() as unknown as ReturnType<typeof createServerClient<Database>>
   }
 
   const cookieStore = await cookies()

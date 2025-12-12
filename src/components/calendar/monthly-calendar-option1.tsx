@@ -545,7 +545,7 @@ export function MonthlyCalendarOption1({ events, initialDate }: MonthlyCalendarP
 
               <div>
                 <div className="flex items-center justify-between mb-3">
-                  <p className="text-xs font-medium uppercase tracking-wide text-gray-500">Who's going</p>
+                  <p className="text-xs font-medium uppercase tracking-wide text-gray-500">Who&apos;s going</p>
                 </div>
                 <div className="flex flex-wrap gap-2">
                   {selectedEvent.attendees
