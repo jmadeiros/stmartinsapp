@@ -1,0 +1,6 @@
+export { ProfileView } from './profile-view'
+export { ProfileHeader } from './profile-header'
+export { ProfileAbout } from './profile-about'
+export { ProfileSkills } from './profile-skills'
+export { ProfileContact } from './profile-contact'
+export { ProfileEditDialog } from './profile-edit-dialog'

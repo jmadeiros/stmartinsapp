@@ -1,40 +1,65 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback, useRef } from "react"
 import { Button } from "@/components/ui/button"
-import { Search, Bell, User, Menu, Sparkles, Zap, X } from "lucide-react"
+import { Search, Bell, User, Menu, Sparkles, Zap, X, MessageSquare } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
-import { usePathname } from "next/navigation"
+import { usePathname, useRouter } from "next/navigation"
 import Link from "next/link"
 import { cn } from "@/lib/utils"
 import { getUnreadNotificationCount } from "@/lib/actions/notifications"
 import { getUnreadChatCount } from "@/lib/actions/chat"
 import { createClient } from "@/lib/supabase/client"
 import { NotificationsDropdown } from "./notifications-dropdown"
+import { FeedbackDialog } from "./feedback-dialog"
 
 export function SocialHeader() {
   const pathname = usePathname()
+  const router = useRouter()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [searchExpanded, setSearchExpanded] = useState(false)
+  const [searchQuery, setSearchQuery] = useState('')
   const [notificationCount, setNotificationCount] = useState(0)
   const [chatCount, setChatCount] = useState(0)
   const [notificationsOpen, setNotificationsOpen] = useState(false)
   const [userId, setUserId] = useState<string | undefined>(undefined)
-  
+
+  // Track when notification count was last updated by dropdown to prevent overwriting
+  const lastDropdownUpdateRef = useRef<number>(0)
+
+  // Handle search submission
+  const handleSearch = useCallback((e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter' && searchQuery.trim()) {
+      router.push(`/search?q=${encodeURIComponent(searchQuery.trim())}`)
+      setSearchExpanded(false)
+      setSearchQuery('')
+    }
+  }, [searchQuery, router])
+
+  const handleSearchChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchQuery(e.target.value)
+  }, [])
+
   // Fetch badge counts
   useEffect(() => {
     async function fetchBadgeCounts() {
       const supabase = createClient()
       const { data: { user } } = await supabase.auth.getUser()
 
-      if (!user) return
+      if (!user) {
+        return
+      }
 
       setUserId(user.id)
 
-      // Fetch notification count
-      const notificationResult = await getUnreadNotificationCount(user.id)
-      if (notificationResult.success) {
-        setNotificationCount(notificationResult.count)
+      // Only fetch notification count if dropdown hasn't updated recently (within 5 seconds)
+      // This prevents the periodic refresh from overwriting optimistic updates
+      const timeSinceDropdownUpdate = Date.now() - lastDropdownUpdateRef.current
+      if (timeSinceDropdownUpdate > 5000) {
+        const notificationResult = await getUnreadNotificationCount(user.id)
+        if (notificationResult.success) {
+          setNotificationCount(notificationResult.count)
+        }
       }
 
       // Fetch chat count
@@ -61,6 +86,13 @@ export function SocialHeader() {
     window.addEventListener('resize', handleResize)
     return () => window.removeEventListener('resize', handleResize)
   }, [])
+
+  // Memoized callback to update notification count from dropdown
+  const handleNotificationCountChange = useCallback((newCount: number) => {
+    setNotificationCount(newCount)
+    // Record the timestamp to prevent periodic refresh from overwriting
+    lastDropdownUpdateRef.current = Date.now()
+  }, [])
   
   const navItems = [
     { label: "Home", href: "/dashboard" },
@@ -73,7 +105,7 @@ export function SocialHeader() {
 
   return (
     <header 
-      className="sticky top-0 z-50 border-b border-border/40 backdrop-blur-xl relative overflow-hidden"
+      className="sticky top-0 z-50 border-b border-border/40 backdrop-blur-xl relative overflow-x-hidden"
       style={{ 
         backgroundColor: 'oklch(1 0 0 / 0.95)'
       }}
@@ -190,6 +222,9 @@ export function SocialHeader() {
                 <input
                   type="search"
                   placeholder="Search..."
+                  value={searchQuery}
+                  onChange={handleSearchChange}
+                  onKeyDown={handleSearch}
                   autoFocus
                   onBlur={() => {
                     // Small delay to allow clicking on results
@@ -211,6 +246,9 @@ export function SocialHeader() {
                 <input
                   type="search"
                   placeholder="Search..."
+                  value={searchQuery}
+                  onChange={handleSearchChange}
+                  onKeyDown={handleSearch}
                   className="relative h-10 w-full rounded-xl border border-border/50 bg-[var(--surface)]/80 pl-10 pr-4 text-sm font-medium placeholder:text-muted-foreground placeholder:font-normal focus:outline-none focus:border-primary/50 focus:ring-2 focus:ring-primary/20 hover:border-border hover:bg-[var(--surface)] transition-all duration-200"
                 />
               </div>
@@ -223,6 +261,9 @@ export function SocialHeader() {
                 <input
                   type="search"
                   placeholder="Search..."
+                  value={searchQuery}
+                  onChange={handleSearchChange}
+                  onKeyDown={handleSearch}
                   className="relative h-9 w-full rounded-xl border border-border/50 bg-[var(--surface)]/80 pl-10 pr-2 text-xs font-medium placeholder:text-muted-foreground placeholder:font-normal focus:outline-none focus:border-primary/50 focus:ring-2 focus:ring-primary/20 hover:border-border hover:bg-[var(--surface)] transition-all duration-200"
                 />
               </div>
@@ -239,10 +280,24 @@ export function SocialHeader() {
           </Button>
 
           {/* Action Buttons - minimum 44x44px on mobile/tablet */}
+          <FeedbackDialog
+            trigger={
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-9 w-9 sm:h-10 sm:w-10 min-h-[44px] min-w-[44px] hover:bg-[var(--surface-secondary)] transition-colors rounded-xl"
+                title="Send Feedback"
+              >
+                <MessageSquare className="h-4 w-4" />
+              </Button>
+            }
+          />
+
           <div className="relative">
             <Button
               variant="ghost"
               size="icon"
+              data-notification-bell
               onClick={() => setNotificationsOpen(!notificationsOpen)}
               className="relative h-9 w-9 sm:h-10 sm:w-10 min-h-[44px] min-w-[44px] hover:bg-[var(--surface-secondary)] transition-colors rounded-xl"
             >
@@ -257,16 +312,19 @@ export function SocialHeader() {
               userId={userId}
               isOpen={notificationsOpen}
               onClose={() => setNotificationsOpen(false)}
+              onCountChange={handleNotificationCountChange}
             />
           </div>
 
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            className="h-9 w-9 sm:h-10 sm:w-10 min-h-[44px] min-w-[44px] hover:bg-[var(--surface-secondary)] transition-colors rounded-xl"
-          >
-            <User className="h-4 w-4" />
-          </Button>
+          <Link href="/settings">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-9 w-9 sm:h-10 sm:w-10 min-h-[44px] min-w-[44px] hover:bg-[var(--surface-secondary)] transition-colors rounded-xl"
+            >
+              <User className="h-4 w-4" />
+            </Button>
+          </Link>
 
           {/* Mobile Menu Button - Only show on very small screens */}
           <Button 

@@ -16,13 +16,11 @@ export async function getUnreadNotificationCount(userId: string) {
       .eq('read', false)
 
     if (error) {
-      console.error('[getUnreadNotificationCount] Error:', error)
       return { success: false, error: error.message, count: 0 }
     }
 
     return { success: true, count: count || 0, error: null }
   } catch (error) {
-    console.error('[getUnreadNotificationCount] Exception:', error)
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Unknown error',
@@ -41,19 +39,16 @@ export async function markNotificationAsRead(notificationId: string) {
     const { error } = await (supabase
       .from('notifications') as any)
       .update({
-        read: true,
-        read_at: new Date().toISOString()
+        read: true
       })
       .eq('id', notificationId)
 
     if (error) {
-      console.error('[markNotificationAsRead] Error:', error)
       return { success: false, error: error.message }
     }
 
     return { success: true, error: null }
   } catch (error) {
-    console.error('[markNotificationAsRead] Exception:', error)
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Unknown error'
@@ -71,20 +66,17 @@ export async function markAllNotificationsAsRead(userId: string) {
     const { error } = await (supabase
       .from('notifications') as any)
       .update({
-        read: true,
-        read_at: new Date().toISOString()
+        read: true
       })
       .eq('user_id', userId)
       .eq('read', false)
 
     if (error) {
-      console.error('[markAllNotificationsAsRead] Error:', error)
       return { success: false, error: error.message }
     }
 
     return { success: true, error: null }
   } catch (error) {
-    console.error('[markAllNotificationsAsRead] Exception:', error)
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Unknown error'
@@ -119,13 +111,11 @@ export async function getNotifications(userId: string, options?: {
     const { data, error } = await query
 
     if (error) {
-      console.error('[getNotifications] Error:', error)
       return { success: false, error: error.message, data: null }
     }
 
     return { success: true, data, error: null }
   } catch (error) {
-    console.error('[getNotifications] Exception:', error)
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Unknown error',

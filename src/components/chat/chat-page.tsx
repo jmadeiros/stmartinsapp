@@ -151,7 +151,8 @@ export function ChatPage() {
 
         if (firstConv) {
           setActiveConversation(firstConv)
-          await loadMessages(firstConv.id)
+          // Pass chatUser explicitly since state may not be updated yet
+          await loadMessages(firstConv.id, chatUser)
         }
 
         // Set up conversation subscription
@@ -194,16 +195,19 @@ export function ChatPage() {
   }, [])
 
   // Load messages for a conversation
-  const loadMessages = useCallback(async (conversationId: string) => {
+  // Accept optional user param for initial load (before state is updated)
+  const loadMessages = useCallback(async (conversationId: string, user?: ChatUser) => {
     if (useMockData) {
       setMessages(getMessagesForConversation(conversationId))
       return
     }
 
+    const effectiveUser = user || currentUser
+
     try {
       const result = await fetchConversationMessages(conversationId)
 
-      if (result.success && result.data && currentUser) {
+      if (result.success && result.data) {
         const uiMessages: Message[] = result.data.map((dbMsg: any) => {
           const sender = dbMsg.sender ? dbUserToChatUser({
             user_id: dbMsg.sender.user_id,
@@ -211,11 +215,13 @@ export function ChatPage() {
             avatar_url: dbMsg.sender.avatar_url,
             job_title: dbMsg.sender.job_title,
             organization_name: dbMsg.sender.organization?.name || null,
-          }) : currentUser
+          }) : effectiveUser || { id: dbMsg.sender_id, name: 'Unknown', initials: 'UK', isOnline: false }
 
           return dbMessageToMessage(dbMsg, sender)
         })
         setMessages(uiMessages)
+      } else if (result.error) {
+        console.error("Error fetching messages:", result.error)
       }
     } catch (err) {
       console.error("Error loading messages:", err)
@@ -318,7 +324,23 @@ export function ChatPage() {
       return
     }
 
-    // Real mode - send to database
+    // Real mode - add message optimistically first
+    const optimisticId = `optimistic-${Date.now()}`
+    const optimisticMessage: Message = {
+      id: optimisticId,
+      conversationId: activeConversation.id,
+      senderId: currentUser.id,
+      sender: currentUser,
+      content,
+      timestamp: new Date(),
+      reactions: [],
+      mentions,
+    }
+
+    // Add optimistic message to UI immediately
+    setMessages(prev => [...prev, optimisticMessage])
+
+    // Then send to database
     try {
       const result = await sendChatMessage({
         conversationId: activeConversation.id,
@@ -329,11 +351,31 @@ export function ChatPage() {
 
       if (!result.success) {
         console.error("Failed to send message:", result.error)
+        // Remove optimistic message on error
+        setMessages(prev => prev.filter(m => m.id !== optimisticId))
         // Optionally show error toast
+      } else if (result.data) {
+        // Replace optimistic message with real one
+        const realMessage: Message = {
+          id: result.data.id,
+          conversationId: result.data.conversation_id,
+          senderId: result.data.sender_id,
+          sender: currentUser,
+          content: result.data.content,
+          timestamp: new Date(result.data.created_at),
+          reactions: [],
+          mentions,
+        }
+        setMessages(prev => prev.map(m =>
+          m.id === optimisticId ? realMessage : m
+        ))
       }
-      // Message will be added via real-time subscription
+      // Note: Real-time subscription will also pick up the message,
+      // but the duplicate check in the subscription handler will prevent duplicates
     } catch (err) {
       console.error("Error sending message:", err)
+      // Remove optimistic message on error
+      setMessages(prev => prev.filter(m => m.id !== optimisticId))
     }
   }, [activeConversation, currentUser, useMockData])
 

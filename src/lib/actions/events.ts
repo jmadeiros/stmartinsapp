@@ -91,3 +91,76 @@ export async function createEvent(params: CreateEventParams) {
     }
   }
 }
+
+/**
+ * Get a single event by ID with full details including organizer, organization, RSVPs, and collaborations
+ */
+export async function getEventById(eventId: string) {
+  const supabase = await createClient()
+
+  try {
+    // Fetch the event with related data
+    const { data: event, error } = await supabase
+      .from('events')
+      .select(`
+        *,
+        organizer:user_profiles!events_organizer_id_fkey(
+          user_id,
+          full_name,
+          avatar_url,
+          role,
+          organization:organization_members!user_profiles_user_id_fkey(
+            organization:organizations(name)
+          )
+        ),
+        organization:organizations!events_org_id_fkey(
+          id,
+          name,
+          logo_url
+        ),
+        rsvps:event_rsvps(
+          id,
+          user_id,
+          status,
+          volunteer_offered,
+          participants_count,
+          can_partner,
+          created_at,
+          attendee:user_profiles!event_rsvps_user_id_fkey(
+            user_id,
+            full_name,
+            avatar_url,
+            role
+          )
+        ),
+        collaborations:event_collaborations(
+          id,
+          collaborator_org:organizations!event_collaborations_collaborator_org_id_fkey(
+            id,
+            name,
+            logo_url
+          )
+        )
+      `)
+      .eq('id', eventId)
+      .single()
+
+    if (error) {
+      console.error('[getEventById] Error fetching event:', error)
+      return { success: false, error: error.message, data: null }
+    }
+
+    if (!event) {
+      return { success: false, error: 'Event not found', data: null }
+    }
+
+    return { success: true, data: event, error: null }
+  } catch (error) {
+    console.error('[getEventById] Exception:', error)
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error',
+      data: null
+    }
+  }
+}

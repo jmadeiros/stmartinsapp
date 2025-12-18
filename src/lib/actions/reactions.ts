@@ -248,7 +248,24 @@ async function createReactionNotification(
   const typedProfile = actorProfile as ProfileResult | null
   const actorName = typedProfile?.full_name || 'Someone'
 
-  // Create the notification
+  // Get post content preview
+  type PostContent = {
+    content: string
+  }
+  const { data: postContent } = await supabase
+    .from('posts')
+    .select('content')
+    .eq('id', postId)
+    .single()
+
+  const typedPostContent = postContent as PostContent | null
+  const fullPostContent = typedPostContent?.content || ''
+  // Longer preview for the action_data (displayed in dropdown)
+  const postPreview = fullPostContent.length > 80
+    ? fullPostContent.substring(0, 80) + '...'
+    : fullPostContent || 'your post'
+
+  // Create the notification with post context in title
   const { error: notifError } = await (supabase
     .from('notifications') as any)
     .insert({
@@ -259,6 +276,10 @@ async function createReactionNotification(
       reference_type: 'post',
       reference_id: postId,
       link: `/posts/${postId}`,
+      action_data: {
+        actor_name: actorName,
+        post_preview: postPreview
+      },
       read: false
     })
 

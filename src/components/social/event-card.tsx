@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useRef, useState } from "react"
+import Link from "next/link"
 import { AnimatePresence, motion } from "framer-motion"
 import {
   Calendar,
@@ -532,13 +533,13 @@ export function EventCard({ event }: EventCardProps) {
                   )}
                 </AnimatePresence>
               </div>
-              <button
-                onClick={() => console.log("Navigate to event detail")}
+              <Link
+                href={`/events/${event.id}`}
                 className="inline-flex items-center gap-1.5 px-2 py-1.5 text-sm font-medium text-muted-foreground hover:text-primary transition-colors"
               >
                 <CalendarDays className="h-4 w-4" />
                 View event
-              </button>
+              </Link>
             </div>
           </div>
         </div>

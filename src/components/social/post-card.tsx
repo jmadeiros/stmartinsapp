@@ -4,15 +4,21 @@ import { useState, useEffect, useCallback } from "react"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { MessageCircle, Heart, ExternalLink, Calendar, Target, Send, Trash2, Edit2 } from "lucide-react"
+import { Badge } from "@/components/ui/badge"
+import { MessageCircle, Heart, ExternalLink, Calendar, Target, Send, Trash2, Edit2, Pin } from "lucide-react"
 import { ContentBadge } from "@/components/ui/content-badge"
 import { CategoryBadge } from "@/components/ui/category-badge"
 import { PostMenu } from "@/components/ui/post-menu"
 import { Textarea } from "@/components/ui/textarea"
 import type { Post } from "@/lib/types"
-import { getComments, addComment, deleteComment, type CommentWithAuthor } from "@/lib/actions/comments"
+import { getComments, addComment, deleteComment, getCommentCount, type CommentWithAuthor } from "@/lib/actions/comments"
 import { createClient } from "@/lib/supabase/client"
 import { toggleReaction, getReactionData } from "@/lib/actions/reactions"
+import { getPollByPostId, type Poll } from "@/lib/actions/polls"
+import { PollCard } from "@/components/social/poll-card"
+import { pinPost, unpinPost, acknowledgePost, hasUserAcknowledged, getPostAcknowledgments } from "@/lib/actions/posts"
+import { useToast } from "@/hooks/use-toast"
+import { CheckCircle2 } from "lucide-react"
 
 interface PostCardProps {
   post: Post
@@ -27,18 +33,44 @@ export function PostCard({ post }: PostCardProps) {
   const [replyText, setReplyText] = useState("")
   const [loading, setLoading] = useState(false)
   const [currentUserId, setCurrentUserId] = useState<string | null>(null)
+  const [isAdmin, setIsAdmin] = useState(false)
 
   // Reaction states
   const [reactionCount, setReactionCount] = useState(post.likes || 0)
   const [hasReacted, setHasReacted] = useState(false)
   const [isLoadingReaction, setIsLoadingReaction] = useState(false)
 
-  // Get current user
+  // Poll state
+  const [poll, setPoll] = useState<Poll | null>(null)
+  const [pollLoading, setPollLoading] = useState(true)
+
+  // Pin state
+  const [isPinned, setIsPinned] = useState(post.isPinned || false)
+
+  // Acknowledgment state
+  const [hasAcknowledged, setHasAcknowledged] = useState(false)
+  const [acknowledgmentCount, setAcknowledgmentCount] = useState(0)
+  const [isAcknowledging, setIsAcknowledging] = useState(false)
+
+  const { toast } = useToast()
+
+  // Get current user and check if admin
   useEffect(() => {
     const supabase = createClient()
-    supabase.auth.getUser().then(({ data: { user } }) => {
+    supabase.auth.getUser().then(async ({ data: { user } }) => {
       if (user) {
         setCurrentUserId(user.id)
+
+        // Check if user is admin
+        const { data: profile } = await (supabase
+          .from('user_profiles') as any)
+          .select('role')
+          .eq('user_id', user.id)
+          .single()
+
+        if (profile && profile.role === 'admin') {
+          setIsAdmin(true)
+        }
       }
     })
   }, [])
@@ -52,6 +84,40 @@ export function PostCard({ post }: PostCardProps) {
     }
     fetchReactionData()
   }, [post.id])
+
+  // Fetch comment count on mount
+  useEffect(() => {
+    async function fetchCommentCount() {
+      const { count } = await getCommentCount(post.id)
+      setCommentCount(count)
+    }
+    fetchCommentCount()
+  }, [post.id])
+
+  // Fetch poll data if exists
+  useEffect(() => {
+    async function fetchPoll() {
+      setPollLoading(true)
+      const pollData = await getPollByPostId(post.id)
+      setPoll(pollData)
+      setPollLoading(false)
+    }
+    fetchPoll()
+  }, [post.id])
+
+  // Fetch acknowledgment data for pinned posts (priority alerts)
+  useEffect(() => {
+    async function fetchAcknowledgments() {
+      if (!isPinned || !currentUserId) return
+
+      const { data: hasAcked } = await hasUserAcknowledged(post.id, currentUserId)
+      const { data: ackData } = await getPostAcknowledgments(post.id)
+
+      setHasAcknowledged(hasAcked || false)
+      setAcknowledgmentCount(ackData?.count || 0)
+    }
+    fetchAcknowledgments()
+  }, [post.id, isPinned, currentUserId])
 
   const loadComments = useCallback(async () => {
     setLoading(true)
@@ -128,6 +194,90 @@ export function PostCard({ post }: PostCardProps) {
     }
   }
 
+  // Handle pin post
+  const handlePinPost = async () => {
+    try {
+      const result = await pinPost(post.id)
+      if (result.success) {
+        setIsPinned(true)
+        toast({
+          title: "Post pinned",
+          description: "This post has been pinned to the top of the feed.",
+        })
+      } else {
+        toast({
+          title: "Failed to pin post",
+          description: result.error || "An error occurred while pinning the post.",
+          variant: "destructive",
+        })
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "An unexpected error occurred.",
+        variant: "destructive",
+      })
+    }
+  }
+
+  // Handle unpin post
+  const handleUnpinPost = async () => {
+    try {
+      const result = await unpinPost(post.id)
+      if (result.success) {
+        setIsPinned(false)
+        toast({
+          title: "Post unpinned",
+          description: "This post has been unpinned from the feed.",
+        })
+      } else {
+        toast({
+          title: "Failed to unpin post",
+          description: result.error || "An error occurred while unpinning the post.",
+          variant: "destructive",
+        })
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "An unexpected error occurred.",
+        variant: "destructive",
+      })
+    }
+  }
+
+  // Handle acknowledge post
+  const handleAcknowledgePost = async () => {
+    if (isAcknowledging || hasAcknowledged) return
+
+    setIsAcknowledging(true)
+    try {
+      const result = await acknowledgePost(post.id)
+      if (result.success) {
+        setHasAcknowledged(true)
+        setAcknowledgmentCount(prev => prev + 1)
+        toast({
+          title: "Acknowledged",
+          description: "You have acknowledged this priority alert.",
+        })
+      } else {
+        toast({
+          title: "Failed to acknowledge",
+          description: result.error || "An error occurred while acknowledging the post.",
+          variant: "destructive",
+        })
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "An unexpected error occurred.",
+        variant: "destructive",
+      })
+    } finally {
+      setIsAcknowledging(false)
+    }
+  }
+
   // Determine CTA based on linked content
   const getCTA = () => {
     if (post.linkedEventId) {
@@ -158,6 +308,43 @@ export function PostCard({ post }: PostCardProps) {
   return (
     <Card className="text-card-foreground flex flex-col rounded-2xl overflow-hidden bg-white border border-gray-100 shadow-md transition-shadow hover:shadow-lg">
       <div className="p-4">
+        {/* Pinned Indicator & Acknowledgment Section */}
+        {isPinned && (
+          <div className="mb-3 space-y-2">
+            <div className="flex items-center justify-between gap-2">
+              <Badge variant="secondary" className="gap-1.5 bg-primary/10 text-primary hover:bg-primary/20">
+                <Pin className="h-3 w-3" />
+                Priority Alert
+              </Badge>
+              {acknowledgmentCount > 0 && (
+                <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                  <CheckCircle2 className="h-3 w-3" />
+                  <span>{acknowledgmentCount} acknowledged</span>
+                </div>
+              )}
+            </div>
+
+            {!hasAcknowledged && (
+              <Button
+                onClick={handleAcknowledgePost}
+                disabled={isAcknowledging}
+                size="sm"
+                className="w-full gap-2 bg-amber-500 hover:bg-amber-600 text-white"
+              >
+                <CheckCircle2 className="h-4 w-4" />
+                {isAcknowledging ? "Acknowledging..." : "Acknowledge This Alert"}
+              </Button>
+            )}
+
+            {hasAcknowledged && (
+              <div className="flex items-center justify-center gap-2 py-2 px-3 bg-green-50 border border-green-200 rounded-lg">
+                <CheckCircle2 className="h-4 w-4 text-green-600" />
+                <span className="text-sm font-medium text-green-700">You acknowledged this alert</span>
+              </div>
+            )}
+          </div>
+        )}
+
         {/* Header */}
         <div className="mb-4 flex items-start justify-between">
           <div className="flex items-center gap-3">
@@ -170,7 +357,7 @@ export function PostCard({ post }: PostCardProps) {
             <div>
               <p className="text-sm font-semibold text-foreground">{post.author.name}</p>
               <p className="text-xs text-muted-foreground">
-                {post.author.role && post.author.organization 
+                {post.author.role && post.author.organization
                   ? `${post.author.role} at ${post.author.organization}`
                   : post.author.organization || post.author.handle
                 } · {post.timeAgo}
@@ -180,11 +367,15 @@ export function PostCard({ post }: PostCardProps) {
           <PostMenu
             contentType="post"
             isAuthor={false}
+            isAdmin={isAdmin}
+            isPinned={isPinned}
             onEdit={() => console.log("Edit post")}
             onShare={() => console.log("Share post")}
             onReport={() => console.log("Report post")}
             onLinkToEvent={() => console.log("Link to event")}
             onLinkToProject={() => console.log("Link to project")}
+            onPin={handlePinPost}
+            onUnpin={handleUnpinPost}
           />
         </div>
 
@@ -228,6 +419,11 @@ export function PostCard({ post }: PostCardProps) {
           <div className="mb-4 overflow-hidden rounded-xl">
             <img src={post.image} alt={post.title || "Post image"} className="h-[150px] sm:h-[200px] w-full object-cover" />
           </div>
+        )}
+
+        {/* Poll (if attached) */}
+        {!pollLoading && poll && (
+          <PollCard initialPoll={poll} showInline={true} />
         )}
 
         {/* Footer - Engagement & CTA */}

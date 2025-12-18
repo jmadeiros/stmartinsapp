@@ -87,6 +87,9 @@ export type FeedPost = {
   timeAgo: string
   likes?: number
   comments?: number
+  isPinned?: boolean
+  pinnedAt?: string
+  pinnedBy?: string
 }
 
 export type FeedItem = EventPost | ProjectPost | FeedPost

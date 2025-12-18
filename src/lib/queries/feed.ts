@@ -5,6 +5,7 @@ type Client = SupabaseClient<Database>
 
 /**
  * Fetch feed items from the unified feed view
+ * Pinned posts appear first, followed by posts ordered by creation date
  */
 export async function getFeed(
   supabase: Client,
@@ -18,6 +19,7 @@ export async function getFeed(
     .from('feed')
     .select('*')
     .eq('org_id', orgId)
+    .order('is_pinned', { ascending: false })
     .order('created_at', { ascending: false })
     .range(options?.offset ?? 0, (options?.offset ?? 0) + (options?.limit ?? 20) - 1)
 
@@ -31,6 +33,7 @@ export async function getFeed(
 
 /**
  * Fetch posts by category
+ * Pinned posts appear first, followed by posts ordered by creation date
  */
 export async function getPostsByCategory(
   supabase: Client,
@@ -53,6 +56,7 @@ export async function getPostsByCategory(
     `)
     .eq('org_id', orgId)
     .eq('category', category)
+    .order('is_pinned', { ascending: false })
     .order('created_at', { ascending: false })
     .range(options?.offset ?? 0, (options?.offset ?? 0) + (options?.limit ?? 20) - 1)
 
@@ -218,6 +222,12 @@ export async function rsvpToEvent(
       const typedProfile = userProfile as ProfileResult | null
       const userName = typedProfile?.full_name || 'Someone'
 
+      // Truncate event title for preview
+      const eventTitle = typedEvent.title || 'your event'
+      const eventTitlePreview = eventTitle.length > 60
+        ? eventTitle.substring(0, 60) + '...'
+        : eventTitle
+
       // Create the notification
       const { error: notifError } = await (supabase
         .from('notifications') as any)
@@ -225,10 +235,14 @@ export async function rsvpToEvent(
           user_id: typedEvent.organizer_id,
           actor_id: params.userId,
           type: 'rsvp',
-          title: `${userName} is attending your event`,
+          title: `${userName} is attending "${eventTitlePreview}"`,
           reference_type: 'event',
           reference_id: params.eventId,
           link: `/events/${params.eventId}`,
+          action_data: {
+            actor_name: userName,
+            event_title: eventTitle
+          },
           read: false
         })
 
@@ -313,6 +327,12 @@ export async function expressProjectInterest(
       const typedProfile = userProfile as ProfileResult | null
       const userName = typedProfile?.full_name || 'Someone'
 
+      // Truncate project title for preview
+      const projectTitle = typedProject.title || 'your project'
+      const projectTitlePreview = projectTitle.length > 60
+        ? projectTitle.substring(0, 60) + '...'
+        : projectTitle
+
       // Create the notification
       const { error: notifError } = await (supabase
         .from('notifications') as any)
@@ -320,10 +340,14 @@ export async function expressProjectInterest(
           user_id: typedProject.author_id,
           actor_id: params.userId,
           type: 'project_interest',
-          title: `${userName} is interested in your project`,
+          title: `${userName} is interested in "${projectTitlePreview}"`,
           reference_type: 'project',
           reference_id: params.projectId,
           link: `/projects/${params.projectId}`,
+          action_data: {
+            actor_name: userName,
+            project_title: projectTitle
+          },
           read: false
         })
 

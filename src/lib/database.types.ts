@@ -105,32 +105,127 @@ export type Database = {
           },
         ]
       }
-      chat_messages: {
+      conversation_participants: {
         Row: {
-          content: string
-          created_at: string
-          deleted_at: string | null
-          id: string
+          conversation_id: string
+          joined_at: string
+          last_read_at: string | null
+          muted: boolean
+          org_id: string
+          user_id: string
+        }
+        Insert: {
+          conversation_id: string
+          joined_at?: string
+          last_read_at?: string | null
+          muted?: boolean
+          org_id: string
+          user_id: string
+        }
+        Update: {
+          conversation_id?: string
+          joined_at?: string
+          last_read_at?: string | null
+          muted?: boolean
+          org_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "conversation_participants_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "conversation_participants_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      conversation_unread: {
+        Row: {
+          conversation_id: string
+          last_message_id: string | null
+          unread_count: number
           updated_at: string
           user_id: string
         }
         Insert: {
-          content: string
-          created_at?: string
-          deleted_at?: string | null
-          id?: string
+          conversation_id: string
+          last_message_id?: string | null
+          unread_count?: number
           updated_at?: string
           user_id: string
         }
         Update: {
-          content?: string
-          created_at?: string
-          deleted_at?: string | null
-          id?: string
+          conversation_id?: string
+          last_message_id?: string | null
+          unread_count?: number
           updated_at?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "conversation_unread_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "conversation_unread_last_message_id_fkey"
+            columns: ["last_message_id"]
+            isOneToOne: false
+            referencedRelation: "messages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      conversations: {
+        Row: {
+          archived: boolean
+          created_at: string
+          created_by: string
+          id: string
+          is_group: boolean
+          name: string | null
+          org_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          archived?: boolean
+          created_at?: string
+          created_by: string
+          id?: string
+          is_group?: boolean
+          name?: string | null
+          org_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          archived?: boolean
+          created_at?: string
+          created_by?: string
+          id?: string
+          is_group?: boolean
+          name?: string | null
+          org_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "conversations_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       event_attachments: {
         Row: {
@@ -408,8 +503,89 @@ export type Database = {
           },
         ]
       }
+      message_reactions: {
+        Row: {
+          created_at: string
+          emoji: string
+          message_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          emoji: string
+          message_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          emoji?: string
+          message_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "message_reactions_message_id_fkey"
+            columns: ["message_id"]
+            isOneToOne: false
+            referencedRelation: "messages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      messages: {
+        Row: {
+          attachments: Json | null
+          content: string
+          conversation_id: string
+          created_at: string
+          deleted_at: string | null
+          edited_at: string | null
+          id: string
+          reply_to_id: string | null
+          sender_id: string
+        }
+        Insert: {
+          attachments?: Json | null
+          content: string
+          conversation_id: string
+          created_at?: string
+          deleted_at?: string | null
+          edited_at?: string | null
+          id?: string
+          reply_to_id?: string | null
+          sender_id: string
+        }
+        Update: {
+          attachments?: Json | null
+          content?: string
+          conversation_id?: string
+          created_at?: string
+          deleted_at?: string | null
+          edited_at?: string | null
+          id?: string
+          reply_to_id?: string | null
+          sender_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "messages_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "messages_reply_to_id_fkey"
+            columns: ["reply_to_id"]
+            isOneToOne: false
+            referencedRelation: "messages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       notifications: {
         Row: {
+          action_data: Json | null
           actor_id: string | null
           created_at: string | null
           id: string
@@ -422,6 +598,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          action_data?: Json | null
           actor_id?: string | null
           created_at?: string | null
           id?: string
@@ -434,6 +611,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          action_data?: Json | null
           actor_id?: string | null
           created_at?: string | null
           id?: string
@@ -925,6 +1103,44 @@ export type Database = {
           },
         ]
       }
+      user_memberships: {
+        Row: {
+          id: string
+          is_primary: boolean
+          joined_at: string
+          left_at: string | null
+          org_id: string
+          role: Database["public"]["Enums"]["user_role"]
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          is_primary?: boolean
+          joined_at?: string
+          left_at?: string | null
+          org_id: string
+          role?: Database["public"]["Enums"]["user_role"]
+          user_id: string
+        }
+        Update: {
+          id?: string
+          is_primary?: boolean
+          joined_at?: string
+          left_at?: string | null
+          org_id?: string
+          role?: Database["public"]["Enums"]["user_role"]
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_memberships_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_profiles: {
         Row: {
           avatar_url: string | null
@@ -990,6 +1206,50 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "organizations"
             referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_feedback: {
+        Row: {
+          id: string
+          user_id: string | null
+          feedback_type: string
+          description: string
+          page_url: string | null
+          screenshot_url: string | null
+          status: string
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id?: string | null
+          feedback_type?: string
+          description: string
+          page_url?: string | null
+          screenshot_url?: string | null
+          status?: string
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string | null
+          feedback_type?: string
+          description?: string
+          page_url?: string | null
+          screenshot_url?: string | null
+          status?: string
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_feedback_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["user_id"]
           },
         ]
       }
@@ -1292,6 +1552,11 @@ export type Database = {
         Returns: undefined
       }
       generate_event_ical: { Args: { p_event_id: string }; Returns: string }
+      get_total_unread_count: { Args: never; Returns: number }
+      mark_conversation_read: {
+        Args: { p_conversation_id: string }
+        Returns: undefined
+      }
       member_orgs: {
         Args: { p_user_id: string }
         Returns: {

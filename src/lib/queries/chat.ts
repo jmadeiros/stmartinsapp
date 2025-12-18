@@ -132,11 +132,11 @@ export async function getUserConversations(
 ): Promise<{ data: ChatConversationWithDetails[] | null; error: Error | null }> {
   try {
     // Get conversations where user is a participant
+    // Note: We only filter by user_id, not org_id, to allow users to see all their conversations
     const { data: participations, error: partError } = await supabase
       .from('conversation_participants' as any)
       .select('conversation_id')
       .eq('user_id', userId)
-      .eq('org_id', orgId)
 
     if (partError) {
       console.error('Error fetching participations:', partError)
@@ -144,8 +144,11 @@ export async function getUserConversations(
     }
 
     if (!participations || participations.length === 0) {
+      console.log(`[getUserConversations] No participations found for user ${userId}`)
       return { data: [], error: null }
     }
+    
+    console.log(`[getUserConversations] Found ${participations.length} participations for user ${userId}`)
 
     const conversationIds = participations.map((p: any) => p.conversation_id)
 

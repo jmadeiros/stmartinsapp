@@ -312,23 +312,25 @@ export async function expressInterest(params: ExpressInterestParams) {
     const org = userOrg as { name: string }
 
     // Create a notification for the organizer
+    const notificationTitle = params.message
+      ? `${org.name} expressed interest in collaborating: "${params.message.substring(0, 50)}${params.message.length > 50 ? '...' : ''}"`
+      : `${org.name} expressed interest in collaborating on your ${params.resourceType}`
+
     const { error: notificationError } = await (supabase
-      .from('notifications' as any) as any)
+      .from('notifications') as any)
       .insert({
         user_id: organizerId,
-        org_id: res.org_id,
+        actor_id: params.userId,
         type: 'collaboration_request',
-        title: 'Interest in Collaboration',
-        message: params.message
-          ? `${org.name} expressed interest in collaborating: "${params.message}"`
-          : `${org.name} expressed interest in collaborating on your ${params.resourceType}`,
-        resource_type: params.resourceType,
-        resource_id: params.resourceId,
-        action_url: `/${params.resourceType}s/${params.resourceId}`,
+        title: notificationTitle,
+        reference_type: params.resourceType,
+        reference_id: params.resourceId,
+        link: `/${params.resourceType}s/${params.resourceId}`,
         action_data: {
           interested_org_id: params.userOrgId,
           interested_org_name: org.name,
           interested_user_id: params.userId,
+          message: params.message || null
         },
         read: false,
       })

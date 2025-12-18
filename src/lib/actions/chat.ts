@@ -297,16 +297,20 @@ export async function getUnreadChatCount(userId: string) {
 
   try {
     // Get all unread counts for the user's conversations
-    // TODO: conversation_unread table doesn't exist yet - return 0 for now
-    // When the table is created, this can be updated to:
-    // const { data, error } = await supabase
-    //   .from('conversation_unread')
-    //   .select('unread_count')
-    //   .eq('user_id', userId)
+    const { data, error } = await (supabase
+      .from('conversation_unread') as any)
+      .select('unread_count')
+      .eq('user_id', userId)
 
-    // For now, check if we have any messages table to count unread from
-    // If not, just return 0
-    return { success: true, count: 0, error: null }
+    if (error) {
+      console.error('[getUnreadChatCount] Error:', error)
+      return { success: false, error: error.message, count: 0 }
+    }
+
+    // Sum all unread counts
+    const totalUnread = data?.reduce((sum: number, row: any) => sum + (row.unread_count || 0), 0) ?? 0
+
+    return { success: true, count: totalUnread, error: null }
   } catch (error) {
     console.error('[getUnreadChatCount] Exception:', error)
     return {

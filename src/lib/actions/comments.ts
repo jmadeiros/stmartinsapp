@@ -277,7 +277,8 @@ export async function addComment(
         user.id,
         actorName,
         'comment',
-        parentId || null
+        parentId || null,
+        content // Pass the comment content for preview
       )
 
       // If this is a reply, also notify the parent comment author
@@ -287,7 +288,8 @@ export async function addComment(
           postId,
           parentId,
           user.id,
-          actorName
+          actorName,
+          content
         )
       }
     } catch (notifError) {
@@ -485,16 +487,18 @@ async function createCommentNotification(
   actorId: string,
   actorName: string,
   notificationType: 'comment' | 'reply',
-  parentCommentId: string | null
+  parentCommentId: string | null,
+  commentContent?: string
 ) {
   // Get the post author
   type PostAuthor = {
     author_id: string
+    content: string
   }
 
   const { data: post, error: postError } = await supabase
     .from('posts')
-    .select('author_id')
+    .select('author_id, content')
     .eq('id', postId)
     .single()
 
@@ -511,6 +515,14 @@ async function createCommentNotification(
     return
   }
 
+  // Truncate content preview
+  const contentPreview = commentContent 
+    ? (commentContent.length > 100 ? commentContent.substring(0, 100) + '...' : commentContent)
+    : null
+  const postPreview = typedPost.content
+    ? (typedPost.content.length > 50 ? typedPost.content.substring(0, 50) + '...' : typedPost.content)
+    : 'your post'
+
   // Create the notification for the post author
   const { error: notifError } = await (supabase
     .from('notifications') as any)
@@ -522,6 +534,11 @@ async function createCommentNotification(
       reference_type: 'post',
       reference_id: postId,
       link: `/posts/${postId}`,
+      action_data: {
+        actor_name: actorName,
+        comment_preview: contentPreview,
+        post_preview: postPreview
+      },
       read: false
     })
 
@@ -540,20 +557,22 @@ async function createReplyNotification(
   postId: string,
   parentCommentId: string,
   actorId: string,
-  actorName: string
+  actorName: string,
+  replyContent: string
 ) {
-  // Get the parent comment author
-  type ParentCommentAuthor = {
+  // Get the parent comment author and content
+  type ParentCommentData = {
     author_id: string
+    content: string
   }
 
   const { data: parentComment, error: parentError } = await supabase
     .from('post_comments')
-    .select('author_id')
+    .select('author_id, content')
     .eq('id', parentCommentId)
     .single()
 
-  const typedParentComment = parentComment as ParentCommentAuthor | null
+  const typedParentComment = parentComment as ParentCommentData | null
 
   if (parentError || !typedParentComment) {
     console.error('[createReplyNotification] Error fetching parent comment:', parentError)
@@ -566,6 +585,16 @@ async function createReplyNotification(
     return
   }
 
+  // Truncate reply content for preview
+  const replyPreview = replyContent.length > 100
+    ? replyContent.substring(0, 100) + '...'
+    : replyContent
+
+  // Truncate original comment for context
+  const originalCommentPreview = typedParentComment.content
+    ? (typedParentComment.content.length > 50 ? typedParentComment.content.substring(0, 50) + '...' : typedParentComment.content)
+    : 'your comment'
+
   // Create the notification for the parent comment author
   const { error: notifError } = await (supabase
     .from('notifications') as any)
@@ -577,6 +606,11 @@ async function createReplyNotification(
       reference_type: 'post',
       reference_id: postId,
       link: `/posts/${postId}`,
+      action_data: {
+        actor_name: actorName,
+        comment_preview: replyPreview,
+        original_comment_preview: originalCommentPreview
+      },
       read: false
     })
 

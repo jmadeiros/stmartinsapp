@@ -20,12 +20,16 @@ import {
   Calendar,
   Link as LinkIcon,
   CalendarPlus,
+  Pin,
+  PinOff,
 } from "lucide-react"
 
 interface PostMenuProps {
   contentType: "event" | "project" | "post"
   isAuthor?: boolean
   isClosed?: boolean
+  isAdmin?: boolean
+  isPinned?: boolean
   onEdit?: () => void
   onShare?: () => void
   onReport?: () => void
@@ -38,6 +42,8 @@ interface PostMenuProps {
   onDetachFromProject?: () => void
   onLinkToEvent?: () => void
   onLinkToProject?: () => void
+  onPin?: () => void
+  onUnpin?: () => void
   hasParentProject?: boolean
 }
 
@@ -45,6 +51,8 @@ export function PostMenu({
   contentType,
   isAuthor = false,
   isClosed = false,
+  isAdmin = false,
+  isPinned = false,
   hasParentProject = false,
   onEdit,
   onShare,
@@ -58,6 +66,8 @@ export function PostMenu({
   onDetachFromProject,
   onLinkToEvent,
   onLinkToProject,
+  onPin,
+  onUnpin,
 }: PostMenuProps) {
   return (
     <DropdownMenu>
@@ -72,6 +82,28 @@ export function PostMenu({
             <Edit className="mr-2 h-4 w-4" />
             Edit post
           </DropdownMenuItem>
+        )}
+
+        {/* Pin/Unpin for posts (admin only) */}
+        {contentType === "post" && isAdmin && (
+          <>
+            {isPinned ? (
+              onUnpin && (
+                <DropdownMenuItem onClick={onUnpin}>
+                  <PinOff className="mr-2 h-4 w-4" />
+                  Unpin post
+                </DropdownMenuItem>
+              )
+            ) : (
+              onPin && (
+                <DropdownMenuItem onClick={onPin}>
+                  <Pin className="mr-2 h-4 w-4" />
+                  Pin post
+                </DropdownMenuItem>
+              )
+            )}
+            <DropdownMenuSeparator />
+          </>
         )}
 
         {contentType === "project" && (

@@ -1,66 +1,41 @@
 "use client"
 
 import { useState, useEffect, useCallback } from "react"
-import { Zap, AlertTriangle, Plus } from "lucide-react"
+import { Zap, AlertTriangle, Plus, CheckCircle2 } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
 
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { Badge } from "@/components/ui/badge"
 import { createClient } from "@/lib/supabase/client"
 
 import { AnimatedEvents } from "./animated-events"
 import { SendAlertDialog } from "./send-alert-dialog"
 import { createAlert } from "@/lib/actions/alerts"
+import { acknowledgePost, hasUserAcknowledged, getPostAcknowledgments } from "@/lib/actions/posts"
 
 type UserRole = 'admin' | 'st_martins_staff' | 'partner_staff' | 'volunteer'
 
-interface AlertData {
+interface PriorityAlert {
   id: string
-  title: string
-  message: string
-  severity: string
-  created_by: string
+  title: string | null
+  content: string
+  category: string
   created_at: string
-  expires_at: string | null
-  author?: {
+  author: {
     full_name: string
     job_title: string | null
     avatar_url: string | null
-  } | null
+  }
+  acknowledgment_count: number
+  has_acknowledged: boolean
 }
 
 interface SocialRightSidebarProps {
   userId?: string
   orgId?: string
   userRole?: UserRole
-}
-
-const DISMISSED_ALERTS_KEY = "village-hub-dismissed-alerts"
-
-// Helper to get dismissed alert IDs from localStorage
-function getDismissedAlerts(): string[] {
-  if (typeof window === "undefined") return []
-  try {
-    const stored = localStorage.getItem(DISMISSED_ALERTS_KEY)
-    return stored ? JSON.parse(stored) : []
-  } catch {
-    return []
-  }
-}
-
-// Helper to add an alert ID to dismissed list
-function addDismissedAlert(alertId: string): void {
-  if (typeof window === "undefined") return
-  try {
-    const current = getDismissedAlerts()
-    if (!current.includes(alertId)) {
-      current.push(alertId)
-      localStorage.setItem(DISMISSED_ALERTS_KEY, JSON.stringify(current))
-    }
-  } catch {
-    // Silently fail if localStorage is not available
-  }
 }
 
 // Helper to format relative time
@@ -90,8 +65,7 @@ function getInitials(name: string): string {
 }
 
 export function SocialRightSidebar({ userId, orgId, userRole = 'volunteer' }: SocialRightSidebarProps) {
-  const [alerts, setAlerts] = useState<AlertData[]>([])
-  const [dismissedAlertIds, setDismissedAlertIds] = useState<string[]>([])
+  const [priorityAlerts, setPriorityAlerts] = useState<PriorityAlert[]>([])
   const [loading, setLoading] = useState(true)
   const [showAlertDialog, setShowAlertDialog] = useState(false)
   const [isCreatingAlert, setIsCreatingAlert] = useState(false)
@@ -99,41 +73,59 @@ export function SocialRightSidebar({ userId, orgId, userRole = 'volunteer' }: So
   // Check if user can send alerts
   const canSendAlerts = userRole === 'admin' || userRole === 'st_martins_staff'
 
-  // Fetch alerts from Supabase
-  const fetchAlerts = useCallback(async () => {
+  // Fetch priority alert posts from Supabase
+  const fetchPriorityAlerts = useCallback(async () => {
+    if (!userId) {
+      setLoading(false)
+      return
+    }
+
     const supabase = createClient()
 
     try {
-      // First fetch alerts without the join
-      let query = supabase
-        .from("alerts")
-        .select("id, title, message, severity, created_by, created_at, expires_at")
-        .is("dismissed_at", null)
+      // Fetch pinned posts as priority alerts
+      let query = (supabase
+        .from("posts") as any)
+        .select(`
+          id,
+          title,
+          content,
+          category,
+          created_at,
+          author_id,
+          is_pinned
+        `)
+        .eq("is_pinned", true)
+        .is("deleted_at", null)
         .order("created_at", { ascending: false })
 
       // Filter by org if provided
       if (orgId) {
-        query = query.or(`org_id.eq.${orgId},org_id.is.null`)
+        query = query.eq("org_id", orgId)
       }
 
-      const { data: alertsData, error: alertsError } = await query
+      const { data: postsData, error: postsError } = await query
 
-      if (alertsError) {
-        console.error("Error fetching alerts:", alertsError)
+      if (postsError) {
+        console.error("Error fetching priority alerts:", postsError)
         setLoading(false)
         return
       }
 
-      // Filter out expired alerts
-      const now = new Date().toISOString()
-      type AlertRow = { id: string; title: string; message: string; severity: string; created_by: string; created_at: string; expires_at: string | null }
-      const activeAlerts = ((alertsData || []) as AlertRow[]).filter((alert) => {
-        if (!alert.expires_at) return true
-        return alert.expires_at > now
-      })
+      type PostRow = {
+        id: string
+        title: string | null
+        content: string
+        category: string
+        created_at: string
+        author_id: string
+        is_pinned: boolean
+      }
 
-      // Fetch author profiles separately
-      const authorIds = Array.from(new Set(activeAlerts.map(a => a.created_by)))
+      const posts = (postsData || []) as PostRow[]
+
+      // Fetch author profiles
+      const authorIds = Array.from(new Set(posts.map(p => p.author_id)))
       let authorMap: Record<string, { full_name: string; job_title: string | null; avatar_url: string | null }> = {}
 
       if (authorIds.length > 0) {
@@ -155,33 +147,50 @@ export function SocialRightSidebar({ userId, orgId, userRole = 'volunteer' }: So
         }
       }
 
-      // Combine alerts with author data
-      const alertsWithAuthors: AlertData[] = activeAlerts.map(alert => ({
-        ...alert,
-        author: authorMap[alert.created_by] || null,
-      }))
+      // For each post, check if current user has acknowledged and get acknowledgment count
+      const alertsWithAcknowledgments = await Promise.all(
+        posts.map(async (post) => {
+          const { data: hasAcked } = await hasUserAcknowledged(post.id, userId)
+          const { data: ackData } = await getPostAcknowledgments(post.id)
 
-      setAlerts(alertsWithAuthors)
+          return {
+            id: post.id,
+            title: post.title,
+            content: post.content,
+            category: post.category,
+            created_at: post.created_at,
+            author: authorMap[post.author_id] || {
+              full_name: "Unknown",
+              job_title: null,
+              avatar_url: null,
+            },
+            acknowledgment_count: ackData?.count || 0,
+            has_acknowledged: hasAcked || false,
+          }
+        })
+      )
+
+      setPriorityAlerts(alertsWithAcknowledgments)
     } catch (err) {
-      console.error("Error in fetchAlerts:", err)
+      console.error("Error in fetchPriorityAlerts:", err)
     } finally {
       setLoading(false)
     }
-  }, [orgId])
+  }, [orgId, userId])
 
-  // Load dismissed alerts from localStorage on mount
+  // Fetch priority alerts on mount and when userId changes
   useEffect(() => {
-    setDismissedAlertIds(getDismissedAlerts())
-  }, [])
+    fetchPriorityAlerts()
+  }, [fetchPriorityAlerts])
 
-  // Fetch alerts on mount
-  useEffect(() => {
-    fetchAlerts()
-  }, [fetchAlerts])
-
-  const handleAcknowledge = (alertId: string) => {
-    addDismissedAlert(alertId)
-    setDismissedAlertIds(prev => [...prev, alertId])
+  const handleAcknowledge = async (postId: string) => {
+    const result = await acknowledgePost(postId)
+    if (result.success) {
+      // Refresh the alerts to update acknowledgment status
+      await fetchPriorityAlerts()
+    } else {
+      console.error("Failed to acknowledge post:", result.error)
+    }
   }
 
   const handleSendAlert = async (alertData: {
@@ -207,8 +216,8 @@ export function SocialRightSidebar({ userId, orgId, userRole = 'volunteer' }: So
       })
 
       if (result.success) {
-        // Refetch alerts to show the new one
-        await fetchAlerts()
+        // Refetch priority alerts to show the new one
+        await fetchPriorityAlerts()
         setShowAlertDialog(false)
       } else {
         console.error("Failed to create alert:", result.error)
@@ -220,34 +229,29 @@ export function SocialRightSidebar({ userId, orgId, userRole = 'volunteer' }: So
     }
   }
 
-  // Filter out dismissed alerts
-  const visibleAlerts = alerts.filter(alert => !dismissedAlertIds.includes(alert.id))
-  const currentAlert = visibleAlerts[0] // Show the most recent non-dismissed alert
+  // Filter out already acknowledged alerts
+  const visibleAlerts = priorityAlerts.filter(alert => !alert.has_acknowledged)
+  const currentAlert = visibleAlerts[0] // Show the most recent non-acknowledged alert
 
-  // Determine severity styling
-  const getSeverityStyles = (severity: string) => {
-    switch (severity) {
-      case "high":
-        return {
-          headerBg: "bg-destructive",
-          headerText: "text-destructive-foreground",
-          buttonBg: "bg-destructive hover:bg-destructive/90",
-          icon: Zap,
-        }
-      case "medium":
-        return {
-          headerBg: "bg-amber-500",
-          headerText: "text-white",
-          buttonBg: "bg-amber-500 hover:bg-amber-600",
-          icon: AlertTriangle,
-        }
-      default:
-        return {
-          headerBg: "bg-blue-500",
-          headerText: "text-white",
-          buttonBg: "bg-blue-500 hover:bg-blue-600",
-          icon: AlertTriangle,
-        }
+  // Determine priority styling based on category
+  const getPriorityStyles = (category: string) => {
+    // High priority for wins and intros
+    if (category === "wins" || category === "intros") {
+      return {
+        headerBg: "bg-destructive",
+        headerText: "text-destructive-foreground",
+        buttonBg: "bg-destructive hover:bg-destructive/90",
+        icon: Zap,
+        label: "Priority"
+      }
+    }
+    // Medium priority for other categories
+    return {
+      headerBg: "bg-amber-500",
+      headerText: "text-white",
+      buttonBg: "bg-amber-500 hover:bg-amber-600",
+      icon: AlertTriangle,
+      label: "Alert"
     }
   }
 
@@ -279,11 +283,11 @@ export function SocialRightSidebar({ userId, orgId, userRole = 'volunteer' }: So
               transition={{ duration: 0.4 }}
             >
               {(() => {
-                const styles = getSeverityStyles(currentAlert.severity)
+                const styles = getPriorityStyles(currentAlert.category)
                 const IconComponent = styles.icon
-                const authorName = currentAlert.author?.full_name || "System"
-                const authorRole = currentAlert.author?.job_title || "Alert"
-                const authorAvatar = currentAlert.author?.avatar_url
+                const authorName = currentAlert.author.full_name
+                const authorRole = currentAlert.author.job_title || "Team Member"
+                const authorAvatar = currentAlert.author.avatar_url
 
                 return (
                   <Card className="border border-border/50 bg-[var(--surface)] overflow-hidden p-0" style={{ boxShadow: "var(--shadow-overlay)" }}>
@@ -291,7 +295,7 @@ export function SocialRightSidebar({ userId, orgId, userRole = 'volunteer' }: So
                       <div className="flex items-center gap-2">
                         <IconComponent className={`h-4 w-4 ${styles.headerText}`} fill="currentColor" />
                         <span className={`text-sm font-semibold ${styles.headerText}`}>
-                          {currentAlert.severity === "high" ? "Priority" : "Alert"}
+                          {styles.label}
                         </span>
                       </div>
                       <span className={`text-xs ${styles.headerText}/90 font-medium`}>
@@ -314,20 +318,32 @@ export function SocialRightSidebar({ userId, orgId, userRole = 'volunteer' }: So
                       </div>
 
                       <div>
-                        <h3 className="text-base font-bold text-foreground mb-2 leading-tight">
-                          {currentAlert.title}
-                        </h3>
+                        {currentAlert.title && (
+                          <h3 className="text-base font-bold text-foreground mb-2 leading-tight">
+                            {currentAlert.title}
+                          </h3>
+                        )}
                         <p className="text-sm text-muted-foreground leading-relaxed">
-                          {currentAlert.message}
+                          {currentAlert.content}
                         </p>
                       </div>
 
-                      <Button
-                        onClick={() => handleAcknowledge(currentAlert.id)}
-                        className={`w-full ${styles.buttonBg} text-white border-0 shadow-sm transition-all active:scale-[0.98]`}
-                      >
-                        Acknowledge
-                      </Button>
+                      <div className="space-y-2">
+                        <Button
+                          onClick={() => handleAcknowledge(currentAlert.id)}
+                          className={`w-full ${styles.buttonBg} text-white border-0 shadow-sm transition-all active:scale-[0.98]`}
+                        >
+                          <CheckCircle2 className="h-4 w-4 mr-2" />
+                          Acknowledge
+                        </Button>
+
+                        {currentAlert.acknowledgment_count > 0 && (
+                          <div className="flex items-center justify-center gap-1 text-xs text-muted-foreground">
+                            <CheckCircle2 className="h-3 w-3" />
+                            <span>{currentAlert.acknowledgment_count} {currentAlert.acknowledgment_count === 1 ? 'person' : 'people'} acknowledged</span>
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </Card>
                 )

@@ -1,20 +1,157 @@
-[2m[WebServer] [22m [31m[1m⨯[22m[39m Failed to start server
-[2m[WebServer] [22mError: listen EADDRINUSE: address already in use :::3001
-[2m[WebServer] [22m[90m    at Server.setupListenHandle [as _listen2] (node:net:1939:16)[39m
-[2m[WebServer] [22m[90m    at listenInCluster (node:net:1996:12)[39m
-[2m[WebServer] [22m[90m    at Server.listen (node:net:2101:7)[39m
-[2m[WebServer] [22m    at [90m/Users/josh/stmartinsapp/[39mnode_modules/[4mnext[24m/dist/server/lib/start-server.js:280:16
-[2m[WebServer] [22m    at new Promise (<anonymous>)
-[2m[WebServer] [22m    at startServer [90m(/Users/josh/stmartinsapp/[39mnode_modules/[4mnext[24m/dist/server/lib/start-server.js:191:11[90m)[39m
-[2m[WebServer] [22m    at [90m/Users/josh/stmartinsapp/[39mnode_modules/[4mnext[24m/dist/server/lib/start-server.js:310:52
-[2m[WebServer] [22m    at Span.traceAsyncFn [90m(/Users/josh/stmartinsapp/[39mnode_modules/[4mnext[24m/dist/trace/trace.js:154:26[90m)[39m
-[2m[WebServer] [22m    at process.<anonymous> [90m(/Users/josh/stmartinsapp/[39mnode_modules/[4mnext[24m/dist/server/lib/start-server.js:310:35[90m)[39m
-[2m[WebServer] [22m[90m    at process.emit (node:events:518:28)[39m {
-[2m[WebServer] [22m  code: [32m'EADDRINUSE'[39m,
-[2m[WebServer] [22m  errno: [33m-48[39m,
-[2m[WebServer] [22m  syscall: [32m'listen'[39m,
-[2m[WebServer] [22m  address: [32m'::'[39m,
-[2m[WebServer] [22m  port: [33m3001[39m
-[2m[WebServer] [22m}
-Error: Process from config.webServer exited early.
+[Playwright] Detected dev server running on port 3000
+[Playwright] Using dev server at http://localhost:3000 (detected)
+[dotenv@17.2.3] injecting env (4) from .env.local -- tip: 📡 add observability to secrets: https://dotenvx.com/ops
 
+Running 3 tests using 1 worker
+
+(node:51474) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:51474) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+[Playwright] Detected dev server running on port 3000
+[Playwright] Using dev server at http://localhost:3000 (detected)
+[dotenv@17.2.3] injecting env (0) from .env.local -- tip: 🔐 prevent committing .env to code: https://dotenvx.com/precommit
+  ✘  1 [chromium] › tests/e2e/cross-user-notifications.spec.ts:107:7 › Cross-User Notification Tests › User B liking User A post creates notification for User A (2.3m)
+  -  2 [chromium] › tests/e2e/cross-user-notifications.spec.ts:224:7 › Cross-User Notification Tests › User B commenting on User A post creates notification for User A
+  -  3 [chromium] › tests/e2e/cross-user-notifications.spec.ts:319:7 › Cross-User Notification Tests › User B mentioning User A in post creates notification for User A
+
+
+  1) [chromium] › tests/e2e/cross-user-notifications.spec.ts:107:7 › Cross-User Notification Tests › User B liking User A post creates notification for User A 
+
+    Error: apiRequestContext.post: connect ECONNREFUSED ::1:3000
+    Call log:
+    [2m  - → POST http://localhost:3000/api/dev-login[22m
+    [2m    - user-agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.7499.4 Safari/537.36[22m
+    [2m    - accept: */*[22m
+    [2m    - accept-encoding: gzip,deflate,br[22m
+    [2m    - Content-Type: application/json[22m
+    [2m    - content-length: 27[22m
+
+        at apiRequestContext.post: connect ECONNREFUSED ::1:3000
+        at devLogin (/Users/josh/stmartinsapp/tests/e2e/cross-user-notifications.spec.ts:24:42)
+        at /Users/josh/stmartinsapp/tests/e2e/cross-user-notifications.spec.ts:142:5
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/cross-user-notifications-C-5d96c-tes-notification-for-User-A-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/cross-user-notifications-C-5d96c-tes-notification-for-User-A-chromium/error-context.md
+
+  1 failed
+    [chromium] › tests/e2e/cross-user-notifications.spec.ts:107:7 › Cross-User Notification Tests › User B liking User A post creates notification for User A 
+  2 did not run
+[Playwright] Detected dev server running on port 3000
+[Playwright] Using dev server at http://localhost:3000 (detected)
+[dotenv@17.2.3] injecting env (4) from .env.local -- tip: 📡 add observability to secrets: https://dotenvx.com/ops
+
+Running 1 test using 1 worker
+
+(node:52294) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:52294) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+[Playwright] Detected dev server running on port 3000
+[Playwright] Using dev server at http://localhost:3000 (detected)
+[dotenv@17.2.3] injecting env (0) from .env.local -- tip: 🛠️  run anywhere with `dotenvx run -- yourcommand`
+Post not found by content, using first like button
+  ✘  1 [chromium] › tests/e2e/cross-user-notifications.spec.ts:121:7 › Cross-User Notification Tests › User B liking User A post creates notification for User A (2.5m)
+
+
+  1) [chromium] › tests/e2e/cross-user-notifications.spec.ts:121:7 › Cross-User Notification Tests › User B liking User A post creates notification for User A 
+
+    Error: [2mexpect([22m[31mreceived[39m[2m).[22mtoBe[2m([22m[32mexpected[39m[2m) // Object.is equality[22m
+
+    Expected: [32mtrue[39m
+    Received: [31mfalse[39m
+
+      233 |     
+      234 |     // ASSERT: Notification must be visible
+    > 235 |     expect(hasNotification).toBe(true);
+          |                             ^
+      236 |   });
+      237 |
+      238 |   test('User B commenting on User A post creates notification for User A', async ({ browser }) => {
+        at /Users/josh/stmartinsapp/tests/e2e/cross-user-notifications.spec.ts:235:29
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/cross-user-notifications-C-5d96c-tes-notification-for-User-A-chromium/test-failed-3.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  1 failed
+    [chromium] › tests/e2e/cross-user-notifications.spec.ts:121:7 › Cross-User Notification Tests › User B liking User A post creates notification for User A 
+[Playwright] Detected dev server running on port 3000
+[Playwright] Using dev server at http://localhost:3000 (detected)
+[dotenv@17.2.3] injecting env (4) from .env.local -- tip: ⚙️  load multiple .env files with { path: ['.env.local', '.env'] }
+
+Running 1 test using 1 worker
+
+(node:53801) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:53801) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+[Playwright] Detected dev server running on port 3000
+[Playwright] Using dev server at http://localhost:3000 (detected)
+[dotenv@17.2.3] injecting env (0) from .env.local -- tip: 🔐 prevent committing .env to code: https://dotenvx.com/precommit
+[Playwright] Detected dev server running on port 3000
+[Playwright] Using dev server at http://localhost:3000 (detected)
+[dotenv@17.2.3] injecting env (4) from .env.local -- tip: ⚙️  override existing env vars with { override: true }
+
+Running 1 test using 1 worker
+
+(node:55387) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:55387) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+[Playwright] Detected dev server running on port 3000
+[Playwright] Using dev server at http://localhost:3000 (detected)
+[dotenv@17.2.3] injecting env (0) from .env.local -- tip: 📡 add observability to secrets: https://dotenvx.com/ops
+Found 23 posts in feed
+Found 1 elements matching post content
+Found post by content and located like button
+Found 45 notification items in dropdown
+Notification 1: AitriumOasis St Martins VillageHomeChatCalendarOpportunitiesPeopleProjects...
+Notification 2: My TeamYour OrganizationSee all team members...
+Notification 3: Welcome to The Village!Discover collaboration opportunities, upcoming events, and initiatives from c...
+Notification 4: Welcome to The Village!Discover collaboration opportunities, upcoming events, and initiatives from c...
+Notification 5: YouCreatePost...
+Notification 6: AllEventsProjectsPostsLatest...
+Notification 7: SSarah MitchellSt Martins Village · 21 minutes agoGeneralTest post for like notification 17655380211...
+Notification 8: 00...
+Notification 9: SSarah MitchellSt Martins Village · 25 minutes agoGeneralTest post for like notification 17655377773...
+Notification 10: 00...
+Notification 11: SSarah MitchellSt Martins Village · 27 minutes agoGeneralTest post for like notification 17655377039...
+Notification 12: 00...
+Notification 13: SSarah MitchellSt Martins Village · 30 minutes agoGeneralTest post for like notification 17655375149...
+Notification 14: 00...
+Notification 15: SSarah MitchellSt Martins Village · 31 minutes agoGeneralTest post for like notification 17655374627...
+Notification 16: 00...
+Notification 17: JJames ChenSt Martins Village · about 16 hours agoGeneral@[Sarah Mitchell]  test00...
+Notification 18: 00...
+Notification 19: JJames ChenSt Martins Village · about 16 hours agoGeneral@[James Chen]  test00...
+Notification 20: 00...
+Notification 21: SSarah MitchellSt Martins Village · about 16 hours agoGeneralTest post for like notification - 2025-...
+Notification 22: 00...
+Notification 23: SSarah MitchellSt Martins Village · about 16 hours agoGeneralTest post for like notification - 2025-...
+Notification 24: 00...
+Notification 25: SSarah MitchellSt Martins Village · about 16 hours agoGeneralHey @James Chen check this out! - 17654...
+Notification 26: 00...
+Notification 27: TTeam MemberSt Martins Village · posted 2 days agoQA EVENT TEST QA-1765373187083Test event descripti...
+Notification 28: Dec 11, 20258:00 PM - 10:00 PMTest Location...
+Notification 29: TTeam MemberSt Martins Village · posted 2 days agoQA FINAL EVENT 1765372821522Final rigorous test ev...
+Notification 30: Dec 11, 20257:00 PM - 9:00 PMFinal Test Location...
+Notification 31: TTeam MemberSt Martins Village · posted 2 days agoQA FINAL EVENT 1765372743107Final test event descr...
+Notification 32: Dec 11, 20255:00 PM - 7:00 PMTest Location Final...
+Notification 33: TTeam MemberSt Martins Village · posted 2 days agoQA Test Event - 1:08:40 PMThis is a test event cre...
+Notification 34: Dec 11, 20252:00 PM - 4:00 PMVillage Community Center...
+Notification 35: TTeam MemberSt Martins Village · posted 2 days agoCommunity Food Drive & DistributionJoin us for our...
+Notification 36: Dec 15, 20249:00 AM - 3:00 PMSt Martin's Community Center - Main Hall...
+Notification 37: TTeam MemberSt Martins Village · posted 2 days agoNew Year Community PotluckRing in 2025 with your n...
+Notification 38: Dec 31, 20246:00 PM - 12:00 AMSt Martin's Hub - Rooftop Garden...
+Notification 39: TTeam MemberSt Martins Village · posted 2 days agoHoliday Lights Installation WorkshopLearn how to s...
+Notification 40: Dec 18, 20246:00 PM - 8:00 PMCommunity Center - Workshop Room...
+Notification 41: TTeam MemberSt Martins Village · updated 2 days agobeautificationCommunity Mural ProjectTransform ou...
+Notification 42: Impact GoalCreate a 30ft x 15ft mural by spring 2025...
+Notification 43: TTeam MemberSt Martins Village · updated 2 days agoeducationYouth Mentorship ProgramLaunch a structu...
+Notification 44: Impact GoalMatch 50 teens with mentors by February 2025...
+Notification 45: ...
+Notification check - hasLiked: false, hasJames: false, hasChen: false, total notifications: 45

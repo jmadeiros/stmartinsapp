@@ -7,6 +7,7 @@ import { ProjectCard } from "@/components/social/project-card"
 import { CreateEventDialog } from "@/components/social/create-event-dialog"
 import { CreateProjectDialog } from "@/components/social/create-project-dialog"
 import { SendAlertDialog } from "@/components/social/send-alert-dialog"
+import { CreatePollDialog } from "@/components/social/create-poll-dialog"
 import { AlertBanner } from "@/components/ui/alert-banner"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
@@ -194,8 +195,10 @@ export function MainFeed({ initialFeedItems = [], userId, orgId, userRole = 'vol
   const [showProjectDialog, setShowProjectDialog] = useState(false)
   const [showAlertDialog, setShowAlertDialog] = useState(false)
   const [showWeeklyUpdate, setShowWeeklyUpdate] = useState(false)
+  const [showPollDialog, setShowPollDialog] = useState(false)
   const [isPostSubmitting, setIsPostSubmitting] = useState(false)
   const [postError, setPostError] = useState<string | null>(null)
+  const [createdPostId, setCreatedPostId] = useState<string | null>(null)
   const router = useRouter()
 
   useEffect(() => {
@@ -260,7 +263,11 @@ export function MainFeed({ initialFeedItems = [], userId, orgId, userRole = 'vol
         mentionedUserIds: allMentionedUserIds.length > 0 ? allMentionedUserIds : undefined,
       })
 
-      if (result.success) {
+      if (result.success && result.data) {
+        // Store the created post ID for poll creation
+        const postData = result.data as { id: string }
+        setCreatedPostId(postData.id)
+
         setPostContent("")
         setPostCategory("general")
         setLinkedItems([])
@@ -680,6 +687,59 @@ export function MainFeed({ initialFeedItems = [], userId, orgId, userRole = 'vol
                         <Button
                           variant="ghost"
                           size="sm"
+                          onClick={async () => {
+                            // Create a post first, then open poll dialog
+                            if (!userId || !orgId) {
+                              setPostError("User ID or Organization ID is missing")
+                              return
+                            }
+
+                            if (!postContent.trim()) {
+                              setPostError("Please write something before adding a poll")
+                              return
+                            }
+
+                            setIsPostSubmitting(true)
+                            setPostError(null)
+
+                            try {
+                              const linkedEvent = linkedItems.find(item => item.type === 'event')
+                              const linkedProject = linkedItems.find(item => item.type === 'project')
+                              const uiMentionedUserIds = linkedItems
+                                .filter(item => item.type === 'user')
+                                .map(item => item.id)
+                              const allMentionedUserIds = Array.from(new Set([...uiMentionedUserIds, ...mentionedUserIds]))
+
+                              const result = await createPost({
+                                content: postContent,
+                                authorId: userId,
+                                orgId: orgId,
+                                category: postCategory,
+                                linkedEventId: linkedEvent?.id,
+                                linkedProjectId: linkedProject?.id,
+                                mentionedUserIds: allMentionedUserIds.length > 0 ? allMentionedUserIds : undefined,
+                              })
+
+                              if (result.success && result.data) {
+                                const postData = result.data as { id: string }
+                                setCreatedPostId(postData.id)
+                                setPostContent("")
+                                setPostCategory("general")
+                                setLinkedItems([])
+                                setMentionedUserIds([])
+                                setPostFocused(false)
+                                // Open poll dialog
+                                setShowPollDialog(true)
+                              } else {
+                                setPostError(result.error || "Failed to create post")
+                              }
+                            } catch (err) {
+                              setPostError(err instanceof Error ? err.message : "An unexpected error occurred")
+                            } finally {
+                              setIsPostSubmitting(false)
+                            }
+                          }}
+                          disabled={!postContent.trim() || isPostSubmitting}
                           className="text-gray-500 hover:text-primary hover:bg-primary/5 h-9 px-3 gap-2"
                         >
                           <BarChart3 className="h-4 w-4" />
@@ -954,6 +1014,16 @@ export function MainFeed({ initialFeedItems = [], userId, orgId, userRole = 'vol
         open={showAlertDialog}
         onOpenChange={setShowAlertDialog}
         onSend={handleSendAlert}
+      />
+
+      <CreatePollDialog
+        open={showPollDialog}
+        onOpenChange={setShowPollDialog}
+        postId={createdPostId || undefined}
+        onPollCreated={() => {
+          setCreatedPostId(null)
+          router.refresh()
+        }}
       />
     </main>
   )

@@ -25,25 +25,29 @@ export type NotificationType =
   | 'invitation_declined'
   | 'event_reminder'
   | 'project_update'
+  | 'project_interest'
   | 'mention'
   | 'comment'
+  | 'reply'
   | 'reaction'
+  | 'rsvp'
 
 export type Notification = {
   id: string
   user_id: string
-  org_id: string
+  actor_id: string | null
   type: NotificationType
   title: string
-  message: string
-  resource_type: 'event' | 'project' | 'post' | 'comment' | null
-  resource_id: string | null
-  action_url: string | null
+  reference_type: string | null
+  reference_id: string | null
+  link: string | null
   action_data: Record<string, any> | null
   read: boolean
-  read_at: string | null
   created_at: string
-  expires_at: string | null
+  // Legacy field aliases for backwards compatibility
+  resource_type?: string | null
+  resource_id?: string | null
+  message?: string | null
 }
 
 // For displaying in UI with additional data

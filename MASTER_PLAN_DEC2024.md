@@ -1,5 +1,10 @@
 # St Martins Village Hub - Master Implementation Plan
 
+> ⚠️ **AUTHORITATIVE PLANNING DOCUMENT**
+> This is the single source of truth for implementation planning.
+> Supersedes: `MASTER_PLAN.md`, `REVISED_PLAN.md`, `IMPLEMENTATION_PLAN.md`
+> Last verified: December 15, 2024
+
 > **Created:** December 9, 2024
 > **Status:** Ready for Implementation
 > **Related Docs:** [ARCHITECTURE_MAP.md](./ARCHITECTURE_MAP.md), [AI_FEATURES_ROADMAP.md](./AI_FEATURES_ROADMAP.md)
@@ -187,19 +192,19 @@ Most RLS already exists for core tables. The above are additions for new feature
 ## PHASE 2: Core Feature Completion 🔌
 *Wire mock data to real Supabase*
 
-| # | Task | Files | Complexity | 🤖 AI Hook |
-|---|------|-------|------------|------------|
-| 2.1 | **Wire up Chat** - 100% mock → real messages/conversations | `components/chat/*`, new query file | 🔴 Large | - |
-| 2.2 | **Wire up Calendar** - Mock events → real events table | `calendar/page.tsx`, `monthly-calendar.tsx` | 🟡 Medium | - |
-| 2.3 | **Wire up My Team Box** - Hardcoded → org members query | `left-sidebar.tsx:12-56` | 🟡 Medium | - |
-| 2.4 | **Wire up Priority Alerts** - Hardcoded → announcements. **Send restricted to st_martins_staff/admin only** (everyone views + acks) | `right-sidebar.tsx`, `send-alert-dialog.tsx` | 🟡 Medium | Smart alerts |
-| 2.5 | **Wire up Badge Counts** - Hardcoded "3" → real unread counts | `header.tsx:14,88-91` | 🟡 Medium | - |
-| 2.6 | **Remove mock fallback from Dashboard** | `dashboard/actions.ts:8-165` | 🟢 Small | - |
-| 2.7 | **Wire up Community Highlights** - Real metrics from DB (events this week, pinned posts, active projects) | `left-sidebar.tsx:58-83` | 🟡 Medium | - |
-| 2.8 | **Remove mock projects** - Once real data exists | `projects/page.tsx:9-155` | 🟢 Small | - |
-| 2.9 | **Wire up Post Reactions** - Heart button → `post_reactions` table | `post-card.tsx`, new action | 🟢 Small | - |
-| 2.10 | **Wire up Post Comments** - Schema exists, build UI + backend. **Include edit/delete own posts & comments** | `post-card.tsx`, new component | 🟡 Medium | - |
-| 2.11 | **Persist @Mentions** - Currently visual only, save to DB | `main-feed.tsx`, posts table | 🟢 Small | - |
+| # | Task | Files | Complexity | 🤖 AI Hook | Status |
+|---|------|-------|------------|------------|--------|
+| 2.1 | **Wire up Chat** - 100% mock → real messages/conversations | `components/chat/*`, new query file | 🔴 Large | - | 🚧 In Progress |
+| 2.2 | **Wire up Calendar** - Mock events → real events table | `calendar/page.tsx`, `monthly-calendar.tsx` | 🟡 Medium | - | ✅ DONE |
+| 2.3 | **Wire up My Team Box** - Hardcoded → org members query | `left-sidebar.tsx:12-56` | 🟡 Medium | - | ✅ DONE |
+| 2.4 | **Wire up Priority Alerts** - Hardcoded → announcements. **Send restricted to st_martins_staff/admin only** (everyone views + acks) | `right-sidebar.tsx`, `send-alert-dialog.tsx` | 🟡 Medium | Smart alerts | ✅ DONE |
+| 2.5 | **Wire up Badge Counts** - Hardcoded "3" → real unread counts | `header.tsx:14,88-91` | 🟡 Medium | - | ✅ DONE |
+| 2.6 | **Remove mock fallback from Dashboard** | `dashboard/actions.ts:8-165` | 🟢 Small | - | ✅ DONE |
+| 2.7 | **Wire up Community Highlights** - Real metrics from DB (events this week, pinned posts, active projects) | `left-sidebar.tsx:58-83` | 🟡 Medium | - | ✅ DONE |
+| 2.8 | **Remove mock projects** - Once real data exists | `projects/page.tsx:9-155` | 🟢 Small | - | ✅ DONE |
+| 2.9 | **Wire up Post Reactions** - Heart button → `post_reactions` table | `post-card.tsx`, new action | 🟢 Small | - | 🚧 In Progress |
+| 2.10 | **Wire up Post Comments** - Schema exists, build UI + backend. **Include edit/delete own posts & comments** | `post-card.tsx`, new component | 🟡 Medium | - | 🚧 In Progress |
+| 2.11 | **Persist @Mentions** - Currently visual only, save to DB | `main-feed.tsx`, posts table | 🟢 Small | - | ✅ DONE |
 
 ---
 
