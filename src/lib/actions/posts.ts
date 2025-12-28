@@ -257,6 +257,107 @@ export async function createPost(params: CreatePostParams) {
 }
 
 /**
+ * Get all posts created by a specific user
+ */
+export async function getUserPosts(userId: string) {
+  const supabase = await createClient()
+
+  try {
+    const { data: postsData, error } = await supabase
+      .from('posts')
+      .select('*')
+      .eq('author_id', userId)
+      .is('deleted_at', null)
+      .order('created_at', { ascending: false })
+
+    if (error) {
+      console.error('[getUserPosts] Error fetching posts:', error)
+      return { data: [], error: error.message }
+    }
+
+    if (!postsData || postsData.length === 0) {
+      return { data: [], error: null }
+    }
+
+    // Process posts to include author info (which we already know, but for consistency) and org info
+    // Fetch author profile once
+    const { data: authorProfile } = await supabase
+      .from('user_profiles')
+      .select('user_id, full_name, avatar_url, role')
+      .eq('user_id', userId)
+      .single()
+    
+    // Fetch unique orgs
+    const orgIds = [...new Set(postsData.map(p => p.org_id).filter(Boolean))]
+    const { data: orgs } = await supabase
+      .from('organizations')
+      .select('id, name')
+      .in('id', orgIds)
+    
+    const orgMap = new Map(orgs?.map(o => [o.id, o.name]) || [])
+
+    // Get reaction and comment counts for all posts
+    // We can do this efficiently or just loop for now. 
+    // For better performance, we'd do a group by query, but Supabase JS client doesn't support it easily without view/rpc.
+    // Let's do a simple loop for now as profile posts volume isn't huge usually.
+    
+    const posts = await Promise.all(postsData.map(async (p) => {
+      // Get counts
+      const { count: reactionCount } = await supabase
+        .from('post_reactions')
+        .select('*', { count: 'exact', head: true })
+        .eq('post_id', p.id)
+
+      const { count: commentCount } = await supabase
+        .from('post_comments')
+        .select('*', { count: 'exact', head: true })
+        .eq('post_id', p.id)
+        .is('deleted_at', null)
+
+       // Format time ago
+       const date = new Date(p.created_at)
+       const now = new Date()
+       const seconds = Math.floor((now.getTime() - date.getTime()) / 1000)
+       let timeAgo = ''
+ 
+       if (seconds < 60) timeAgo = 'just now'
+       else if (seconds < 3600) timeAgo = `${Math.floor(seconds / 60)}m ago`
+       else if (seconds < 86400) timeAgo = `${Math.floor(seconds / 3600)}h ago`
+       else if (seconds < 604800) timeAgo = `${Math.floor(seconds / 86400)}d ago`
+       else timeAgo = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+
+      return {
+        id: p.id,
+        type: 'post' as const,
+        author: {
+          name: authorProfile?.full_name || 'Unknown',
+          handle: `@${authorProfile?.full_name?.toLowerCase().replace(/\s+/g, '') || 'user'}`,
+          avatar: authorProfile?.avatar_url || '/placeholder.svg',
+          role: authorProfile?.role || undefined,
+          organization: p.org_id ? orgMap.get(p.org_id) : undefined,
+        },
+        title: p.title || undefined,
+        content: p.content,
+        category: p.category as PostCategory,
+        linkedEventId: p.linked_event_id || undefined,
+        linkedProjectId: p.linked_project_id || undefined,
+        cause: p.cause || undefined,
+        image: p.image_url || undefined,
+        timeAgo: timeAgo,
+        likes: reactionCount || 0,
+        comments: commentCount || 0,
+        isPinned: p.is_pinned || false,
+      }
+    }))
+
+    return { data: posts, error: null }
+  } catch (error) {
+    console.error('[getUserPosts] Exception:', error)
+    return { data: [], error: error instanceof Error ? error.message : 'Unknown error' }
+  }
+}
+
+/**
  * Get all mentions for a specific post
  */
 export async function getPostMentions(postId: string) {

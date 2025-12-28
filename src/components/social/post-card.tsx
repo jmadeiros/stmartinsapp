@@ -19,6 +19,7 @@ import { PollCard } from "@/components/social/poll-card"
 import { pinPost, unpinPost, acknowledgePost, hasUserAcknowledged, getPostAcknowledgments } from "@/lib/actions/posts"
 import { useToast } from "@/hooks/use-toast"
 import { CheckCircle2 } from "lucide-react"
+import { cn } from "@/lib/utils"
 
 interface PostCardProps {
   post: Post
@@ -306,44 +307,19 @@ export function PostCard({ post }: PostCardProps) {
   const cta = getCTA()
 
   return (
-    <Card className="text-card-foreground flex flex-col rounded-2xl overflow-hidden bg-white border border-gray-100 shadow-md transition-shadow hover:shadow-lg">
+    <Card className={cn(
+      "text-card-foreground flex flex-col rounded-2xl overflow-hidden bg-white shadow-md transition-shadow",
+      isPinned 
+        ? "border-amber-200 shadow-sm hover:shadow-md" 
+        : "border-gray-100 hover:shadow-lg"
+    )}>
+      {isPinned && (
+        <div className="px-4 py-1.5 bg-amber-50/50 border-b border-amber-100 flex items-center gap-2">
+          <Pin className="h-3 w-3 text-amber-600 fill-amber-600" />
+          <span className="text-xs font-medium text-amber-700">Pinned Post</span>
+        </div>
+      )}
       <div className="p-4">
-        {/* Pinned Indicator & Acknowledgment Section */}
-        {isPinned && (
-          <div className="mb-3 space-y-2">
-            <div className="flex items-center justify-between gap-2">
-              <Badge variant="secondary" className="gap-1.5 bg-primary/10 text-primary hover:bg-primary/20">
-                <Pin className="h-3 w-3" />
-                Priority Alert
-              </Badge>
-              {acknowledgmentCount > 0 && (
-                <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                  <CheckCircle2 className="h-3 w-3" />
-                  <span>{acknowledgmentCount} acknowledged</span>
-                </div>
-              )}
-            </div>
-
-            {!hasAcknowledged && (
-              <Button
-                onClick={handleAcknowledgePost}
-                disabled={isAcknowledging}
-                size="sm"
-                className="w-full gap-2 bg-amber-500 hover:bg-amber-600 text-white"
-              >
-                <CheckCircle2 className="h-4 w-4" />
-                {isAcknowledging ? "Acknowledging..." : "Acknowledge This Alert"}
-              </Button>
-            )}
-
-            {hasAcknowledged && (
-              <div className="flex items-center justify-center gap-2 py-2 px-3 bg-green-50 border border-green-200 rounded-lg">
-                <CheckCircle2 className="h-4 w-4 text-green-600" />
-                <span className="text-sm font-medium text-green-700">You acknowledged this alert</span>
-              </div>
-            )}
-          </div>
-        )}
 
         {/* Header */}
         <div className="mb-4 flex items-start justify-between">

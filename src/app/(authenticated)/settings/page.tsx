@@ -7,7 +7,7 @@ import { Switch } from "@/components/ui/switch"
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
 import { Separator } from "@/components/ui/separator"
-import { Bell, User, Lock, Shield, Info, LogOut, CheckCircle2, AlertCircle } from "lucide-react"
+import { Bell, User, Lock, Shield, Info, LogOut, CheckCircle2, Sparkles, Zap } from "lucide-react"
 import { createClient } from "@/lib/supabase/client"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
@@ -20,6 +20,7 @@ import {
   type NotificationPreferences,
 } from "@/lib/actions/settings"
 import { toast } from "@/components/ui/use-toast"
+import { SocialHeader } from "@/components/social/header"
 
 export default function SettingsPage() {
   const router = useRouter()
@@ -171,7 +172,7 @@ export default function SettingsPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
+      <div className="flex items-center justify-center min-h-screen bg-background">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
       </div>
     )
@@ -179,56 +180,78 @@ export default function SettingsPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="container max-w-4xl py-8 px-4">
-        {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold mb-2">Settings</h1>
-          <p className="text-muted-foreground">
-            Manage your account settings and preferences
-          </p>
-        </div>
-
-        <div className="space-y-6">
-          {/* Account Section */}
-          <Card>
-            <CardHeader>
-              <div className="flex items-center gap-2">
-                <User className="h-5 w-5 text-primary" />
-                <CardTitle>Account</CardTitle>
-              </div>
-              <CardDescription>
-                Manage your account information and profile
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label className="text-sm text-muted-foreground">Email</Label>
-                <p className="text-sm font-medium">{userEmail}</p>
-              </div>
-
-              <div className="space-y-2">
-                <Label className="text-sm text-muted-foreground">Full Name</Label>
-                <p className="text-sm font-medium">{userProfile?.full_name || 'Not set'}</p>
-              </div>
-
-              <div className="space-y-2">
-                <Label className="text-sm text-muted-foreground">Role</Label>
-                <p className="text-sm font-medium capitalize">
-                  {userProfile?.role?.replace('_', ' ') || 'Not set'}
+      <SocialHeader />
+      
+      <div className="mx-auto max-w-4xl px-4 py-8">
+        <main className="space-y-6">
+            {/* Page Header */}
+            <div className="relative overflow-hidden rounded-2xl bg-card border border-border/50 p-8 shadow-sm">
+               <div 
+                className="absolute inset-0 pointer-events-none opacity-50" 
+                style={{ 
+                  backgroundImage: 'linear-gradient(to right, oklch(0.52 0.12 166 / 0.1), oklch(0.52 0.12 166 / 0.05), transparent)',
+                  backgroundSize: '200% 200%'
+                }}
+              />
+              <div className="relative z-10">
+                <h1 className="text-3xl font-bold tracking-tight mb-2 flex items-center gap-2">
+                  Settings
+                  <Sparkles className="h-5 w-5 text-primary opacity-50" />
+                </h1>
+                <p className="text-muted-foreground text-lg max-w-2xl">
+                  Manage your account preferences, security settings, and notification controls.
                 </p>
               </div>
+            </div>
 
-              <Separator />
+            {/* Account Section */}
+            <Card className="border-border/50 shadow-sm hover:shadow-md transition-shadow duration-300">
+              <CardHeader className="pb-4">
+                <div className="flex items-center gap-2.5 mb-1">
+                  <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
+                    <User className="h-4 w-4 text-primary" />
+                  </div>
+                  <CardTitle>Account Information</CardTitle>
+                </div>
+                <CardDescription className="ml-10.5">
+                  Your personal account details and public profile information
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6 ml-10.5">
+                <div className="grid gap-6 md:grid-cols-2">
+                  <div className="space-y-2 p-3 rounded-lg bg-muted/30 border border-border/40">
+                    <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Email Address</Label>
+                    <p className="text-sm font-medium flex items-center gap-2">
+                      {userEmail}
+                      <CheckCircle2 className="h-3.5 w-3.5 text-primary" />
+                    </p>
+                  </div>
 
-              <div>
-                <Link href="/profile">
-                  <Button variant="outline" className="w-full sm:w-auto">
-                    Edit Profile
-                  </Button>
-                </Link>
-              </div>
-            </CardContent>
-          </Card>
+                  <div className="space-y-2 p-3 rounded-lg bg-muted/30 border border-border/40">
+                    <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Full Name</Label>
+                    <p className="text-sm font-medium">{userProfile?.full_name || 'Not set'}</p>
+                  </div>
+
+                  <div className="space-y-2 p-3 rounded-lg bg-muted/30 border border-border/40">
+                    <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Role</Label>
+                    <p className="text-sm font-medium capitalize flex items-center gap-2">
+                      {userProfile?.role?.replace('_', ' ') || 'Not set'}
+                      <span className="inline-flex items-center rounded-full border border-primary/20 bg-primary/5 px-2 py-0.5 text-xs font-medium text-primary">
+                        Verified
+                      </span>
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex justify-end pt-2">
+                  <Link href="/profile">
+                    <Button variant="outline" className="border-primary/20 hover:bg-primary/5 hover:text-primary transition-colors">
+                      Edit Profile Details
+                    </Button>
+                  </Link>
+                </div>
+              </CardContent>
+            </Card>
 
           {/* Change Password Section */}
           <Card>
@@ -497,7 +520,7 @@ export default function SettingsPage() {
               </Button>
             </CardContent>
           </Card>
-        </div>
+        </main>
       </div>
     </div>
   )

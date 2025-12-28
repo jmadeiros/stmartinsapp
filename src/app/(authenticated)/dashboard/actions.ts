@@ -9,12 +9,13 @@ export async function getFeedData(orgId: string): Promise<FeedItem[]> {
 
   console.log('[getFeedData] Fetching feed for org:', orgId)
 
-  // Fetch posts
+  // Fetch posts - pinned posts appear first
   const { data: postsData, error: postsError } = await supabase
     .from('posts')
     .select('*')
     .eq('org_id', orgId)
     .is('deleted_at', null)
+    .order('is_pinned', { ascending: false })
     .order('created_at', { ascending: false })
     .limit(10)
 
@@ -107,6 +108,7 @@ export async function getFeedData(orgId: string): Promise<FeedItem[]> {
       timeAgo: formatDistanceToNow(new Date(post.created_at), { addSuffix: true }),
       likes: 0,
       comments: 0,
+      isPinned: post.is_pinned || false,
     }
   })
 
@@ -203,14 +205,22 @@ export async function getFeedData(orgId: string): Promise<FeedItem[]> {
     }
   })
 
-  // Combine and sort all items by creation date
+  // Combine all items
   const allItems: FeedItem[] = [
     ...posts,
     ...events,
     ...projects,
   ]
 
-  // Sort by created_at timestamp (we need to extract it from timeAgo or store timestamps)
-  // For now, items are already sorted within their type, and we're interleaving them
+  // Sort pinned posts to the top
+  allItems.sort((a, b) => {
+    const aIsPinned = a.type === 'post' && (a as FeedPost).isPinned
+    const bIsPinned = b.type === 'post' && (b as FeedPost).isPinned
+
+    if (aIsPinned && !bIsPinned) return -1
+    if (!aIsPinned && bIsPinned) return 1
+    return 0
+  })
+
   return allItems
 }

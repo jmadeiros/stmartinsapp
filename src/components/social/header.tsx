@@ -2,7 +2,14 @@
 
 import { useState, useEffect, useCallback, useRef } from "react"
 import { Button } from "@/components/ui/button"
-import { Search, Bell, User, Menu, Sparkles, Zap, X, MessageSquare } from "lucide-react"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import { Search, Bell, User, Menu, Sparkles, Zap, X, MessageSquare, Settings, LogOut } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
 import { usePathname, useRouter } from "next/navigation"
 import Link from "next/link"
@@ -22,6 +29,8 @@ export function SocialHeader() {
   const [notificationCount, setNotificationCount] = useState(0)
   const [chatCount, setChatCount] = useState(0)
   const [notificationsOpen, setNotificationsOpen] = useState(false)
+  const [userMenuOpen, setUserMenuOpen] = useState(false)
+  const [feedbackOpen, setFeedbackOpen] = useState(false)
   const [userId, setUserId] = useState<string | undefined>(undefined)
 
   // Track when notification count was last updated by dropdown to prevent overwriting
@@ -316,15 +325,48 @@ export function SocialHeader() {
             />
           </div>
 
-          <Link href="/settings">
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-9 w-9 sm:h-10 sm:w-10 min-h-[44px] min-w-[44px] hover:bg-[var(--surface-secondary)] transition-colors rounded-xl"
-            >
-              <User className="h-4 w-4" />
-            </Button>
-          </Link>
+          <DropdownMenu open={userMenuOpen} onOpenChange={(open) => {
+            setUserMenuOpen(open)
+            if (open) setNotificationsOpen(false) // Close notifications when opening user menu
+          }}>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-9 w-9 sm:h-10 sm:w-10 min-h-[44px] min-w-[44px] hover:bg-primary/10 hover:text-primary data-[state=open]:bg-primary/10 data-[state=open]:text-primary transition-colors rounded-xl group"
+              >
+                <User className="h-4 w-4 group-hover:fill-current group-data-[state=open]:fill-current" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-48 z-[100]">
+              <DropdownMenuItem
+                className="flex items-center gap-2 cursor-pointer"
+                onClick={() => router.push('/profile')}
+              >
+                <User className="h-4 w-4" />
+                <span>Profile</span>
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                className="flex items-center gap-2 cursor-pointer"
+                onClick={() => router.push('/settings')}
+              >
+                <Settings className="h-4 w-4" />
+                <span>Settings</span>
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem 
+                className="flex items-center gap-2 cursor-pointer text-destructive focus:text-destructive"
+                onClick={async () => {
+                  const supabase = createClient()
+                  await supabase.auth.signOut()
+                  router.push('/login')
+                }}
+              >
+                <LogOut className="h-4 w-4" />
+                <span>Sign Out</span>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
 
           {/* Mobile Menu Button - Only show on very small screens */}
           <Button 
