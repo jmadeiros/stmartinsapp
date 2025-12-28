@@ -164,3 +164,108 @@ export async function getEventById(eventId: string) {
     }
   }
 }
+
+/**
+ * Get all events organized by a specific user
+ */
+export async function getUserEvents(userId: string) {
+  const supabase = await createClient()
+
+  try {
+    const { data: events, error } = await supabase
+      .from('events')
+      .select(`
+        id,
+        title,
+        description,
+        location,
+        start_time,
+        end_time,
+        category,
+        status,
+        cause,
+        created_at,
+        organization:organizations!events_org_id_fkey(
+          id,
+          name
+        )
+      `)
+      .eq('organizer_id', userId)
+      .order('start_time', { ascending: false })
+      .limit(10)
+
+    if (error) {
+      console.error('[getUserEvents] Error fetching events:', error)
+      return { data: [], error: error.message }
+    }
+
+    // Get RSVP counts for each event
+    const eventsWithCounts = await Promise.all((events || []).map(async (event) => {
+      const { count } = await supabase
+        .from('event_rsvps')
+        .select('*', { count: 'exact', head: true })
+        .eq('event_id', event.id)
+        .eq('status', 'going')
+
+      return {
+        ...event,
+        attendeeCount: count || 0
+      }
+    }))
+
+    return { data: eventsWithCounts, error: null }
+  } catch (error) {
+    console.error('[getUserEvents] Exception:', error)
+    return { data: [], error: error instanceof Error ? error.message : 'Unknown error' }
+  }
+}
+
+/**
+ * Get all events a user has RSVP'd to
+ */
+export async function getUserRSVPs(userId: string) {
+  const supabase = await createClient()
+
+  try {
+    const { data: rsvps, error } = await supabase
+      .from('event_rsvps')
+      .select(`
+        id,
+        status,
+        created_at,
+        event:events(
+          id,
+          title,
+          description,
+          location,
+          start_time,
+          end_time,
+          category,
+          status,
+          organization:organizations!events_org_id_fkey(
+            id,
+            name
+          )
+        )
+      `)
+      .eq('user_id', userId)
+      .eq('status', 'going')
+      .order('created_at', { ascending: false })
+      .limit(10)
+
+    if (error) {
+      console.error('[getUserRSVPs] Error fetching RSVPs:', error)
+      return { data: [], error: error.message }
+    }
+
+    // Flatten the data structure
+    const events = (rsvps || [])
+      .filter(rsvp => rsvp.event)
+      .map(rsvp => rsvp.event)
+
+    return { data: events, error: null }
+  } catch (error) {
+    console.error('[getUserRSVPs] Exception:', error)
+    return { data: [], error: error instanceof Error ? error.message : 'Unknown error' }
+  }
+}
