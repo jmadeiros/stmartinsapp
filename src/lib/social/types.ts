@@ -47,8 +47,11 @@ export type EventPost = {
   needs?: Needs
   status?: "Open" | "Closed"
   timeAgo: string
+  createdAt?: string
   interestedOrgs?: string[]
   participantsReferred?: number
+  org_id?: string
+  collaboratorOrgs?: Array<{id: string, name: string, logo_url?: string | null}>
 }
 
 export type ProjectPost = {
@@ -67,8 +70,11 @@ export type ProjectPost = {
   progress?: Progress
   eventsCount?: number
   timeAgo: string
+  createdAt?: string
   interestedOrgs?: string[]
   participantsReferred?: number
+  org_id?: string
+  collaboratorOrgs?: Array<{id: string, name: string, logo_url?: string | null}>
 }
 
 export type PostCategory = "intros" | "wins" | "opportunities" | "questions" | "learnings" | "general"
@@ -85,6 +91,7 @@ export type FeedPost = {
   cause?: string
   image?: string
   timeAgo: string
+  createdAt?: string
   likes?: number
   comments?: number
   isPinned?: boolean

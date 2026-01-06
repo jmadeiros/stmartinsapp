@@ -104,6 +104,7 @@ export async function getEventById(eventId: string) {
       .from('events')
       .select(`
         *,
+        collaborating_orgs,
         organizer:user_profiles!events_organizer_id_fkey(
           user_id,
           full_name,
@@ -132,14 +133,6 @@ export async function getEventById(eventId: string) {
             avatar_url,
             role
           )
-        ),
-        collaborations:event_collaborations(
-          id,
-          collaborator_org:organizations!event_collaborations_collaborator_org_id_fkey(
-            id,
-            name,
-            logo_url
-          )
         )
       `)
       .eq('id', eventId)
@@ -154,7 +147,18 @@ export async function getEventById(eventId: string) {
       return { success: false, error: 'Event not found', data: null }
     }
 
-    return { success: true, data: event, error: null }
+    // After getting event data, fetch collaborator org details
+    let collaboratorOrgs: Array<{id: string, name: string, logo_url?: string | null}> = []
+    const eventData = event as { collaborating_orgs?: string[] | null }
+    if (eventData.collaborating_orgs && eventData.collaborating_orgs.length > 0) {
+      const { data: orgs } = await supabase
+        .from('organizations')
+        .select('id, name, logo_url')
+        .in('id', eventData.collaborating_orgs)
+      collaboratorOrgs = orgs || []
+    }
+
+    return { success: true, data: { ...(event as Record<string, unknown>), collaboratorOrgs }, error: null }
   } catch (error) {
     console.error('[getEventById] Exception:', error)
     return {

@@ -7,8 +7,8 @@ import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
-import { MultiSelect } from "@/components/ui/multiselect"
-import { ChevronDown, Target, Plus, Loader2 } from "lucide-react"
+import { Switch } from "@/components/ui/switch"
+import { ChevronDown, Target, Loader2 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { createProject } from "@/lib/actions/projects"
 import { useRouter } from "next/navigation"
@@ -31,21 +31,17 @@ export function CreateProjectDialog({ open, onOpenChange, userId, orgId }: Creat
     impactGoal: "",
     cause: "",
     targetDate: "",
+    needsVolunteers: false,
     volunteersNeeded: "",
-    participantPrograms: "",
+    needsParticipants: false,
+    participantsNeeded: "",
+    participantTypes: "",
+    needsResources: false,
     resourcesRequested: "",
+    needsFundraising: false,
     fundraisingGoal: "",
     seekingPartners: false,
-    inviteCollaborators: [] as string[],
   })
-
-  // Mock organization data - will be replaced with real data from API
-  const availableOrganizations = [
-    { label: "Youth Action Network", value: "00000000-0000-0000-0000-000000000002" },
-    { label: "Community Arts Trust", value: "00000000-0000-0000-0000-000000000003" },
-    { label: "Elder Care Foundation", value: "00000000-0000-0000-0000-000000000004" },
-    { label: "Food Security Alliance", value: "00000000-0000-0000-0000-000000000005" },
-  ]
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -67,11 +63,10 @@ export function CreateProjectDialog({ open, onOpenChange, userId, orgId }: Creat
         orgId: orgId,
         cause: formData.cause || undefined,
         targetDate: formData.targetDate || undefined,
-        volunteersNeeded: formData.volunteersNeeded ? parseInt(formData.volunteersNeeded) : undefined,
-        resourcesRequested: formData.resourcesRequested || undefined,
-        fundraisingGoal: formData.fundraisingGoal || undefined,
+        volunteersNeeded: formData.needsVolunteers && formData.volunteersNeeded ? parseInt(formData.volunteersNeeded) : undefined,
+        resourcesRequested: formData.needsResources && formData.resourcesRequested ? formData.resourcesRequested : undefined,
+        fundraisingGoal: formData.needsFundraising && formData.fundraisingGoal ? formData.fundraisingGoal : undefined,
         seekingPartners: formData.seekingPartners,
-        inviteCollaborators: formData.inviteCollaborators.length > 0 ? formData.inviteCollaborators : undefined,
       })
 
       if (result.success) {
@@ -82,12 +77,16 @@ export function CreateProjectDialog({ open, onOpenChange, userId, orgId }: Creat
           impactGoal: "",
           cause: "",
           targetDate: "",
+          needsVolunteers: false,
           volunteersNeeded: "",
-          participantPrograms: "",
+          needsParticipants: false,
+          participantsNeeded: "",
+          participantTypes: "",
+          needsResources: false,
           resourcesRequested: "",
+          needsFundraising: false,
           fundraisingGoal: "",
           seekingPartners: false,
-          inviteCollaborators: [],
         })
         setShowAdvanced(false)
         onOpenChange(false)
@@ -166,18 +165,17 @@ export function CreateProjectDialog({ open, onOpenChange, userId, orgId }: Creat
               <Button
                 type="button"
                 variant="outline"
-                className="w-full gap-2 justify-between"
+                className="w-full justify-between"
               >
                 <span className="flex items-center gap-2">
-                  <Plus className="h-4 w-4" />
-                  Advanced Options
+                  <ChevronDown
+                    className={cn(
+                      "h-4 w-4 transition-transform duration-200",
+                      showAdvanced && "rotate-180"
+                    )}
+                  />
+                  {showAdvanced ? "Hide" : "Show"} additional options
                 </span>
-                <ChevronDown
-                  className={cn(
-                    "h-4 w-4 transition-transform duration-200",
-                    showAdvanced && "rotate-180"
-                  )}
-                />
               </Button>
             </CollapsibleTrigger>
 
@@ -206,82 +204,172 @@ export function CreateProjectDialog({ open, onOpenChange, userId, orgId }: Creat
                   </p>
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="volunteersNeeded">Volunteers Needed</Label>
-                  <Input
-                    id="volunteersNeeded"
-                    type="number"
-                    placeholder="100"
-                    min="0"
-                    value={formData.volunteersNeeded}
-                    onChange={(e) => setFormData({ ...formData, volunteersNeeded: e.target.value })}
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="participantPrograms">Participants Needed</Label>
-                  <Input
-                    id="participantPrograms"
-                    placeholder="e.g., Youth Programs, Senior Services"
-                    value={formData.participantPrograms}
-                    onChange={(e) => setFormData({ ...formData, participantPrograms: e.target.value })}
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    Comma-separated program types
-                  </p>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="resourcesRequested">Resources Requested</Label>
-                  <Input
-                    id="resourcesRequested"
-                    placeholder="e.g., Laptops, Venue, Transportation"
-                    value={formData.resourcesRequested}
-                    onChange={(e) => setFormData({ ...formData, resourcesRequested: e.target.value })}
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    Comma-separated resources
-                  </p>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="fundraisingGoal">Fundraising Goal</Label>
-                  <Input
-                    id="fundraisingGoal"
-                    placeholder="e.g., $50,000"
-                    value={formData.fundraisingGoal}
-                    onChange={(e) => setFormData({ ...formData, fundraisingGoal: e.target.value })}
-                  />
-                </div>
-
-                <div className="flex items-center space-x-2">
-                  <input
-                    type="checkbox"
-                    id="seekingPartners"
-                    checked={formData.seekingPartners}
-                    onChange={(e) => setFormData({ ...formData, seekingPartners: e.target.checked })}
-                    className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
-                  />
-                  <Label htmlFor="seekingPartners" className="font-normal cursor-pointer">
-                    Seeking partner organizations
-                  </Label>
-                </div>
-
-                {formData.seekingPartners && (
-                  <div className="space-y-2 pl-6 border-l-2 border-emerald-200">
-                    <Label htmlFor="inviteCollaborators">Invite Organizations</Label>
-                    <MultiSelect
-                      options={availableOrganizations}
-                      selected={formData.inviteCollaborators}
-                      onChange={(values) => setFormData({ ...formData, inviteCollaborators: values })}
-                      placeholder="Select organizations to invite..."
-                      className="w-full"
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="needsVolunteers" className="font-normal cursor-pointer">
+                      Volunteers Needed
+                    </Label>
+                    <Switch
+                      id="needsVolunteers"
+                      checked={formData.needsVolunteers}
+                      onCheckedChange={(checked) => setFormData({
+                        ...formData,
+                        needsVolunteers: checked,
+                        volunteersNeeded: checked ? formData.volunteersNeeded : ""
+                      })}
                     />
-                    <p className="text-xs text-muted-foreground">
-                      Organizations will receive a collaboration invitation and can accept or decline
-                    </p>
                   </div>
-                )}
+
+                  {formData.needsVolunteers && (
+                    <div className="pl-4 mt-2">
+                      <Input
+                        id="volunteersNeeded"
+                        type="number"
+                        placeholder="e.g., 100"
+                        min="1"
+                        value={formData.volunteersNeeded}
+                        onChange={(e) => setFormData({ ...formData, volunteersNeeded: e.target.value })}
+                      />
+                      <p className="text-xs text-muted-foreground mt-1">
+                        How many volunteers do you need?
+                      </p>
+                    </div>
+                  )}
+                </div>
+
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="needsParticipants" className="font-normal cursor-pointer">
+                      Participants Needed
+                    </Label>
+                    <Switch
+                      id="needsParticipants"
+                      checked={formData.needsParticipants}
+                      onCheckedChange={(checked) => setFormData({
+                        ...formData,
+                        needsParticipants: checked,
+                        participantsNeeded: checked ? formData.participantsNeeded : "",
+                        participantTypes: checked ? formData.participantTypes : ""
+                      })}
+                    />
+                  </div>
+
+                  {formData.needsParticipants && (
+                    <div className="pl-4 mt-2 space-y-3">
+                      <div>
+                        <Input
+                          id="participantsNeeded"
+                          type="number"
+                          placeholder="e.g., 50"
+                          min="1"
+                          value={formData.participantsNeeded}
+                          onChange={(e) => setFormData({ ...formData, participantsNeeded: e.target.value })}
+                        />
+                        <p className="text-xs text-muted-foreground mt-1">
+                          How many participants do you need?
+                        </p>
+                      </div>
+                      <div>
+                        <Input
+                          id="participantTypes"
+                          type="text"
+                          placeholder="e.g., Kids aged 5-12, Elderly residents"
+                          value={formData.participantTypes}
+                          onChange={(e) => setFormData({ ...formData, participantTypes: e.target.value })}
+                        />
+                        <p className="text-xs text-muted-foreground mt-1">
+                          What type of participants? (optional)
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="needsResources" className="font-normal cursor-pointer">
+                      Resources Needed
+                    </Label>
+                    <Switch
+                      id="needsResources"
+                      checked={formData.needsResources}
+                      onCheckedChange={(checked) => setFormData({
+                        ...formData,
+                        needsResources: checked,
+                        resourcesRequested: checked ? formData.resourcesRequested : ""
+                      })}
+                    />
+                  </div>
+
+                  {formData.needsResources && (
+                    <div className="pl-4 mt-2">
+                      <Input
+                        id="resourcesRequested"
+                        placeholder="e.g., Laptops, Venue space, Transportation"
+                        value={formData.resourcesRequested}
+                        onChange={(e) => setFormData({ ...formData, resourcesRequested: e.target.value })}
+                      />
+                      <p className="text-xs text-muted-foreground mt-1">
+                        What resources do you need? (comma-separated)
+                      </p>
+                    </div>
+                  )}
+                </div>
+
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="needsFundraising" className="font-normal cursor-pointer">
+                      Fundraising Goal
+                    </Label>
+                    <Switch
+                      id="needsFundraising"
+                      checked={formData.needsFundraising}
+                      onCheckedChange={(checked) => setFormData({
+                        ...formData,
+                        needsFundraising: checked,
+                        fundraisingGoal: checked ? formData.fundraisingGoal : ""
+                      })}
+                    />
+                  </div>
+
+                  {formData.needsFundraising && (
+                    <div className="pl-4 mt-2">
+                      <div className="relative">
+                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">£</span>
+                        <Input
+                          id="fundraisingGoal"
+                          type="number"
+                          placeholder="e.g., 5000"
+                          min="1"
+                          className="pl-7"
+                          value={formData.fundraisingGoal}
+                          onChange={(e) => setFormData({ ...formData, fundraisingGoal: e.target.value })}
+                        />
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        How much funding do you need?
+                      </p>
+                    </div>
+                  )}
+                </div>
+
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <Label htmlFor="seekingPartners" className="font-normal cursor-pointer">
+                        Seeking Partner Collaboration
+                      </Label>
+                      <p className="text-xs text-muted-foreground">
+                        Other organisations can express interest in partnering
+                      </p>
+                    </div>
+                    <Switch
+                      id="seekingPartners"
+                      checked={formData.seekingPartners}
+                      onCheckedChange={(checked) => setFormData({ ...formData, seekingPartners: checked })}
+                    />
+                  </div>
+                </div>
               </div>
             </CollapsibleContent>
           </Collapsible>

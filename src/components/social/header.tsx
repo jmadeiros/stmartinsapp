@@ -13,28 +13,38 @@ import { Search, Bell, User, Menu, Sparkles, Zap, X, MessageSquare, Settings, Lo
 import { motion, AnimatePresence } from "framer-motion"
 import { usePathname, useRouter } from "next/navigation"
 import Link from "next/link"
-import { cn } from "@/lib/utils"
-import { getUnreadNotificationCount } from "@/lib/actions/notifications"
 import { getUnreadChatCount } from "@/lib/actions/chat"
 import { createClient } from "@/lib/supabase/client"
 import { NotificationsDropdown } from "./notifications-dropdown"
 import { FeedbackDialog } from "./feedback-dialog"
+import { useNotifications } from "@/hooks/use-notifications"
 
 export function SocialHeader() {
   const pathname = usePathname()
   const router = useRouter()
+  const supabaseRef = useRef(createClient())
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [searchExpanded, setSearchExpanded] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
-  const [notificationCount, setNotificationCount] = useState(0)
   const [chatCount, setChatCount] = useState(0)
   const [notificationsOpen, setNotificationsOpen] = useState(false)
   const [userMenuOpen, setUserMenuOpen] = useState(false)
   const [feedbackOpen, setFeedbackOpen] = useState(false)
   const [userId, setUserId] = useState<string | undefined>(undefined)
 
-  // Track when notification count was last updated by dropdown to prevent overwriting
-  const lastDropdownUpdateRef = useRef<number>(0)
+  // Use notifications hook at Header level - keeps subscription always active
+  const {
+    notifications,
+    unreadCount,
+    isLoading: notificationsLoading,
+    isFetching: notificationsFetching,
+    error: notificationsError,
+    markAsRead,
+    markAllAsRead,
+  } = useNotifications({
+    userId,
+    enabled: !!userId,
+  })
 
   // Handle search submission
   const handleSearch = useCallback((e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -49,41 +59,63 @@ export function SocialHeader() {
     setSearchQuery(e.target.value)
   }, [])
 
-  // Fetch badge counts
+  // Keep userId in sync with Supabase session (fast path uses cached session)
   useEffect(() => {
-    async function fetchBadgeCounts() {
-      const supabase = createClient()
-      const { data: { user } } = await supabase.auth.getUser()
+    const supabase = supabaseRef.current
+    let isMounted = true
 
-      if (!user) {
-        return
+    async function syncFromSession() {
+      const { data, error } = await supabase.auth.getSession()
+      if (!isMounted) return
+
+      if (error) {
+        console.error('[SocialHeader] Failed to get session:', error)
       }
 
-      setUserId(user.id)
+      setUserId(data.session?.user?.id)
+    }
 
-      // Only fetch notification count if dropdown hasn't updated recently (within 5 seconds)
-      // This prevents the periodic refresh from overwriting optimistic updates
-      const timeSinceDropdownUpdate = Date.now() - lastDropdownUpdateRef.current
-      if (timeSinceDropdownUpdate > 5000) {
-        const notificationResult = await getUnreadNotificationCount(user.id)
-        if (notificationResult.success) {
-          setNotificationCount(notificationResult.count)
-        }
-      }
+    syncFromSession()
 
-      // Fetch chat count
-      const chatResult = await getUnreadChatCount(user.id)
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUserId(session?.user?.id)
+    })
+
+    return () => {
+      isMounted = false
+      subscription.unsubscribe()
+    }
+  }, [])
+
+  // Poll for chat count (notifications use realtime + local cache)
+  useEffect(() => {
+    if (!userId) {
+      setChatCount(0)
+      return
+    }
+
+    const currentUserId = userId
+    let isMounted = true
+
+    async function fetchChatCount() {
+      const chatResult = await getUnreadChatCount(currentUserId)
+      if (!isMounted) return
       if (chatResult.success) {
         setChatCount(chatResult.count)
       }
     }
 
-    fetchBadgeCounts()
+    fetchChatCount()
 
-    // Optionally refresh counts periodically
-    const interval = setInterval(fetchBadgeCounts, 30000) // Refresh every 30 seconds
-    return () => clearInterval(interval)
-  }, [])
+    const interval = setInterval(fetchChatCount, 30000)
+
+    return () => {
+      isMounted = false
+      clearInterval(interval)
+    }
+  }, [userId])
 
   // Auto-collapse search on resize if we're on desktop
   useEffect(() => {
@@ -96,20 +128,14 @@ export function SocialHeader() {
     return () => window.removeEventListener('resize', handleResize)
   }, [])
 
-  // Memoized callback to update notification count from dropdown
-  const handleNotificationCountChange = useCallback((newCount: number) => {
-    setNotificationCount(newCount)
-    // Record the timestamp to prevent periodic refresh from overwriting
-    lastDropdownUpdateRef.current = Date.now()
-  }, [])
-  
+    
   const navItems = [
     { label: "Home", href: "/dashboard" },
     { label: "Chat", href: "/chat", badge: chatCount },
     { label: "Calendar", href: "/calendar" },
-    { label: "Opportunities", href: "/opportunities" },
-    { label: "People", href: "/people" },
     { label: "Projects", href: "/projects" },
+    { label: "People", href: "/people" },
+    { label: "Notes", href: "/meeting-notes" },
   ]
 
   return (
@@ -172,7 +198,7 @@ export function SocialHeader() {
                     relative px-2 md:px-2.5 lg:px-3 py-2 text-sm font-medium transition-colors rounded-lg
                     ${isActive 
                       ? 'text-primary' 
-                      : 'text-muted-foreground hover:text-foreground hover:bg-[var(--surface-secondary)]'
+                      : 'text-muted-foreground hover:text-primary hover:bg-primary/15'
                     }
                     group
                   `}
@@ -311,9 +337,9 @@ export function SocialHeader() {
               className="relative h-9 w-9 sm:h-10 sm:w-10 min-h-[44px] min-w-[44px] hover:bg-[var(--surface-secondary)] transition-colors rounded-xl"
             >
               <Bell className="h-4 w-4" />
-              {notificationCount > 0 && (
+              {unreadCount > 0 && (
                 <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground ring-2 ring-background shadow-lg">
-                  {notificationCount}
+                  {unreadCount}
                 </span>
               )}
             </Button>
@@ -321,7 +347,12 @@ export function SocialHeader() {
               userId={userId}
               isOpen={notificationsOpen}
               onClose={() => setNotificationsOpen(false)}
-              onCountChange={handleNotificationCountChange}
+              notifications={notifications}
+              unreadCount={unreadCount}
+              isLoading={notificationsLoading}
+              isFetching={notificationsFetching}
+              markAsRead={markAsRead}
+              markAllAsRead={markAllAsRead}
             />
           </div>
 

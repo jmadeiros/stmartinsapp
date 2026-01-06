@@ -119,6 +119,16 @@ export async function getProjectById(id: string): Promise<ProjectPost | null> {
     // Cast project to expected shape
     const p = project as any
 
+    // Fetch collaborator organization details if collaborators exist
+    let collaboratorOrgs: Array<{id: string, name: string, logo_url?: string | null}> = []
+    if (p.collaborators && p.collaborators.length > 0) {
+      const { data: orgs } = await supabase
+        .from('organizations')
+        .select('id, name, logo_url')
+        .in('id', p.collaborators)
+      collaboratorOrgs = orgs || []
+    }
+
     // Count linked events
     const { count: eventsCount } = await supabase
       .from('events')
@@ -159,6 +169,8 @@ export async function getProjectById(id: string): Promise<ProjectPost | null> {
       timeAgo: formatDistanceToNow(new Date(p.created_at), { addSuffix: true }),
       interestedOrgs: p.interested_orgs || undefined,
       participantsReferred: p.participants_referred || 0,
+      org_id: p.org_id,
+      collaboratorOrgs,
     }
 
     return projectPost

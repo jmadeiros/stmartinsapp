@@ -12,6 +12,31 @@ export type Database = {
   __InternalSupabase: {
     PostgrestVersion: "13.0.5"
   }
+  graphql_public: {
+    Tables: {
+      [_ in never]: never
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      graphql: {
+        Args: {
+          extensions?: Json
+          operationName?: string
+          query?: string
+          variables?: Json
+        }
+        Returns: Json
+      }
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
   public: {
     Tables: {
       action_items: {
@@ -271,6 +296,61 @@ export type Database = {
             columns: ["event_id"]
             isOneToOne: false
             referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      event_comments: {
+        Row: {
+          author_id: string
+          content: string
+          created_at: string | null
+          deleted_at: string | null
+          event_id: string
+          id: string
+          parent_comment_id: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          author_id: string
+          content: string
+          created_at?: string | null
+          deleted_at?: string | null
+          event_id: string
+          id?: string
+          parent_comment_id?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          author_id?: string
+          content?: string
+          created_at?: string | null
+          deleted_at?: string | null
+          event_id?: string
+          id?: string
+          parent_comment_id?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_comments_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "calendar"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_comments_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_comments_parent_comment_id_fkey"
+            columns: ["parent_comment_id"]
+            isOneToOne: false
+            referencedRelation: "event_comments"
             referencedColumns: ["id"]
           },
         ]
@@ -581,6 +661,20 @@ export type Database = {
             referencedRelation: "messages"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "messages_sender_id_fkey"
+            columns: ["sender_id"]
+            isOneToOne: false
+            referencedRelation: "people"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "messages_sender_id_fkey"
+            columns: ["sender_id"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["user_id"]
+          },
         ]
       }
       notifications: {
@@ -640,6 +734,7 @@ export type Database = {
           mission: string | null
           name: string
           primary_color: string | null
+          room_location: string | null
           size_range: string | null
           slug: string
           social_links: Json | null
@@ -660,6 +755,7 @@ export type Database = {
           mission?: string | null
           name: string
           primary_color?: string | null
+          room_location?: string | null
           size_range?: string | null
           slug: string
           social_links?: Json | null
@@ -680,6 +776,7 @@ export type Database = {
           mission?: string | null
           name?: string
           primary_color?: string | null
+          room_location?: string | null
           size_range?: string | null
           slug?: string
           social_links?: Json | null
@@ -687,6 +784,139 @@ export type Database = {
           website?: string | null
         }
         Relationships: []
+      }
+      poll_options: {
+        Row: {
+          created_at: string | null
+          id: string
+          option_text: string
+          poll_id: string | null
+          position: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          option_text: string
+          poll_id?: string | null
+          position?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          option_text?: string
+          poll_id?: string | null
+          position?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "poll_options_poll_id_fkey"
+            columns: ["poll_id"]
+            isOneToOne: false
+            referencedRelation: "polls"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      poll_votes: {
+        Row: {
+          poll_option_id: string
+          user_id: string
+          voted_at: string | null
+        }
+        Insert: {
+          poll_option_id: string
+          user_id: string
+          voted_at?: string | null
+        }
+        Update: {
+          poll_option_id?: string
+          user_id?: string
+          voted_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "poll_votes_poll_option_id_fkey"
+            columns: ["poll_option_id"]
+            isOneToOne: false
+            referencedRelation: "poll_options"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      polls: {
+        Row: {
+          allow_multiple: boolean | null
+          created_at: string | null
+          expires_at: string | null
+          id: string
+          post_id: string | null
+          question: string
+        }
+        Insert: {
+          allow_multiple?: boolean | null
+          created_at?: string | null
+          expires_at?: string | null
+          id?: string
+          post_id?: string | null
+          question: string
+        }
+        Update: {
+          allow_multiple?: boolean | null
+          created_at?: string | null
+          expires_at?: string | null
+          id?: string
+          post_id?: string | null
+          question?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "polls_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "opportunities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "polls_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      post_acknowledgments: {
+        Row: {
+          acknowledged_at: string | null
+          post_id: string
+          user_id: string
+        }
+        Insert: {
+          acknowledged_at?: string | null
+          post_id: string
+          user_id: string
+        }
+        Update: {
+          acknowledged_at?: string | null
+          post_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "post_acknowledgments_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "opportunities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "post_acknowledgments_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "posts"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       post_comments: {
         Row: {
@@ -914,6 +1144,61 @@ export type Database = {
           },
         ]
       }
+      project_comments: {
+        Row: {
+          author_id: string
+          content: string
+          created_at: string | null
+          deleted_at: string | null
+          id: string
+          parent_comment_id: string | null
+          project_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          author_id: string
+          content: string
+          created_at?: string | null
+          deleted_at?: string | null
+          id?: string
+          parent_comment_id?: string | null
+          project_id: string
+          updated_at?: string | null
+        }
+        Update: {
+          author_id?: string
+          content?: string
+          created_at?: string | null
+          deleted_at?: string | null
+          id?: string
+          parent_comment_id?: string | null
+          project_id?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_comments_parent_comment_id_fkey"
+            columns: ["parent_comment_id"]
+            isOneToOne: false
+            referencedRelation: "project_comments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_comments_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_comments_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects_view"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       project_interest: {
         Row: {
           can_partner: boolean | null
@@ -1103,6 +1388,42 @@ export type Database = {
           },
         ]
       }
+      user_feedback: {
+        Row: {
+          created_at: string
+          description: string
+          feedback_type: string
+          id: string
+          page_url: string | null
+          screenshot_url: string | null
+          status: string
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          description: string
+          feedback_type?: string
+          id?: string
+          page_url?: string | null
+          screenshot_url?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          description?: string
+          feedback_type?: string
+          id?: string
+          page_url?: string | null
+          screenshot_url?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       user_memberships: {
         Row: {
           id: string
@@ -1147,8 +1468,10 @@ export type Database = {
           bio: string | null
           contact_email: string | null
           contact_phone: string | null
+          cover_image_url: string | null
           created_at: string
           full_name: string
+          instagram_url: string | null
           interests: string[] | null
           job_title: string | null
           last_active_at: string | null
@@ -1157,17 +1480,21 @@ export type Database = {
           phone: string | null
           role: Database["public"]["Enums"]["user_role"]
           skills: string[] | null
+          twitter_url: string | null
           updated_at: string
           user_id: string
           visibility: string
+          website_url: string | null
         }
         Insert: {
           avatar_url?: string | null
           bio?: string | null
           contact_email?: string | null
           contact_phone?: string | null
+          cover_image_url?: string | null
           created_at?: string
           full_name: string
+          instagram_url?: string | null
           interests?: string[] | null
           job_title?: string | null
           last_active_at?: string | null
@@ -1176,17 +1503,21 @@ export type Database = {
           phone?: string | null
           role?: Database["public"]["Enums"]["user_role"]
           skills?: string[] | null
+          twitter_url?: string | null
           updated_at?: string
           user_id: string
           visibility?: string
+          website_url?: string | null
         }
         Update: {
           avatar_url?: string | null
           bio?: string | null
           contact_email?: string | null
           contact_phone?: string | null
+          cover_image_url?: string | null
           created_at?: string
           full_name?: string
+          instagram_url?: string | null
           interests?: string[] | null
           job_title?: string | null
           last_active_at?: string | null
@@ -1195,9 +1526,11 @@ export type Database = {
           phone?: string | null
           role?: Database["public"]["Enums"]["user_role"]
           skills?: string[] | null
+          twitter_url?: string | null
           updated_at?: string
           user_id?: string
           visibility?: string
+          website_url?: string | null
         }
         Relationships: [
           {
@@ -1209,56 +1542,18 @@ export type Database = {
           },
         ]
       }
-      user_feedback: {
-        Row: {
-          id: string
-          user_id: string | null
-          feedback_type: string
-          description: string
-          page_url: string | null
-          screenshot_url: string | null
-          status: string
-          created_at: string
-          updated_at: string
-        }
-        Insert: {
-          id?: string
-          user_id?: string | null
-          feedback_type?: string
-          description: string
-          page_url?: string | null
-          screenshot_url?: string | null
-          status?: string
-          created_at?: string
-          updated_at?: string
-        }
-        Update: {
-          id?: string
-          user_id?: string | null
-          feedback_type?: string
-          description?: string
-          page_url?: string | null
-          screenshot_url?: string | null
-          status?: string
-          created_at?: string
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "user_feedback_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "user_profiles"
-            referencedColumns: ["user_id"]
-          },
-        ]
-      }
       user_settings: {
         Row: {
           created_at: string
           email_notifications: boolean
           language: string | null
           notification_frequency: string | null
+          notify_collaboration_invitations: boolean | null
+          notify_comments: boolean | null
+          notify_event_updates: boolean | null
+          notify_mentions: boolean | null
+          notify_project_updates: boolean | null
+          notify_reactions: boolean | null
           push_notifications: boolean
           theme: string | null
           timezone: string | null
@@ -1270,6 +1565,12 @@ export type Database = {
           email_notifications?: boolean
           language?: string | null
           notification_frequency?: string | null
+          notify_collaboration_invitations?: boolean | null
+          notify_comments?: boolean | null
+          notify_event_updates?: boolean | null
+          notify_mentions?: boolean | null
+          notify_project_updates?: boolean | null
+          notify_reactions?: boolean | null
           push_notifications?: boolean
           theme?: string | null
           timezone?: string | null
@@ -1281,6 +1582,12 @@ export type Database = {
           email_notifications?: boolean
           language?: string | null
           notification_frequency?: string | null
+          notify_collaboration_invitations?: boolean | null
+          notify_comments?: boolean | null
+          notify_event_updates?: boolean | null
+          notify_mentions?: boolean | null
+          notify_project_updates?: boolean | null
+          notify_reactions?: boolean | null
           push_notifications?: boolean
           theme?: string | null
           timezone?: string | null
@@ -1584,6 +1891,10 @@ export type Database = {
         }
         Returns: string
       }
+      user_is_conversation_participant: {
+        Args: { p_conversation_id: string; p_user_id: string }
+        Returns: boolean
+      }
     }
     Enums: {
       event_category:
@@ -1734,6 +2045,9 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
+  graphql_public: {
+    Enums: {},
+  },
   public: {
     Enums: {
       event_category: [

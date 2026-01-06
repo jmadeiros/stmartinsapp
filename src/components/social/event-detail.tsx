@@ -25,17 +25,23 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { rsvpToEvent } from "@/lib/queries/feed"
 import { createClient } from "@/lib/supabase/client"
+import { CommentSection } from "./comment-section"
+import { CollaboratorManagement } from "./collaborator-management"
 
 type EventDetailProps = {
   event: any
   currentUserId: string
+  currentUserOrgId: string
 }
 
-export function EventDetail({ event, currentUserId }: EventDetailProps) {
+export function EventDetail({ event, currentUserId, currentUserOrgId }: EventDetailProps) {
   const supabase = createClient()
 
   // Check if current user is the organizer
   const isOrganizer = event.organizer?.user_id === currentUserId
+
+  // Check if current user's org owns this event
+  const isOwner = event.org_id === currentUserOrgId
 
   // Check if current user has RSVPed
   const userRsvp = event.rsvps?.find((rsvp: any) => rsvp.user_id === currentUserId)
@@ -259,25 +265,30 @@ export function EventDetail({ event, currentUserId }: EventDetailProps) {
 
                 {/* Collaborating Organizations */}
                 {collaboratorOrgs.length > 0 && (
-                  <div className="pt-4 border-t border-gray-100">
-                    <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground mb-3">
-                      Collaborating organizations
-                    </h2>
-                    <div className="flex flex-wrap gap-3">
-                      {collaboratorOrgs.map((org: any) => (
-                        <div key={org.id} className="flex items-center gap-2">
-                          <Avatar className="h-8 w-8">
-                            <AvatarImage src={org.logo_url} alt={org.name} />
-                            <AvatarFallback className="text-xs bg-gradient-to-br from-primary/20 to-accent/20">
-                              {org.name[0]}
-                            </AvatarFallback>
-                          </Avatar>
-                          <span className="text-sm font-medium text-foreground">{org.name}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
+                  <CollaboratorManagement
+                    resourceType="event"
+                    resourceId={event.id}
+                    ownerOrgId={event.org_id}
+                    currentUserOrgId={currentUserOrgId}
+                    collaborators={collaboratorOrgs}
+                    isOwner={isOwner}
+                    onCollaboratorRemoved={() => {
+                      // Refresh the page to get updated data
+                      window.location.reload()
+                    }}
+                  />
                 )}
+              </div>
+            </Card>
+
+            {/* Comments Section */}
+            <Card className="overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-lg">
+              <div className="p-6">
+                <CommentSection
+                  resourceType="event"
+                  resourceId={event.id}
+                  currentUserId={currentUserId}
+                />
               </div>
             </Card>
           </div>

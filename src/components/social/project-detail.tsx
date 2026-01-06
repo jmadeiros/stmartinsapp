@@ -28,6 +28,8 @@ import { Progress } from "@/components/ui/progress"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { ContentBadge } from "@/components/ui/content-badge"
 import { InterestCounter } from "@/components/ui/interest-counter"
+import { CommentSection } from "./comment-section"
+import { CollaboratorManagement } from './collaborator-management'
 import type { ProjectPost } from "@/lib/types"
 import { cn } from "@/lib/utils"
 
@@ -42,11 +44,16 @@ type ProjectSupportResponse = {
 
 interface ProjectDetailProps {
   project: ProjectPost
+  currentUserId: string
+  currentUserOrgId: string
 }
 
-export function ProjectDetail({ project }: ProjectDetailProps) {
+export function ProjectDetail({ project, currentUserId, currentUserOrgId }: ProjectDetailProps) {
   const [interested, setInterested] = useState(false)
-  
+
+  // Check if current user's org owns this project
+  const isOwner = project.org_id === currentUserOrgId
+
   // Collaboration display logic
   const collaborations = project.collaborations ?? []
   
@@ -234,6 +241,17 @@ export function ProjectDetail({ project }: ProjectDetailProps) {
                   </div>
                </div>
             </div>
+
+            {/* Comments Section */}
+            <div className="bg-card rounded-2xl shadow-sm border border-border/50 overflow-hidden">
+              <div className="p-6 sm:p-8">
+                <CommentSection
+                  resourceType="project"
+                  resourceId={project.id}
+                  currentUserId={currentUserId}
+                />
+              </div>
+            </div>
           </div>
 
           {/* Action & Sidebar Column (Right) */}
@@ -363,7 +381,7 @@ export function ProjectDetail({ project }: ProjectDetailProps) {
                    {project.interestedOrgs?.length || 0} interested
                  </span>
                </h3>
-               
+
                <div className="flex -space-x-2 overflow-hidden mb-4">
                   {[1,2,3,4,5].map((_, i) => (
                     <div key={i} className="inline-block h-8 w-8 rounded-full ring-2 ring-background bg-muted flex items-center justify-center text-[10px] font-medium text-muted-foreground">
@@ -374,11 +392,26 @@ export function ProjectDetail({ project }: ProjectDetailProps) {
                     +12
                   </div>
                </div>
-               
+
                <p className="text-xs text-muted-foreground leading-relaxed">
                  Join <strong>St. Martins Village</strong>, <strong>Local Library</strong>, and 12 others in supporting this cause.
                </p>
             </Card>
+
+            {/* Collaborators Section */}
+            {project.collaboratorOrgs && project.collaboratorOrgs.length > 0 && (
+              <CollaboratorManagement
+                resourceType="project"
+                resourceId={project.id}
+                ownerOrgId={project.org_id || ''}
+                currentUserOrgId={currentUserOrgId}
+                collaborators={project.collaboratorOrgs}
+                isOwner={isOwner}
+                onCollaboratorRemoved={() => {
+                  window.location.reload()
+                }}
+              />
+            )}
 
             {/* Admin/Share Tools */}
             <div className="grid grid-cols-2 gap-3">

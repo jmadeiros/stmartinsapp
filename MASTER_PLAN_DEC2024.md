@@ -6,7 +6,8 @@
 > Last verified: December 15, 2024
 
 > **Created:** December 9, 2024
-> **Status:** Ready for Implementation
+> **Last Updated:** January 6, 2025
+> **Status:** Phase 3 Complete (15 done, 3 on hold/removed) - Ready for Phase 4
 > **Related Docs:** [ARCHITECTURE_MAP.md](./ARCHITECTURE_MAP.md), [AI_FEATURES_ROADMAP.md](./AI_FEATURES_ROADMAP.md)
 
 ---
@@ -173,81 +174,90 @@ Most RLS already exists for core tables. The above are additions for new feature
 
 ---
 
-## PHASE 1: Critical Fixes & Cleanup 🔧
+## PHASE 1: Critical Fixes & Cleanup 🔧 ✅ COMPLETE
 *Stabilize before building*
 
-| # | Task | Files | Complexity | 🤖 AI Hook |
-|---|------|-------|------------|------------|
-| 1.1 | **Fix `getProjectById`** - Function imported but doesn't exist | `lib/actions/projects.ts`, `projects/[id]/page.tsx` | 🟢 Small | - |
-| 1.2 | **Delete empty `/directory` route** - Superseded by `/people` | `app/(authenticated)/directory/` | 🟢 Small | - |
-| 1.3 | **Delete old `/components/layout/`** - Orphaned sidebar/header | `components/layout/sidebar.tsx`, `header.tsx` | 🟢 Small | - |
-| 1.4 | **Fix hardcoded `isManager: true`** | `components/social/main-feed.tsx:245` | 🟢 Small | - |
-| 1.5 | **Fix "Current User" hardcoded** - Alert sender | `components/social/main-feed.tsx:230-231` | 🟢 Small | - |
-| 1.6 | **Regenerate TypeScript types** | `lib/database.types.ts` | 🟢 Small | - |
-| 1.7 | **Add event category picker** - Currently hardcodes 'other' | `create-event-dialog.tsx`, `lib/actions/events.ts:48` | 🟢 Small | - |
-| 1.8 | **Wire up Create Post** - Currently only console.logs | `main-feed.tsx` → call `createPost()` | 🟢 Small | - |
+| # | Task | Files | Complexity | Status |
+|---|------|-------|------------|--------|
+| 1.1 | **Fix `getProjectById`** | `lib/actions/projects.ts` | 🟢 Small | ✅ Done |
+| 1.2 | **Delete empty `/directory` route** | `app/(authenticated)/directory/` | 🟢 Small | ✅ Done |
+| 1.3 | **Delete old `/components/layout/`** | `components/layout/` | 🟢 Small | ✅ Done |
+| 1.4 | **Fix hardcoded `isManager: true`** | `main-feed.tsx` | 🟢 Small | ✅ Done |
+| 1.5 | **Fix "Current User" hardcoded** | `main-feed.tsx` | 🟢 Small | ✅ Done |
+| 1.6 | **Regenerate TypeScript types** | `database.types.ts` | 🟢 Small | ✅ Done |
+| 1.7 | **Add event category picker** | `create-event-dialog.tsx` | 🟢 Small | ✅ Done |
+| 1.8 | **Wire up Create Post** | `main-feed.tsx` | 🟢 Small | ✅ Done |
 
 ---
 
-## PHASE 2: Core Feature Completion 🔌
+## PHASE 2: Core Feature Completion 🔌 ✅ COMPLETE
 *Wire mock data to real Supabase*
 
-| # | Task | Files | Complexity | 🤖 AI Hook | Status |
-|---|------|-------|------------|------------|--------|
-| 2.1 | **Wire up Chat** - 100% mock → real messages/conversations | `components/chat/*`, new query file | 🔴 Large | - | 🚧 In Progress |
-| 2.2 | **Wire up Calendar** - Mock events → real events table | `calendar/page.tsx`, `monthly-calendar.tsx` | 🟡 Medium | - | ✅ DONE |
-| 2.3 | **Wire up My Team Box** - Hardcoded → org members query | `left-sidebar.tsx:12-56` | 🟡 Medium | - | ✅ DONE |
-| 2.4 | **Wire up Priority Alerts** - Hardcoded → announcements. **Send restricted to st_martins_staff/admin only** (everyone views + acks) | `right-sidebar.tsx`, `send-alert-dialog.tsx` | 🟡 Medium | Smart alerts | ✅ DONE |
-| 2.5 | **Wire up Badge Counts** - Hardcoded "3" → real unread counts | `header.tsx:14,88-91` | 🟡 Medium | - | ✅ DONE |
-| 2.6 | **Remove mock fallback from Dashboard** | `dashboard/actions.ts:8-165` | 🟢 Small | - | ✅ DONE |
-| 2.7 | **Wire up Community Highlights** - Real metrics from DB (events this week, pinned posts, active projects) | `left-sidebar.tsx:58-83` | 🟡 Medium | - | ✅ DONE |
-| 2.8 | **Remove mock projects** - Once real data exists | `projects/page.tsx:9-155` | 🟢 Small | - | ✅ DONE |
-| 2.9 | **Wire up Post Reactions** - Heart button → `post_reactions` table | `post-card.tsx`, new action | 🟢 Small | - | 🚧 In Progress |
-| 2.10 | **Wire up Post Comments** - Schema exists, build UI + backend. **Include edit/delete own posts & comments** | `post-card.tsx`, new component | 🟡 Medium | - | 🚧 In Progress |
-| 2.11 | **Persist @Mentions** - Currently visual only, save to DB | `main-feed.tsx`, posts table | 🟢 Small | - | ✅ DONE |
+| # | Task | Files | Complexity | Status |
+|---|------|-------|------------|--------|
+| 2.1 | **Wire up Chat** | `components/chat/*` | 🔴 Large | ✅ Done |
+| 2.2 | **Wire up Calendar** | `calendar/page.tsx` | 🟡 Medium | ✅ Done |
+| 2.3 | **Wire up My Team Box** | `left-sidebar.tsx` | 🟡 Medium | ✅ Done |
+| 2.4 | **Wire up Priority Alerts** | `right-sidebar.tsx` | 🟡 Medium | ✅ Done |
+| 2.5 | **Wire up Badge Counts** | `header.tsx` | 🟡 Medium | ✅ Done |
+| 2.6 | **Remove mock fallback from Dashboard** | `dashboard/actions.ts` | 🟢 Small | ✅ Done |
+| 2.7 | **Wire up Community Highlights** | `left-sidebar.tsx` | 🟡 Medium | ✅ Done |
+| 2.8 | **Remove mock projects** | `projects/page.tsx` | 🟢 Small | ✅ Done |
+| 2.9 | **Wire up Post Reactions** | `post-card.tsx` | 🟢 Small | ✅ Done |
+| 2.10 | **Wire up Post Comments** | `post-card.tsx` | 🟡 Medium | ✅ Done |
+| 2.11 | **Persist @Mentions** | `main-feed.tsx` | 🟢 Small | ✅ Done |
 
 ---
 
-## PHASE 3: New Features ✨
+## PHASE 3: New Features ✨ 🚧 IN PROGRESS (13/18)
 *Build missing functionality*
 
-| # | Task | Files | Complexity | 🤖 AI Hook |
-|---|------|-------|------------|------------|
-| 3.1 | **Integrate NotificationsDropdown** - Built but not in header | `notifications-dropdown.tsx` → `header.tsx` | 🟢 Small | Smart notifs |
-| 3.2 | **Use ActionCTA in RSVP flow** - Orphaned component | `action-cta.tsx` → `event-card.tsx`, `project-card.tsx` | 🟡 Medium | - |
-| 3.3 | **Use ExpressInterestButton** - Built but unused | `express-interest-button.tsx` → cards | 🟢 Small | - |
-| 3.4 | **Event Comments System** - console.log → real comments | `event-card.tsx:354`, new component | 🟡 Medium | - |
-| 3.5 | **Project Comments System** - Share infra with events | `project-card.tsx:440` | 🟢 Small | - |
-| 3.6 | **Event Detail Page** - `/events/[id]` route. **Include RSVP attendee list + edit/delete own events** | New route + page | 🟡 Medium | Event-Project link |
-| 3.7 | **Build Opportunities Page** - Merge jobs + opportunity posts | New `/opportunities` route | 🟡 Medium | - |
-| 3.8 | **Build Search** - Header search non-functional (keyword search) | `header.tsx:117-125`, new components | 🔴 Large | - |
-| 3.9 | **Build Profile Page** - View/edit profile, add skills/interests/bio, **social links (LinkedIn, etc.)**, bookmarks | New `/profile` route | 🟡 Medium | - |
-| 3.10 | **Build Settings Page** - Preferences, **notification preferences (email frequency, what to notify)** | New `/settings` route | 🟡 Medium | - |
-| 3.11 | **Build Admin Page** - Org/user management, user approval queue, website approval queue | New `/admin` route | 🔴 Large | - |
-| 3.12 | **Collaboration Post-Acceptance** - Roles, permissions, removal. **Add individual user collaborators (not just orgs) for events/projects** | `lib/actions/collaboration.ts`, cards | 🔴 Large | - |
-| 3.13 | **Meeting Notes on Events** - Attach to calendar events | Calendar detail panel | 🟡 Medium | Notes summary |
-| 3.14 | **Acknowledge Button** - Save to DB (depends on 2.4) | `right-sidebar.tsx:17` | 🟢 Small | - |
-| 3.15 | **Post Pinning** - Admin-only pin/unpin posts (schema exists) | `post-card.tsx`, `PostMenu`, actions | 🟢 Small | - |
-| 3.16 | **Build Polls** - New schema + backend + UI for post polls | New tables, `main-feed.tsx` | 🟡 Medium | - |
-| 3.17 | **Publish to Website** - Toggle on create → admin approval → external calendar/highlights | Create dialogs, admin queue, API | 🔴 Large | - |
-| 3.18 | **User Feedback System** - "Report Issue" button in header → saves to `user_feedback` table | Header, new table, simple form | 🟢 Small | - |
+| # | Task | Files | Complexity | Status |
+|---|------|-------|------------|--------|
+| 3.1 | **Integrate NotificationsDropdown** | `header.tsx` | 🟢 Small | ✅ Done |
+| 3.2 | **Use ActionCTA in RSVP flow** | `event-card.tsx` | 🟡 Medium | ❌ Removed (not needed) |
+| 3.3 | **Use ExpressInterestButton** | cards | 🟢 Small | ❌ Removed (not needed) |
+| 3.4 | **Event Comments System** | `event-card.tsx` | 🟡 Medium | ✅ Done (Dec 29) |
+| 3.5 | **Project Comments System** | `project-card.tsx` | 🟢 Small | ✅ Done (Dec 29) |
+| 3.6 | **Event Detail Page** | `/events/[id]` | 🟡 Medium | ✅ Done |
+| 3.7 | **Build Opportunities Page** | `/opportunities` | 🟡 Medium | ➡️ Moved to Phase 5 |
+| 3.8 | **Build Search** | `header.tsx` | 🔴 Large | ✅ Done |
+| 3.9 | **Build Profile Page** | `/profile` | 🟡 Medium | ✅ Done |
+| 3.10 | **Build Settings Page** | `/settings` | 🟡 Medium | ✅ Done |
+| 3.11 | **Build Admin Page** | `/admin` | 🔴 Large | ✅ Done |
+| 3.12 | **Collaboration Roles UI** | detail sidebars | 🔴 Large | ✅ Done (Jan 6) - pending user testing |
+| 3.13 | **Meeting Notes UI** | `/meeting-notes` | 🟡 Medium | ✅ Done (Jan 6) - pending user testing, includes Granola API sync |
+| 3.14 | **Acknowledge Button** | `right-sidebar.tsx` | 🟢 Small | ✅ Done |
+| 3.15 | **Post Pinning** | `post-card.tsx` | 🟢 Small | ✅ Done |
+| 3.16 | **Build Polls** | `main-feed.tsx` | 🟡 Medium | ✅ Done |
+| 3.17 | **Publish to Website** | admin queue, API | 🔴 Large | ➡️ Moved to Phase 5 |
+| 3.18 | **User Feedback System** | Header | 🟢 Small | ✅ Done |
+| - | **Org Profile Page** | `/organizations/[id]` | 🟡 Medium | ✅ Done |
+| - | **Event/Project Reactions** | cards | 🟢 Small | ✅ Done (Dec 29) |
 
 ---
 
-## PHASE 4: Polish & Production 🚀
+## PHASE 4: Polish & Production 🚀 ⏳ NOT STARTED
 *Production readiness*
 
-| # | Task | Files | Complexity | 🤖 AI Hook |
-|---|------|-------|------------|------------|
-| 4.1 | **Re-enable auth check** - Currently commented out. **Add logout button to header/settings** | `(authenticated)/layout.tsx:11-14`, `header.tsx` | 🟢 Small | - |
-| 4.2 | **Remove all console.log** - ~24 occurrences | Multiple files | 🟡 Medium | - |
-| 4.3 | **Remove TODO comments** - Replace with implementations | `post-card.tsx`, `main-feed.tsx` | 🟢 Small | - |
-| 4.4 | **Clean up old routes** - Delete/redirect /board, /events, /jobs, /menu | Route files | 🟢 Small | - |
-| 4.5 | **Real-time subscriptions** - Live updates for chat, feed, notifications | Chat, feed, notifications | 🟡 Medium | - |
-| 4.6 | **File uploads** - Supabase Storage. **Posts: images/docs. Profiles: avatar. Events: attachments** | Post creation, profiles, events | 🟡 Medium | - |
-| 4.7 | **OAuth + User Onboarding** - Configure providers + post-OAuth profile/membership creation | Supabase config, DB trigger | 🟡 Medium | - |
-| 4.8 | **Mobile responsiveness** - Audit all components | All components | 🟡 Medium | - |
-| 4.9 | **Error handling & loading states** | All pages | 🟡 Medium | - |
+| # | Task | Files | Complexity | Status |
+|---|------|-------|------------|--------|
+| 4.1 | **Re-enable auth check** | `layout.tsx` | 🟢 Small | 🟡 Partial (logout exists, auth check disabled) |
+| 4.2 | **Remove all console.log** | Multiple files | 🟡 Medium | ❌ Not Done |
+| 4.3 | **Remove TODO comments** | Various | 🟢 Small | ❌ Not Done |
+| 4.4 | **Clean up old routes** | Route files | 🟢 Small | ❌ Not Done |
+| 4.5 | **Real-time subscriptions** | Chat, feed, notifications | 🟡 Medium | 🟡 Partial (notifications only) |
+| 4.6 | **File uploads** | Post creation, profiles | 🟡 Medium | ❌ Not Done |
+| 4.7 | **OAuth + User Onboarding** | Supabase config | 🟡 Medium | ❌ Not Done |
+| 4.8 | **Mobile responsiveness audit** | All components | 🟡 Medium | ❌ Not Done |
+| 4.9 | **Error handling & loading states** | All pages | 🟡 Medium | ❌ Not Done |
+| 4.10 | **Linked event/project navigation** | `post-card.tsx` | 🟢 Small | ❌ Not Done |
+| 4.11 | **Post editing** | `post-card.tsx`, actions | 🟡 Medium | ❌ Not Done |
+| 4.12 | **Toast notifications for errors** | RSVP, interest flows | 🟢 Small | ❌ Not Done |
+| 4.13 | **Regenerate database types** | `database.types.ts` | 🟢 Small | ❌ Not Done |
+| 4.14 | **Fix `as any` type casts** | Multiple files (186 instances) | 🟡 Medium | ❌ Not Done |
+| 4.15 | **Update CLAUDE.md docs** | `CLAUDE.md` | 🟢 Small | ❌ Not Done |
+| 4.16 | **Remove hardcoded mock data** | Various components | 🟢 Small | ❌ Not Done |
 
 ---
 
@@ -270,9 +280,10 @@ Most RLS already exists for core tables. The above are additions for new feature
 |---|----------|-----------|----------|-------|
 | **Phase 1** | 8 | 0 | 0 | 8 |
 | **Phase 2** | 4 | 6 | 1 | 11 |
-| **Phase 3** | 7 | 8 | 4 | 19 |
-| **Phase 4** | 3 | 5 | 0 | 8 |
-| **Total** | **22** | **19** | **5** | **46** |
+| **Phase 3** | 7 | 6 | 2 | 15 |
+| **Phase 4** | 9 | 7 | 0 | 16 |
+| **Phase 5** | 0 | 3 | 1 | 4 |
+| **Total** | **28** | **22** | **4** | **54** |
 
 ---
 
@@ -442,7 +453,20 @@ CREATE TABLE user_feedback (
 
 ---
 
-## PHASE 5: AI Features (Future / Optional)
+## PHASE 5: Future / On Hold
+
+*Features deferred from earlier phases, plus optional AI enhancements.*
+
+### Deferred Features (On Hold)
+
+| # | Task | Original Phase | Complexity | Notes |
+|---|------|----------------|------------|-------|
+| 5.1 | **Build Opportunities Page** | Phase 3.7 | 🟡 Medium | `/opportunities` route |
+| 5.2 | **Publish to Website** | Phase 3.17 | 🔴 Large | Admin queue, API integration |
+| 5.3 | **Audit tables** | Phase 4.17 | 🟡 Medium | Track who changed what when |
+| 5.4 | **Volunteer hours tracking** | Future | 🟡 Medium | Log volunteer time contributions |
+
+### AI Features (Optional)
 
 *Only if you add an API later. See [AI_FEATURES_ROADMAP.md](./AI_FEATURES_ROADMAP.md) for implementation details.*
 

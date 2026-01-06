@@ -1,0 +1,76 @@
+# Page snapshot
+
+```yaml
+- generic [active] [ref=e1]:
+  - generic [ref=e8]:
+    - generic [ref=e9]:
+      - paragraph [ref=e10]: Oasis St Martins Village
+      - heading "Aitrium" [level=1] [ref=e11]
+    - generic [ref=e14]:
+      - img "Aurora" [ref=e17] [cursor=pointer]
+      - img "City" [ref=e20] [cursor=pointer]
+      - img "Wave" [ref=e23] [cursor=pointer]
+      - img "Designer" [ref=e26] [cursor=pointer]
+      - img "Gradient" [ref=e29] [cursor=pointer]
+      - img "Architecture" [ref=e32] [cursor=pointer]
+      - img "Mountain" [ref=e35] [cursor=pointer]
+      - img "Valley" [ref=e38] [cursor=pointer]
+      - img "Sunset" [ref=e41] [cursor=pointer]
+      - img "Lake" [ref=e44] [cursor=pointer]
+      - img "Woods" [ref=e47] [cursor=pointer]
+      - img "Aurora 2" [ref=e50] [cursor=pointer]
+      - img "Wave 2" [ref=e53] [cursor=pointer]
+      - img "Designer 2" [ref=e56] [cursor=pointer]
+      - img "Architecture 2" [ref=e59] [cursor=pointer]
+      - img "Valley 2" [ref=e62] [cursor=pointer]
+      - img "Forest 2" [ref=e65] [cursor=pointer]
+      - img "Lake 2" [ref=e68] [cursor=pointer]
+      - img "Road" [ref=e71] [cursor=pointer]
+      - img "Food" [ref=e74] [cursor=pointer]
+      - img "Workspace" [ref=e77] [cursor=pointer]
+      - img "Laptop" [ref=e80] [cursor=pointer]
+      - img "Tech" [ref=e83] [cursor=pointer]
+      - img "Globe" [ref=e86] [cursor=pointer]
+      - img "Camera" [ref=e89] [cursor=pointer]
+      - img "Abstract" [ref=e92] [cursor=pointer]
+      - img "Bridge" [ref=e95] [cursor=pointer]
+      - img "Sky" [ref=e98] [cursor=pointer]
+      - img "Canyon" [ref=e101] [cursor=pointer]
+      - img "Cliffs" [ref=e104] [cursor=pointer]
+    - generic [ref=e105]:
+      - generic [ref=e106]:
+        - button "Sign in with Google" [ref=e107] [cursor=pointer]:
+          - img [ref=e108]
+          - generic [ref=e113]: Sign in with Google
+        - button "Sign in with Microsoft" [ref=e114] [cursor=pointer]:
+          - img [ref=e115]
+          - generic [ref=e120]: Sign in with Microsoft
+        - generic [ref=e123]: or
+        - generic [ref=e126]:
+          - textbox "your.email@company.com" [ref=e127]
+          - button "→" [ref=e128] [cursor=pointer]:
+            - generic [ref=e129]: →
+      - paragraph [ref=e130]:
+        - text: By signing in, you agree to Aitrium's
+        - link "Terms of Service" [ref=e131] [cursor=pointer]:
+          - /url: /terms
+        - text: and
+        - link "Privacy Policy" [ref=e132] [cursor=pointer]:
+          - /url: /privacy
+      - generic [ref=e135]:
+        - img [ref=e136]
+        - generic [ref=e139]:
+          - heading "Development Mode" [level=3] [ref=e140]
+          - paragraph [ref=e141]: Skip OAuth and create a test user to preview the app
+          - generic [ref=e142]:
+            - generic [ref=e143]: "Test account:"
+            - combobox [ref=e144]:
+              - option "Admin (admin@stmartins.dev)" [selected]
+              - option "St Martins Staff (staff@stmartins.dev)"
+              - option "Partner Staff (partner@stmartins.dev)"
+              - option "Volunteer (volunteer@stmartins.dev)"
+          - button "Dev Login (Test Mode)" [ref=e145] [cursor=pointer]
+  - region "Notifications (F8)":
+    - list
+  - alert [ref=e146]
+```

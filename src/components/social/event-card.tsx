@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useRef, useState } from "react"
+import { useEffect, useRef, useState, useCallback } from "react"
 import Link from "next/link"
 import { AnimatePresence, motion } from "framer-motion"
 import {
@@ -16,6 +16,8 @@ import {
   Users,
   Building2,
   MoreHorizontal,
+  Send,
+  Trash2,
 } from "lucide-react"
 
 import { cn } from "@/lib/utils"
@@ -26,6 +28,24 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { ContentBadge } from "@/components/ui/content-badge"
 import { PartnerAvatars } from "@/components/ui/partner-avatars"
 import { InterestCounter } from "@/components/ui/interest-counter"
+import { Textarea } from "@/components/ui/textarea"
+import { createClient } from "@/lib/supabase/client"
+import {
+  getEventComments,
+  addEventComment,
+  deleteEventComment,
+  getEventCommentCount,
+  type EventCommentWithAuthor
+} from "@/lib/actions/event-comments"
+import {
+  toggleEventReaction,
+  getEventReactionData
+} from "@/lib/actions/event-reactions"
+import {
+  toggleEventRsvp,
+  getEventRsvpStatus,
+  updateEventRsvpSupport
+} from "@/lib/actions/event-rsvp"
 
 type EventSupportResponse = {
   volunteer: boolean
@@ -51,11 +71,22 @@ export function EventCard({ event }: EventCardProps) {
   const supportTriggerRef = useRef<HTMLButtonElement | null>(null)
   const [liked, setLiked] = useState(false)
   const [likeCount, setLikeCount] = useState<number>(0)
-  const [commentCount] = useState<number>(0)
+  const [isLoadingReaction, setIsLoadingReaction] = useState(false)
+  const [isLoadingRsvp, setIsLoadingRsvp] = useState(false)
   const [popoverPosition, setPopoverPosition] = useState<{ alignRight: boolean; alignBottom: boolean }>({
     alignRight: true,
     alignBottom: false,
   })
+
+  // Comment state
+  const [showComments, setShowComments] = useState(false)
+  const [comments, setComments] = useState<EventCommentWithAuthor[]>([])
+  const [commentCount, setCommentCount] = useState<number>(0)
+  const [newCommentText, setNewCommentText] = useState("")
+  const [replyingTo, setReplyingTo] = useState<string | null>(null)
+  const [replyText, setReplyText] = useState("")
+  const [loading, setLoading] = useState(false)
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null)
 
   const collaborations = event.collaborations ?? []
   const firstCollaborator = collaborations[0]
@@ -123,13 +154,163 @@ export function EventCard({ event }: EventCardProps) {
       canPartner: false,
     })
 
-  const handleAttendToggle = () => {
-    if (!attending) {
-      setAttending(true)
+  // Get current user
+  useEffect(() => {
+    const supabase = createClient()
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (user) {
+        setCurrentUserId(user.id)
+      }
+    })
+  }, [])
+
+  // Fetch comment count on mount
+  useEffect(() => {
+    async function fetchCommentCount() {
+      const { count } = await getEventCommentCount(event.id)
+      setCommentCount(count)
+    }
+    fetchCommentCount()
+  }, [event.id])
+
+  // Fetch reaction data on mount
+  useEffect(() => {
+    async function fetchReactionData() {
+      const { count, hasReacted } = await getEventReactionData(event.id)
+      setLikeCount(count)
+      setLiked(hasReacted)
+    }
+    fetchReactionData()
+  }, [event.id])
+
+  // Fetch RSVP status on mount
+  useEffect(() => {
+    async function fetchRsvpStatus() {
+      const { isRsvped, rsvpData } = await getEventRsvpStatus(event.id)
+      setAttending(isRsvped)
+
+      // If RSVP exists, populate support choices
+      if (rsvpData) {
+        setSupportChoices({
+          volunteer: rsvpData.volunteer_offered || false,
+          bringParticipants: !!rsvpData.participants_count,
+          participantCount: rsvpData.participants_count ? String(rsvpData.participants_count) : "",
+          canPartner: rsvpData.can_partner || false,
+        })
+      }
+    }
+    fetchRsvpStatus()
+  }, [event.id])
+
+  // Handle like toggle
+  const handleLikeToggle = async () => {
+    if (isLoadingReaction) return
+
+    setIsLoadingReaction(true)
+    // Optimistic update
+    const wasLiked = liked
+    setLiked(!wasLiked)
+    setLikeCount(prev => wasLiked ? prev - 1 : prev + 1)
+
+    const { success, hasReacted } = await toggleEventReaction(event.id)
+
+    if (success) {
+      setLiked(hasReacted)
+    } else {
+      // Revert on failure
+      setLiked(wasLiked)
+      setLikeCount(prev => wasLiked ? prev + 1 : prev - 1)
+    }
+    setIsLoadingReaction(false)
+  }
+
+  const loadComments = useCallback(async () => {
+    setLoading(true)
+    const { data, error } = await getEventComments(event.id)
+    if (!error && data) {
+      setComments(data)
+      setCommentCount(data.reduce((acc, c) => acc + 1 + (c.replies?.length || 0), 0))
+    }
+    setLoading(false)
+  }, [event.id])
+
+  // Load comments when expanded
+  useEffect(() => {
+    if (showComments && comments.length === 0) {
+      loadComments()
+    }
+  }, [showComments, comments.length, loadComments])
+
+  const handleAddComment = async () => {
+    if (!newCommentText.trim()) return
+
+    setLoading(true)
+    const { success, data } = await addEventComment(event.id, newCommentText)
+    if (success && data) {
+      setNewCommentText("")
+      await loadComments()
+    }
+    setLoading(false)
+  }
+
+  const handleAddReply = async (parentId: string) => {
+    if (!replyText.trim()) return
+
+    setLoading(true)
+    const { success } = await addEventComment(event.id, replyText, parentId)
+    if (success) {
+      setReplyText("")
+      setReplyingTo(null)
+      await loadComments()
+    }
+    setLoading(false)
+  }
+
+  const handleDeleteComment = async (commentId: string) => {
+    if (!confirm("Are you sure you want to delete this comment?")) return
+
+    setLoading(true)
+    const { success } = await deleteEventComment(commentId)
+    if (success) {
+      await loadComments()
+    }
+    setLoading(false)
+  }
+
+  const handleAttendToggle = async () => {
+    if (isLoadingRsvp) return
+
+    setIsLoadingRsvp(true)
+
+    // Optimistically update UI
+    const wasAttending = attending
+    setAttending(!wasAttending)
+
+    if (!wasAttending) {
+      // If not previously attending, open the support panel
       setSupportPanelOpen(true)
     } else {
+      // If already attending, toggle the panel
       setSupportPanelOpen((prev) => !prev)
     }
+
+    // Call server action to toggle RSVP
+    const { success, isRsvped } = await toggleEventRsvp(event.id)
+
+    if (success) {
+      setAttending(isRsvped)
+      if (!isRsvped) {
+        // If RSVP removed, close panel and reset choices
+        setSupportPanelOpen(false)
+        resetSupportChoices()
+      }
+    } else {
+      // Revert on failure
+      setAttending(wasAttending)
+      setSupportPanelOpen(false)
+    }
+
+    setIsLoadingRsvp(false)
     setTimeout(() => calculatePopoverPosition(), 0)
   }
 
@@ -152,21 +333,63 @@ export function EventCard({ event }: EventCardProps) {
     setPopoverPosition({ alignRight, alignBottom })
   }
 
-  const handleCancelAttend = () => {
+  const handleCancelAttend = async () => {
+    if (isLoadingRsvp) return
+
+    setIsLoadingRsvp(true)
+
+    // Optimistically update UI
     setAttending(false)
     setSupportPanelOpen(false)
     resetSupportChoices()
+
+    // Call server action to remove RSVP
+    const { success } = await toggleEventRsvp(event.id)
+
+    if (!success) {
+      // Revert on failure
+      setAttending(true)
+    }
+
+    setIsLoadingRsvp(false)
   }
 
-  const handleSupportSubmit = () => {
-    console.log("Event support response:", {
-      volunteer: supportChoices.volunteer,
-      bringParticipants: supportChoices.bringParticipants,
-      participantCount: supportChoices.participantCount ? Number(supportChoices.participantCount) : undefined,
-      canPartner: supportChoices.canPartner,
-    })
-    console.log("Add to calendar:", event.title)
-    setSupportPanelOpen(false)
+  const handleSupportSubmit = async () => {
+    if (isLoadingRsvp) return
+
+    setIsLoadingRsvp(true)
+
+    // Prepare support options
+    const supportOptions: {
+      volunteer_offered?: boolean
+      participants_count?: number | null
+      can_partner?: boolean
+    } = {}
+
+    if (supportChoices.volunteer) {
+      supportOptions.volunteer_offered = true
+    }
+
+    if (supportChoices.bringParticipants && supportChoices.participantCount) {
+      supportOptions.participants_count = Number(supportChoices.participantCount)
+    }
+
+    if (supportChoices.canPartner) {
+      supportOptions.can_partner = true
+    }
+
+    // Update RSVP with support options
+    const { success } = await updateEventRsvpSupport(event.id, supportOptions)
+
+    if (success) {
+      console.log("Event support response saved:", supportOptions)
+      console.log("Add to calendar:", event.title)
+      setSupportPanelOpen(false)
+    } else {
+      console.error("Failed to save support options")
+    }
+
+    setIsLoadingRsvp(false)
   }
 
   const supportCtaLabel = hasSelectedSupport ? "Confirm & add to calendar" : "Add to calendar"
@@ -257,7 +480,9 @@ export function EventCard({ event }: EventCardProps) {
           </div>
         )}
 
-        <h2 className="mb-3 text-xl font-bold text-foreground tracking-tight">{event.title}</h2>
+        <Link href={`/events/${event.id}`} className="block mb-3">
+          <h2 className="text-xl font-bold text-foreground tracking-tight hover:text-primary transition-colors cursor-pointer">{event.title}</h2>
+        </Link>
 
         <p className="mb-4 text-sm leading-relaxed text-muted-foreground">{event.description}</p>
 
@@ -333,15 +558,9 @@ export function EventCard({ event }: EventCardProps) {
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div className="flex items-center gap-3">
               <button
-                onClick={() => {
-                  const next = !liked
-                  setLiked(next)
-                  setLikeCount((c) => {
-                    const nextCount = c + (next ? 1 : -1)
-                    return nextCount < 0 ? 0 : nextCount
-                  })
-                }}
-                className="flex items-center gap-1.5 px-2 py-1.5 text-muted-foreground hover:text-foreground transition-colors"
+                onClick={handleLikeToggle}
+                disabled={isLoadingReaction}
+                className="flex items-center gap-1.5 px-2 py-1.5 text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
               >
                 <Heart className={cn(
                   "h-5 w-5 transition-all duration-200",
@@ -352,10 +571,10 @@ export function EventCard({ event }: EventCardProps) {
                 </span>
               </button>
               <button
-                onClick={() => console.log("Open comments")}
+                onClick={() => setShowComments(!showComments)}
                 className="flex items-center gap-1.5 px-2 py-1.5 text-muted-foreground hover:text-foreground transition-colors"
               >
-                <MessageCircle className="h-5 w-5" />
+                <MessageCircle className={cn("h-5 w-5", showComments && "text-primary")} />
                 <span className="text-sm tabular-nums">{commentCount}</span>
               </button>
             </div>
@@ -365,8 +584,9 @@ export function EventCard({ event }: EventCardProps) {
                 <button
                   ref={supportTriggerRef}
                   onClick={handleAttendToggle}
+                  disabled={isLoadingRsvp}
                   className={cn(
-                    "inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-200",
+                    "inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-200 disabled:opacity-50",
                     attending
                       ? "bg-primary text-primary-foreground shadow-sm"
                       : "bg-primary/10 border border-primary/30 text-primary hover:bg-primary/20 hover:border-primary/50"
@@ -406,6 +626,7 @@ export function EventCard({ event }: EventCardProps) {
                             variant="ghost"
                             size="sm"
                             onClick={handleCancelAttend}
+                            disabled={isLoadingRsvp}
                             className="h-6 px-1.5 text-[11px] text-muted-foreground hover:text-foreground -mt-0.5"
                           >
                             Cancel
@@ -514,7 +735,8 @@ export function EventCard({ event }: EventCardProps) {
                           <Button
                             size="sm"
                             onClick={handleSupportSubmit}
-                            className="w-full gap-1.5 bg-blue-600 text-white hover:bg-blue-600/90 h-8 text-xs"
+                            disabled={isLoadingRsvp}
+                            className="w-full gap-1.5 bg-blue-600 text-white hover:bg-blue-600/90 h-8 text-xs disabled:opacity-50"
                           >
                             <CalendarPlus className="h-3.5 w-3.5" />
                             {supportCtaLabel}
@@ -523,6 +745,7 @@ export function EventCard({ event }: EventCardProps) {
                             variant="ghost"
                             size="sm"
                             onClick={() => setSupportPanelOpen(false)}
+                            disabled={isLoadingRsvp}
                             className="w-full text-[11px] text-muted-foreground hover:text-foreground h-7"
                           >
                             Done for now
@@ -544,7 +767,213 @@ export function EventCard({ event }: EventCardProps) {
           </div>
         </div>
       </div>
+
+      {/* Comments Section */}
+      {showComments && (
+        <div className="px-4 pb-4 space-y-3 border-t border-border pt-3">
+          {/* Comment Input */}
+          <div className="flex gap-3">
+            <Avatar className="h-8 w-8">
+              <AvatarFallback className="bg-primary/20 text-primary text-xs">You</AvatarFallback>
+            </Avatar>
+            <div className="flex-1 space-y-2">
+              <Textarea
+                placeholder="Add a comment..."
+                value={newCommentText}
+                onChange={(e) => setNewCommentText(e.target.value)}
+                className="min-h-[40px] resize-none text-sm"
+                disabled={loading}
+              />
+              <div className="flex justify-end">
+                <Button
+                  size="sm"
+                  onClick={handleAddComment}
+                  disabled={loading || !newCommentText.trim()}
+                  className="gap-2"
+                >
+                  <Send className="h-3.5 w-3.5" />
+                  Comment
+                </Button>
+              </div>
+            </div>
+          </div>
+
+          {/* Comments List */}
+          {loading && comments.length === 0 ? (
+            <div className="text-center text-sm text-muted-foreground py-4">
+              Loading comments...
+            </div>
+          ) : comments.length === 0 ? (
+            <div className="text-center text-sm text-muted-foreground py-4">
+              No comments yet. Be the first to comment!
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {comments.map((comment) => (
+                <EventCommentItem
+                  key={comment.id}
+                  comment={comment}
+                  currentUserId={currentUserId}
+                  onDelete={handleDeleteComment}
+                  onReply={(commentId) => setReplyingTo(commentId)}
+                  replyingTo={replyingTo}
+                  replyText={replyText}
+                  setReplyText={setReplyText}
+                  handleAddReply={handleAddReply}
+                  loading={loading}
+                />
+              ))}
+            </div>
+          )}
+        </div>
+      )}
     </Card>
+  )
+}
+
+// Event Comment Item Component
+interface EventCommentItemProps {
+  comment: EventCommentWithAuthor
+  currentUserId: string | null
+  onDelete: (commentId: string) => void
+  onReply: (commentId: string) => void
+  replyingTo: string | null
+  replyText: string
+  setReplyText: (text: string) => void
+  handleAddReply: (parentId: string) => void
+  loading: boolean
+  isReply?: boolean
+}
+
+function EventCommentItem({
+  comment,
+  currentUserId,
+  onDelete,
+  onReply,
+  replyingTo,
+  replyText,
+  setReplyText,
+  handleAddReply,
+  loading,
+  isReply = false
+}: EventCommentItemProps) {
+  const isAuthor = currentUserId === comment.author_id
+  const showReplyForm = replyingTo === comment.id
+
+  const formatTimeAgo = (dateString: string) => {
+    const date = new Date(dateString)
+    const now = new Date()
+    const seconds = Math.floor((now.getTime() - date.getTime()) / 1000)
+
+    if (seconds < 60) return "just now"
+    const minutes = Math.floor(seconds / 60)
+    if (minutes < 60) return `${minutes}m ago`
+    const hours = Math.floor(minutes / 60)
+    if (hours < 24) return `${hours}h ago`
+    const days = Math.floor(hours / 24)
+    if (days < 7) return `${days}d ago`
+    const weeks = Math.floor(days / 7)
+    if (weeks < 4) return `${weeks}w ago`
+    return date.toLocaleDateString()
+  }
+
+  return (
+    <div className={isReply ? "ml-12" : ""}>
+      <div className="flex gap-3 group">
+        <Avatar className="h-8 w-8 ring-2 ring-primary/10">
+          <AvatarImage src={comment.author.avatar_url || "/placeholder.svg"} alt={comment.author.full_name} />
+          <AvatarFallback className="bg-gradient-to-br from-primary/20 to-accent/20 text-primary text-xs">
+            {comment.author.full_name[0]}
+          </AvatarFallback>
+        </Avatar>
+        <div className="flex-1 space-y-1">
+          <div className="bg-muted/50 rounded-lg p-3">
+            <div className="flex items-center gap-2 mb-1">
+              <span className="text-sm font-semibold text-foreground">
+                {comment.author.full_name}
+              </span>
+              <span className="text-xs text-muted-foreground">
+                {comment.created_at ? formatTimeAgo(comment.created_at) : 'just now'}
+              </span>
+            </div>
+            <p className="text-sm text-foreground whitespace-pre-wrap">{comment.content}</p>
+          </div>
+          <div className="flex items-center gap-3 px-3">
+            {!isReply && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-auto py-1 px-2 text-xs text-muted-foreground hover:text-foreground"
+                onClick={() => onReply(comment.id)}
+              >
+                Reply
+              </Button>
+            )}
+            {isAuthor && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-auto py-1 px-2 text-xs text-muted-foreground hover:text-destructive"
+                onClick={() => onDelete(comment.id)}
+              >
+                <Trash2 className="h-3 w-3" />
+              </Button>
+            )}
+          </div>
+
+          {/* Reply Form */}
+          {showReplyForm && (
+            <div className="mt-2 ml-3 flex gap-2">
+              <Textarea
+                placeholder="Write a reply..."
+                value={replyText}
+                onChange={(e) => setReplyText(e.target.value)}
+                className="min-h-[40px] resize-none text-sm"
+                disabled={loading}
+              />
+              <div className="flex flex-col gap-2">
+                <Button
+                  size="sm"
+                  onClick={() => handleAddReply(comment.id)}
+                  disabled={loading || !replyText.trim()}
+                >
+                  <Send className="h-3.5 w-3.5" />
+                </Button>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => onReply("")}
+                  disabled={loading}
+                >
+                  Cancel
+                </Button>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Nested Replies */}
+      {comment.replies && comment.replies.length > 0 && (
+        <div className="mt-3 space-y-3">
+          {comment.replies.map((reply) => (
+            <EventCommentItem
+              key={reply.id}
+              comment={reply}
+              currentUserId={currentUserId}
+              onDelete={onDelete}
+              onReply={onReply}
+              replyingTo={replyingTo}
+              replyText={replyText}
+              setReplyText={setReplyText}
+              handleAddReply={handleAddReply}
+              loading={loading}
+              isReply={true}
+            />
+          ))}
+        </div>
+      )}
+    </div>
   )
 }
 

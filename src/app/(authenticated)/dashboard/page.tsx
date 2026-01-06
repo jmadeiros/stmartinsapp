@@ -2,6 +2,10 @@ import { createClient } from "@/lib/supabase/server"
 import { SocialDashboard } from "@/components/social/dashboard"
 import { getFeedData } from "./actions"
 
+// Force dynamic rendering - no caching
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
+
 export type UserRole = 'admin' | 'st_martins_staff' | 'partner_staff' | 'volunteer'
 
 export default async function DashboardPage() {

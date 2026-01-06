@@ -1,8 +1,38 @@
 # Phase 3 Decisions - Pre-Implementation
 
 > **Created:** December 15, 2024
-> **Status:** Ready for Implementation
+> **Last Updated:** December 29, 2024
+> **Status:** In Progress
 > **Purpose:** Capture all user decisions before starting Phase 3 tasks
+
+---
+
+## Implementation Status
+
+| Task | Description | Status | Notes |
+|------|-------------|--------|-------|
+| 3.1 | Notifications Dropdown | ✅ Done | Integrated in header |
+| 3.2 | ActionCTA in RSVP Flow | ✅ Done | RSVP persists to DB, support options (volunteer/partner) saved, notifications sent |
+| 3.3 | Interest Button | ✅ Done | Interest persists to DB, support options saved, notifications sent (Jan 4) |
+| 3.4 | Event Comments | ✅ Done | DB tables + server actions + UI (Dec 29) |
+| 3.5 | Project Comments | ✅ Done | DB tables + server actions + UI (Dec 29) |
+| 3.6 | Event Detail Page | ✅ Done | `/events/[id]` route |
+| 3.7 | Opportunities Page | ⏸️ On Hold | User deciding structure |
+| 3.8 | Search | ✅ Done | Global search implemented |
+| 3.9 | Profile Page | ✅ Done | `/profile` route |
+| 3.10 | Settings Page | ✅ Done | `/settings` route |
+| 3.11 | Admin Page | ✅ Done | `/admin` route |
+| 3.12 | Collaboration Roles | ❌ Not Done | No UI for role management |
+| 3.13 | Meeting Notes | ❌ Not Done | DB exists, needs UI on `/meeting-notes` |
+| 3.14 | Acknowledge Button | ✅ Done | Priority alerts acknowledgment |
+| 3.15 | Post Pinning | ✅ Done | Admin-only pin/unpin |
+| 3.16 | Polls | ✅ Done | WhatsApp-style polls |
+| 3.17 | Publish to Website | ⏸️ On Hold | Queue UI exists, publishing logic parked |
+| 3.18 | User Feedback | ✅ Done | Report issue button |
+| - | Org Profile Page | ✅ Done | `/organizations/[id]` |
+| - | Event/Project Reactions | ✅ Done | Persistent likes (Dec 29) |
+
+**Summary:** 15/18 tasks complete, 3 on hold (3.7, 3.17), 2 remaining (3.12, 3.13)
 
 ---
 
@@ -114,19 +144,46 @@
 | Soft delete? | **YES** - With recovery period |
 | Audit logging? | Recommended for accountability |
 
-### 3.12 Collaboration Post-Acceptance
+### 3.12 Collaboration Management (Simplified)
 | Decision | Answer |
 |----------|--------|
-| Individual vs org collaboration | **Individuals collaborate on behalf of their org** |
-| Default role on acceptance | Notification (then can be adjusted) |
-| Can roles change? | **YES** - Flexibility |
-| Notify collaborators? | **YES** - Grouped notifications |
+| Owner vs Collaborator | **Owner** = creating org (full control). **Collaborators** = joined orgs |
+| Co-owners concept | **NO** - Removed. Only owner + collaborators |
+| Collaborator permissions | **CAN edit** events/projects they collaborate on |
+| Remove notification | **Silent removal** - no notification sent |
+| My Collaborations | Section on profile page showing projects/events user's org collaborates on |
+| Management UI location | On project/event detail page |
 
-### 3.13 Meeting Notes on Events
+**Implementation Plan:**
+- 3 parallel agents: (1) Backend actions, (2) Management UI, (3) Profile integration
+- Add `removeCollaborator()`, `getMyCollaborations()` server actions
+- Build `CollaboratorManagement` component for detail pages
+- Add "My Collaborations" to profile page
+
+### 3.13 Meeting Notes (Import-Based)
 | Decision | Answer |
 |----------|--------|
-| Structure | Dedicated page for meeting notes |
-| Future features | Tagging people, action items |
+| Source | **Granola AI** meeting transcription summaries |
+| Input method | **API endpoint** - Granola → Zapier → Village Hub API |
+| Manual creation | **NO** - Users cannot manually create notes |
+| Content format | Markdown (to be confirmed) |
+| Action item matching | Skip assignee matching for now, just get it set up |
+| My Action Items | **Separate page** at `/my-action-items` |
+| Visibility | All org members can see all published notes |
+
+**Granola Integration Notes:**
+- Granola has no public API, integrates via **Zapier**
+- Flow: Granola → Zapier webhook → `/api/meeting-notes/import` → DB
+- API accepts JSON with meeting_date, title, summary, action_items array
+- Authentication via API key in header
+
+**Implementation Plan:**
+- 3 parallel agents: (1) Data layer/types, (2) Import API, (3) Read-only UI
+- Build `/api/meeting-notes/import` endpoint for Zapier
+- Build `/meeting-notes` list page (read-only)
+- Build `/meeting-notes/[id]` detail page
+- Build `/my-action-items` page
+- Add "Meeting Notes" to navigation
 
 ### 3.14 Acknowledge Button
 | Decision | Answer |

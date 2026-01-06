@@ -8,7 +8,6 @@ import { Check, X, Bell, Clock, Handshake, Calendar, Target, Heart, MessageCircl
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import { respondToInvitation } from "@/lib/actions/collaboration"
-import { useNotifications } from "@/hooks/use-notifications"
 import type { Notification } from "@/lib/collaboration.types"
 
 // Extended notification type to include any additional fields
@@ -18,7 +17,13 @@ interface NotificationsDropdownProps {
   userId?: string
   isOpen: boolean
   onClose: () => void
-  onCountChange?: (count: number) => void
+  // Data passed from Header (where useNotifications hook lives)
+  notifications: Notification[]
+  unreadCount: number
+  isLoading: boolean
+  isFetching: boolean
+  markAsRead: (notificationIds: string[]) => Promise<void>
+  markAllAsRead: () => Promise<void>
 }
 
 // Grouped notification type
@@ -38,35 +43,26 @@ interface GroupedNotification {
   link?: string | null
 }
 
-export function NotificationsDropdown({ userId, isOpen, onClose, onCountChange }: NotificationsDropdownProps) {
+export function NotificationsDropdown({
+  userId,
+  isOpen,
+  onClose,
+  notifications,
+  unreadCount,
+  isLoading,
+  isFetching,
+  markAsRead,
+  markAllAsRead,
+}: NotificationsDropdownProps) {
   const router = useRouter()
   const [respondingTo, setRespondingTo] = useState<string | null>(null)
   const [mounted, setMounted] = useState(false)
   const buttonRef = useRef<HTMLButtonElement | null>(null)
   const [position, setPosition] = useState({ top: 0, right: 0 })
 
-  // Use React Query for cached, stale-while-revalidate notifications
-  const {
-    notifications,
-    unreadCount,
-    isLoading,
-    isFetching,
-    error,
-    markAsRead,
-    markAllAsRead,
-  } = useNotifications({
-    userId,
-    enabled: !!userId,
-  })
-
   useEffect(() => {
     setMounted(true)
   }, [])
-
-  // Sync unread count with header
-  useEffect(() => {
-    onCountChange?.(unreadCount)
-  }, [unreadCount, onCountChange])
 
   useEffect(() => {
     if (isOpen) {

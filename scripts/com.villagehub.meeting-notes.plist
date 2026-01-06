@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<!--
+  Granola → Village Hub Auto-Import
+
+  Setup:
+    1. Edit the environment variables below
+    2. Copy: cp scripts/com.villagehub.meeting-notes.plist ~/Library/LaunchAgents/
+    3. Load: launchctl load ~/Library/LaunchAgents/com.villagehub.meeting-notes.plist
+
+  Commands:
+    - Start:  launchctl start com.villagehub.meeting-notes
+    - Stop:   launchctl stop com.villagehub.meeting-notes
+    - Logs:   tail -f /tmp/granola-import.log
+-->
+<dict>
+    <key>Label</key>
+    <string>com.villagehub.meeting-notes</string>
+
+    <key>ProgramArguments</key>
+    <array>
+        <string>/usr/bin/python3</string>
+        <string>/Users/josh/stmartinsapp/scripts/import-meeting-notes.py</string>
+    </array>
+
+    <key>WorkingDirectory</key>
+    <string>/Users/josh/stmartinsapp</string>
+
+    <key>EnvironmentVariables</key>
+    <dict>
+        <!-- Copy from .env.local -->
+        <key>NEXT_PUBLIC_SUPABASE_URL</key>
+        <string>YOUR_SUPABASE_URL</string>
+
+        <key>SUPABASE_SERVICE_ROLE_KEY</key>
+        <string>YOUR_SERVICE_ROLE_KEY</string>
+
+        <key>OPENAI_API_KEY</key>
+        <string>YOUR_OPENAI_API_KEY</string>
+
+        <key>MEETING_NOTES_ORG_ID</key>
+        <string>YOUR_ORG_ID</string>
+
+        <!-- Where Granola exports go -->
+        <key>MEETING_NOTES_WATCH_DIR</key>
+        <string>/Users/josh/Documents/Granola</string>
+    </dict>
+
+    <key>RunAtLoad</key>
+    <true/>
+
+    <key>KeepAlive</key>
+    <true/>
+
+    <key>StandardOutPath</key>
+    <string>/tmp/granola-import.log</string>
+
+    <key>StandardErrorPath</key>
+    <string>/tmp/granola-import-error.log</string>
+</dict>
+</plist>

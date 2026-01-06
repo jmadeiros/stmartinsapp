@@ -106,6 +106,7 @@ export async function getFeedData(orgId: string): Promise<FeedItem[]> {
       cause: post.cause,
       image: post.image_url,
       timeAgo: formatDistanceToNow(new Date(post.created_at), { addSuffix: true }),
+      createdAt: post.created_at,
       likes: 0,
       comments: 0,
       isPinned: post.is_pinned || false,
@@ -154,6 +155,7 @@ export async function getFeedData(orgId: string): Promise<FeedItem[]> {
         seekingPartners: event.seeking_partners || undefined,
       },
       timeAgo: formatDistanceToNow(new Date(event.created_at), { addSuffix: true }),
+      createdAt: event.created_at,
       participantsReferred: event.participants_referred,
     }
   })
@@ -201,6 +203,7 @@ export async function getFeedData(orgId: string): Promise<FeedItem[]> {
         lastUpdated: formatDistanceToNow(new Date(project.updated_at), { addSuffix: true }),
       } : undefined,
       timeAgo: formatDistanceToNow(new Date(project.created_at), { addSuffix: true }),
+      createdAt: project.created_at,
       participantsReferred: project.participants_referred,
     }
   })
@@ -212,14 +215,19 @@ export async function getFeedData(orgId: string): Promise<FeedItem[]> {
     ...projects,
   ]
 
-  // Sort pinned posts to the top
+  // Sort by: pinned posts first, then by creation date (newest first)
   allItems.sort((a, b) => {
     const aIsPinned = a.type === 'post' && (a as FeedPost).isPinned
     const bIsPinned = b.type === 'post' && (b as FeedPost).isPinned
 
+    // Pinned posts always come first
     if (aIsPinned && !bIsPinned) return -1
     if (!aIsPinned && bIsPinned) return 1
-    return 0
+
+    // For non-pinned items (or both pinned), sort by creation date
+    const aDate = (a as any).createdAt ? new Date((a as any).createdAt).getTime() : 0
+    const bDate = (b as any).createdAt ? new Date((b as any).createdAt).getTime() : 0
+    return bDate - aDate // Newest first
   })
 
   return allItems

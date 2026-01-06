@@ -106,116 +106,143 @@ export function PollCard({ initialPoll, showInline = false }: PollCardProps) {
         </div>
       </div>
 
-      {/* Poll Options */}
+                {/* Poll Options */}
       <div className="space-y-3 mb-4">
         {poll.options.map((option) => {
           const percentage = getPercentage(option)
           const isSelected = selectedOptions.includes(option.id)
           const userVotedThis = poll.user_voted && poll.user_vote_option_ids?.includes(option.id)
+          const maxVotes = Math.max(...poll.options.map(o => o.vote_count || 0))
+          const isWinner = (option.vote_count || 0) === maxVotes && maxVotes > 0 && poll.user_voted
 
           return (
-            <div key={option.id} className="relative">
+            <div key={option.id} className="relative group">
               {/* Option Button/Display */}
               <button
                 onClick={() => handleOptionClick(option.id)}
                 disabled={poll.user_voted || isExpired || isSubmitting}
                 className={cn(
-                  "w-full relative overflow-hidden rounded-lg border-2 transition-all",
+                  "w-full relative overflow-hidden rounded-lg border transition-all",
                   poll.user_voted || isExpired
                     ? "cursor-default"
-                    : "cursor-pointer hover:border-primary/50",
+                    : "cursor-pointer hover:border-primary/50 hover:bg-slate-50",
                   isSelected && !poll.user_voted
-                    ? "border-primary bg-primary/5"
+                    ? "border-primary bg-primary/5 shadow-sm"
                     : "border-gray-200 bg-white",
-                  userVotedThis && "border-primary bg-primary/10"
+                  userVotedThis && "border-primary ring-1 ring-primary/20",
+                  isWinner && "border-primary/50"
                 )}
               >
-                {/* Progress Bar Background (WhatsApp-style) */}
+                {/* Progress Bar Background */}
                 {poll.user_voted && (
                   <div
                     className={cn(
-                      "absolute inset-0 transition-all duration-500",
+                      "absolute inset-y-0 left-0 transition-all duration-700 ease-out",
                       userVotedThis
-                        ? "bg-primary/20"
-                        : "bg-gray-100"
+                        ? "bg-primary/15"
+                        : "bg-gray-100",
+                      isWinner && !userVotedThis && "bg-primary/5"
                     )}
                     style={{ width: `${percentage}%` }}
                   />
                 )}
 
                 {/* Option Content */}
-                <div className="relative flex items-center justify-between p-3">
-                  <div className="flex items-center gap-3 flex-1 min-w-0">
-                    {/* Checkbox/Radio Indicator */}
+                <div className="relative flex items-center justify-between p-3 min-h-[52px]">
+                  <div className="flex items-center gap-3 flex-1 min-w-0 mr-4">
+                    {/* Checkbox/Radio Indicator (only before voting) */}
                     {!poll.user_voted && !isExpired && (
                       <div className={cn(
                         "flex-shrink-0 w-5 h-5 border-2 transition-all flex items-center justify-center",
                         poll.allow_multiple ? "rounded" : "rounded-full",
                         isSelected
                           ? "border-primary bg-primary"
-                          : "border-gray-300 bg-white"
+                          : "border-gray-300 group-hover:border-primary/50"
                       )}>
                         {isSelected && <Check className="h-3 w-3 text-white" />}
                       </div>
                     )}
 
                     {/* Option Text */}
-                    <span className={cn(
-                      "text-sm font-medium text-gray-900 truncate",
-                      userVotedThis && "font-semibold"
-                    )}>
-                      {option.option_text}
-                    </span>
-
-                    {/* "You voted" indicator */}
-                    {userVotedThis && (
-                      <span className="text-xs font-medium text-primary ml-auto flex-shrink-0">
-                        You voted
+                    <div className="flex flex-col items-start text-left overflow-hidden">
+                      <span className={cn(
+                        "text-sm text-gray-900 truncate w-full",
+                        (userVotedThis || isWinner) ? "font-semibold" : "font-medium"
+                      )}>
+                        {option.option_text}
                       </span>
-                    )}
+                      {isWinner && (
+                        <span className="text-[10px] text-primary font-medium flex items-center gap-1">
+                          Most voted
+                        </span>
+                      )}
+                    </div>
                   </div>
 
-                  {/* Vote Count & Percentage */}
-                  {poll.user_voted && (
-                    <div className="flex items-center gap-3 ml-3 flex-shrink-0">
-                      <button
-                        onClick={(e) => {
+                  {/* Results Display */}
+                  {poll.user_voted ? (
+                    <div className="flex items-center flex-shrink-0">
+                      {/* Avatar Stack */}
+                      <div className="flex -space-x-2 mr-3" onClick={(e) => {
                           e.stopPropagation()
-                          setShowVoters(showVoters === option.id ? null : option.id)
-                        }}
-                        className="flex items-center gap-1 text-xs text-gray-600 hover:text-primary transition-colors"
-                        disabled={!option.voters || option.voters.length === 0}
-                      >
-                        <Users className="h-3.5 w-3.5" />
-                        <span>{option.vote_count || 0}</span>
-                      </button>
-                      <span className="text-sm font-semibold text-gray-900 min-w-[3rem] text-right">
-                        {percentage}%
-                      </span>
+                          if (option.voters && option.voters.length > 0) {
+                            setShowVoters(showVoters === option.id ? null : option.id)
+                          }
+                        }}>
+                        {option.voters?.slice(0, 3).map((voter) => (
+                          <Avatar key={voter.user_id} className="w-6 h-6 border-2 border-white ring-1 ring-gray-100">
+                            <AvatarImage src={voter.avatar_url || undefined} />
+                            <AvatarFallback className="text-[8px] bg-gray-100 text-gray-500">
+                              {voter.full_name?.[0]}
+                            </AvatarFallback>
+                          </Avatar>
+                        ))}
+                        {(option.voters?.length || 0) > 3 && (
+                          <div className="w-6 h-6 rounded-full bg-gray-50 border-2 border-white ring-1 ring-gray-100 flex items-center justify-center text-[9px] text-gray-500 font-medium">
+                            +{((option.voters?.length || 0) - 3)}
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="flex flex-col items-end">
+                        <span className="text-sm font-bold text-gray-900 leading-none">
+                          {percentage}%
+                        </span>
+                        <span className="text-[10px] text-gray-500 font-medium mt-0.5">
+                          {option.vote_count || 0} vote{(option.vote_count !== 1) && 's'}
+                        </span>
+                      </div>
+                      
+                      {/* You voted indicator badge */}
+                      {userVotedThis && (
+                        <div className="ml-3 flex h-6 w-6 items-center justify-center rounded-full bg-primary text-white shadow-sm">
+                          <Check className="h-3.5 w-3.5" />
+                        </div>
+                      )}
                     </div>
-                  )}
+                  ) : null}
                 </div>
               </button>
 
-              {/* Voters List */}
+              {/* Voters List (Dropdown) */}
               {showVoters === option.id && option.voters && option.voters.length > 0 && (
-                <div className="mt-2 p-3 bg-gray-50 rounded-lg border border-gray-200">
-                  <div className="text-xs font-medium text-gray-700 mb-2">
-                    Voted by {option.voters.length} {option.voters.length === 1 ? 'person' : 'people'}:
+                <div className="mt-2 p-3 bg-white rounded-lg border border-gray-100 shadow-sm animate-in fade-in zoom-in-95 duration-200">
+                  <div className="text-xs font-medium text-gray-500 mb-2 px-1">
+                    Voted by {option.voters.length} {option.voters.length === 1 ? 'person' : 'people'}
                   </div>
                   <div className="flex flex-wrap gap-2">
                     {option.voters.map((voter) => (
                       <div
                         key={voter.user_id}
-                        className="flex items-center gap-1.5 bg-white px-2 py-1 rounded-full border border-gray-200"
+                        className="flex items-center gap-1.5 bg-gray-50 px-2 py-1 rounded-full border border-gray-100"
                       >
                         <Avatar className="h-4 w-4">
                           <AvatarImage src={voter.avatar_url || "/placeholder.svg"} alt={voter.full_name} />
-                          <AvatarFallback className="text-xs bg-primary/20 text-primary">
-                            {voter.full_name[0]}
+                          <AvatarFallback className="text-[9px] bg-primary/10 text-primary">
+                            {voter.full_name?.[0]}
                           </AvatarFallback>
                         </Avatar>
-                        <span className="text-xs text-gray-700">{voter.full_name}</span>
+                        <span className="text-xs text-gray-700 font-medium">{voter.full_name}</span>
                       </div>
                     ))}
                   </div>
@@ -246,17 +273,18 @@ export function PollCard({ initialPoll, showInline = false }: PollCardProps) {
 
       {/* Voted/Expired Message */}
       {poll.user_voted && (
-        <div className="text-center">
-          <p className="text-sm text-gray-600">
-            You voted. Results are visible to all participants.
+        <div className="flex items-center justify-center gap-2 mt-4 pt-3 border-t border-gray-100">
+          <Check className="h-4 w-4 text-green-600" />
+          <p className="text-xs font-medium text-gray-600">
+            Vote recorded • Results visible
           </p>
         </div>
       )}
 
       {isExpired && !poll.user_voted && (
-        <div className="text-center">
-          <p className="text-sm text-gray-600">
-            This poll has expired. You can no longer vote.
+        <div className="mt-4 pt-3 border-t border-gray-100 text-center">
+          <p className="text-sm font-medium text-gray-600">
+            Poll ended
           </p>
         </div>
       )}

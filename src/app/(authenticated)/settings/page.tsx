@@ -1,13 +1,13 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Switch } from "@/components/ui/switch"
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
 import { Separator } from "@/components/ui/separator"
-import { Bell, User, Lock, Shield, Info, LogOut, CheckCircle2, Sparkles, Zap } from "lucide-react"
+import { Bell, User, Lock, Shield, Info, LogOut, CheckCircle2, Sparkles } from "lucide-react"
 import { createClient } from "@/lib/supabase/client"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
@@ -21,6 +21,17 @@ import {
 } from "@/lib/actions/settings"
 import { toast } from "@/components/ui/use-toast"
 import { SocialHeader } from "@/components/social/header"
+import { cn } from "@/lib/utils"
+
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+
+const navItems = [
+  { id: "account", label: "Account", icon: User },
+  { id: "security", label: "Security", icon: Lock },
+  { id: "notifications", label: "Notifications", icon: Bell },
+  { id: "privacy", label: "Privacy", icon: Shield },
+  { id: "signout", label: "Sign Out", icon: LogOut, danger: true },
+]
 
 export default function SettingsPage() {
   const router = useRouter()
@@ -29,6 +40,7 @@ export default function SettingsPage() {
   const [userProfile, setUserProfile] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
+  const [activeSection, setActiveSection] = useState("account")
   const [notifications, setNotifications] = useState<NotificationPreferences>({
     reactions: true,
     comments: true,
@@ -41,6 +53,40 @@ export default function SettingsPage() {
   const [newPassword, setNewPassword] = useState("")
   const [confirmPassword, setConfirmPassword] = useState("")
   const [changingPassword, setChangingPassword] = useState(false)
+
+  // Refs for scroll observation
+  const sectionRefs = useRef<{ [key: string]: HTMLElement | null }>({})
+
+  // Intersection Observer to highlight active nav item
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            setActiveSection(entry.target.id)
+          }
+        })
+      },
+      {
+        rootMargin: "-20% 0px -60% 0px",
+        threshold: 0,
+      }
+    )
+
+    // Observe all sections
+    Object.values(sectionRefs.current).forEach((ref) => {
+      if (ref) observer.observe(ref)
+    })
+
+    return () => observer.disconnect()
+  }, [loading])
+
+  const scrollToSection = (id: string) => {
+    const element = sectionRefs.current[id]
+    if (element) {
+      element.scrollIntoView({ behavior: "smooth", block: "start" })
+    }
+  }
 
   // Load user data and preferences
   useEffect(() => {
@@ -79,7 +125,6 @@ export default function SettingsPage() {
     value: boolean
   ) => {
     if (key === 'priority_alerts') {
-      // Can't disable priority alerts
       toast({
         title: "Priority Alerts Required",
         description: "Priority alerts cannot be disabled for security and important updates.",
@@ -95,7 +140,6 @@ export default function SettingsPage() {
 
     setNotifications(newPrefs)
 
-    // Auto-save preferences
     if (userId) {
       setSaving(true)
       const result = await updateNotificationPreferences(userId, newPrefs)
@@ -112,7 +156,6 @@ export default function SettingsPage() {
           description: result.error || "Failed to save preferences",
           variant: "destructive",
         })
-        // Revert on error
         setNotifications(notifications)
       }
     }
@@ -179,268 +222,267 @@ export default function SettingsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-[var(--surface-secondary)]">
       <SocialHeader />
       
-      <div className="mx-auto max-w-4xl px-4 py-8">
-        <main className="space-y-6">
-            {/* Page Header */}
-            <div className="relative overflow-hidden rounded-2xl bg-card border border-border/50 p-8 shadow-sm">
-               <div 
-                className="absolute inset-0 pointer-events-none opacity-50" 
-                style={{ 
-                  backgroundImage: 'linear-gradient(to right, oklch(0.52 0.12 166 / 0.1), oklch(0.52 0.12 166 / 0.05), transparent)',
-                  backgroundSize: '200% 200%'
+      <div className="mx-auto max-w-5xl px-4 py-12">
+        {/* Page Header */}
+        <div className="mb-10 flex flex-col md:flex-row md:items-end gap-6 px-4">
+          <div className="relative group">
+            <Avatar className="h-24 w-24 ring-4 ring-white shadow-xl transition-transform duration-300 group-hover:scale-105">
+              <AvatarImage src={userProfile?.avatar_url || undefined} alt={userProfile?.full_name || "User"} />
+              <AvatarFallback className="text-3xl font-bold bg-primary/10 text-primary">
+                {userProfile?.full_name ? userProfile.full_name.charAt(0).toUpperCase() : <User className="h-10 w-10" />}
+              </AvatarFallback>
+            </Avatar>
+            <div className="absolute -bottom-1 -right-1 h-6 w-6 bg-primary rounded-full border-2 border-white flex items-center justify-center shadow-sm">
+              <CheckCircle2 className="h-3 w-3 text-white" />
+            </div>
+          </div>
+          
+          <div className="space-y-2 pb-1">
+            <div className="flex items-center gap-3">
+              <h1 
+                className="text-3xl font-bold tracking-tight bg-clip-text text-transparent"
+                style={{
+                  backgroundImage: "linear-gradient(135deg, oklch(0.6 0.118 184.704), oklch(0.52 0.12 166 / 0.8), oklch(0.769 0.188 70.08))"
                 }}
-              />
-              <div className="relative z-10">
-                <h1 className="text-3xl font-bold tracking-tight mb-2 flex items-center gap-2">
-                  Settings
-                  <Sparkles className="h-5 w-5 text-primary opacity-50" />
-                </h1>
-                <p className="text-muted-foreground text-lg max-w-2xl">
-                  Manage your account preferences, security settings, and notification controls.
+              >
+                Settings
+              </h1>
+              <span className="inline-flex items-center rounded-full bg-primary/10 px-2.5 py-0.5 text-[10px] font-medium text-primary uppercase tracking-wider">
+                Account Active
+              </span>
+            </div>
+            <p className="text-muted-foreground text-lg">
+              Personalize your Village experience and security.
+            </p>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 gap-10 lg:grid-cols-[260px_1fr]">
+          {/* Left Sidebar Navigation */}
+          <aside className="hidden lg:block">
+            <div className="sticky top-28 space-y-4">
+              <div className="px-3 py-2 text-[10px] font-semibold uppercase tracking-[0.15em] text-muted-foreground/60">
+                General Settings
+              </div>
+              <nav className="space-y-1">
+                {navItems.map((item) => {
+                  const Icon = item.icon
+                  const isActive = activeSection === item.id
+                  return (
+                    <button
+                      key={item.id}
+                      onClick={() => scrollToSection(item.id)}
+                      className={cn(
+                        "w-full flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-xl transition-all duration-200",
+                        isActive && !item.danger
+                          ? "bg-white text-primary shadow-sm ring-1 ring-black/5"
+                          : item.danger
+                          ? "text-destructive hover:bg-destructive/10"
+                          : "text-muted-foreground hover:bg-white/50 hover:text-foreground"
+                      )}
+                    >
+                      <Icon className={cn("h-4 w-4", isActive && !item.danger ? "text-primary" : "")} />
+                      {item.label}
+                    </button>
+                  )
+                })}
+              </nav>
+              
+              <div className="mt-8 p-4 rounded-2xl bg-gradient-to-br from-primary/5 to-primary/10 border border-primary/10">
+                <div className="flex items-center gap-2 mb-2">
+                  <Sparkles className="h-4 w-4 text-primary" />
+                  <span className="text-[10px] font-semibold text-primary uppercase tracking-wider">Pro Tip</span>
+                </div>
+                <p className="text-xs text-muted-foreground leading-relaxed">
+                  Keeping your profile updated helps other members find and collaborate with you more easily.
                 </p>
               </div>
             </div>
+          </aside>
 
+          {/* Main Content */}
+          <main className="space-y-16 pb-20 px-4">
             {/* Account Section */}
-            <Card className="border-border/50 shadow-sm hover:shadow-md transition-shadow duration-300">
-              <CardHeader className="pb-4">
-                <div className="flex items-center gap-2.5 mb-1">
-                  <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
-                    <User className="h-4 w-4 text-primary" />
-                  </div>
-                  <CardTitle>Account Information</CardTitle>
-                </div>
-                <CardDescription className="ml-10.5">
-                  Your personal account details and public profile information
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-6 ml-10.5">
-                <div className="grid gap-6 md:grid-cols-2">
-                  <div className="space-y-2 p-3 rounded-lg bg-muted/30 border border-border/40">
-                    <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Email Address</Label>
-                    <p className="text-sm font-medium flex items-center gap-2">
+            <section
+              id="account"
+              ref={(el) => { sectionRefs.current["account"] = el }}
+              className="scroll-mt-28"
+            >
+              <div className="mb-8">
+                <h2 className="text-2xl font-semibold text-foreground">Account Information</h2>
+                <p className="text-muted-foreground mt-1">
+                  Your personal account details and public identity within The Village.
+                </p>
+              </div>
+              
+              <div className="space-y-8">
+                <div className="grid gap-6 sm:grid-cols-2">
+                  <div className="space-y-1">
+                    <Label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-[0.1em]">Email Address</Label>
+                    <p className="text-base font-medium text-foreground flex items-center gap-2">
                       {userEmail}
                       <CheckCircle2 className="h-3.5 w-3.5 text-primary" />
                     </p>
                   </div>
 
-                  <div className="space-y-2 p-3 rounded-lg bg-muted/30 border border-border/40">
-                    <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Full Name</Label>
-                    <p className="text-sm font-medium">{userProfile?.full_name || 'Not set'}</p>
+                  <div className="space-y-1">
+                    <Label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-[0.1em]">Full Name</Label>
+                    <p className="text-base font-medium text-foreground">{userProfile?.full_name || 'Not set'}</p>
                   </div>
 
-                  <div className="space-y-2 p-3 rounded-lg bg-muted/30 border border-border/40">
-                    <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Role</Label>
-                    <p className="text-sm font-medium capitalize flex items-center gap-2">
-                      {userProfile?.role?.replace('_', ' ') || 'Not set'}
-                      <span className="inline-flex items-center rounded-full border border-primary/20 bg-primary/5 px-2 py-0.5 text-xs font-medium text-primary">
-                        Verified
+                  <div className="space-y-1">
+                    <Label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-[0.1em]">Organization</Label>
+                    <p className="text-base font-medium text-foreground">{userProfile?.organization?.name || 'St Martins Village'}</p>
+                  </div>
+
+                  <div className="space-y-1">
+                    <Label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-[0.1em]">Your Role</Label>
+                    <div className="flex items-center gap-3">
+                      <p className="text-base font-medium text-foreground capitalize">
+                        {userProfile?.role?.replace('_', ' ') || 'Not set'}
+                      </p>
+                      <span className="inline-flex items-center rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-semibold text-emerald-600 ring-1 ring-inset ring-emerald-600/10 tracking-wide">
+                        VERIFIED
                       </span>
-                    </p>
+                    </div>
                   </div>
                 </div>
 
-                <div className="flex justify-end pt-2">
+                <div className="flex items-center justify-between p-4 rounded-2xl bg-primary/[0.03] border border-primary/10">
+                  <div className="flex items-center gap-3">
+                    <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center">
+                      <User className="h-5 w-5 text-primary" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-semibold">Profile Visibility</p>
+                      <p className="text-xs text-muted-foreground font-normal">Manage your public bio and social links.</p>
+                    </div>
+                  </div>
                   <Link href="/profile">
-                    <Button variant="outline" className="border-primary/20 hover:bg-primary/5 hover:text-primary transition-colors">
-                      Edit Profile Details
+                    <Button variant="outline" size="sm" className="rounded-xl border-primary/20 bg-white hover:bg-primary/5 hover:text-primary font-semibold">
+                      Edit Profile
                     </Button>
                   </Link>
                 </div>
-              </CardContent>
-            </Card>
-
-          {/* Change Password Section */}
-          <Card>
-            <CardHeader>
-              <div className="flex items-center gap-2">
-                <Lock className="h-5 w-5 text-primary" />
-                <CardTitle>Change Password</CardTitle>
               </div>
-              <CardDescription>
-                Update your password to keep your account secure
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
+            </section>
+
+            {/* Security Section */}
+            <section
+              id="security"
+              ref={(el) => { sectionRefs.current["security"] = el }}
+              className="scroll-mt-28"
+            >
+              <div className="flex items-center justify-between mb-8">
+                <div>
+                  <h2 className="text-2xl font-semibold text-foreground">Security</h2>
+                  <p className="text-muted-foreground mt-1">
+                    Manage your password and account security.
+                  </p>
+                </div>
+                <div className="h-10 w-10 rounded-xl bg-amber-50 flex items-center justify-center border border-amber-100">
+                  <Lock className="h-5 w-5 text-amber-600" />
+                </div>
+              </div>
+
+              <div className="grid gap-6 max-w-md">
+                <div className="space-y-2">
+                  <Label htmlFor="new-password" className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">New Password</Label>
+                  <Input
+                    id="new-password"
+                    type="password"
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    placeholder="Enter new password"
+                    className="rounded-xl border-border/60 bg-white/50 focus:bg-white transition-all font-normal"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="confirm-password" className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Confirm Password</Label>
+                  <Input
+                    id="confirm-password"
+                    type="password"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    placeholder="Confirm new password"
+                    className="rounded-xl border-border/60 bg-white/50 focus:bg-white transition-all font-normal"
+                  />
+                </div>
+
+                <Button
+                  onClick={handleChangePassword}
+                  disabled={!newPassword || !confirmPassword || changingPassword}
+                  className="w-full sm:w-auto rounded-xl bg-primary hover:bg-primary/90 shadow-lg shadow-primary/20 font-semibold"
+                >
+                  {changingPassword ? "Updating..." : "Update Password"}
+                </Button>
+              </div>
+            </section>
+
+            {/* Notifications Section */}
+            <section
+              id="notifications"
+              ref={(el) => { sectionRefs.current["notifications"] = el }}
+              className="scroll-mt-28"
+            >
+              <div className="flex items-center justify-between mb-8">
+                <div>
+                  <h2 className="text-2xl font-semibold text-foreground">Notifications</h2>
+                  <p className="text-muted-foreground mt-1">
+                    Customize how you receive updates from The Village.
+                  </p>
+                </div>
+                <div className="h-10 w-10 rounded-xl bg-blue-50 flex items-center justify-center border border-blue-100">
+                  <Bell className="h-5 w-5 text-blue-600" />
+                </div>
+              </div>
+
               <div className="space-y-2">
-                <Label htmlFor="new-password">New Password</Label>
-                <Input
-                  id="new-password"
-                  type="password"
-                  value={newPassword}
-                  onChange={(e) => setNewPassword(e.target.value)}
-                  placeholder="Enter new password"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="confirm-password">Confirm Password</Label>
-                <Input
-                  id="confirm-password"
-                  type="password"
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  placeholder="Confirm new password"
-                />
-              </div>
-
-              <Button
-                onClick={handleChangePassword}
-                disabled={!newPassword || !confirmPassword || changingPassword}
-                className="w-full sm:w-auto"
-              >
-                {changingPassword ? "Changing..." : "Change Password"}
-              </Button>
-            </CardContent>
-          </Card>
-
-          {/* Notifications Section */}
-          <Card>
-            <CardHeader>
-              <div className="flex items-center gap-2">
-                <Bell className="h-5 w-5 text-primary" />
-                <CardTitle>Notifications</CardTitle>
-              </div>
-              <CardDescription>
-                Control what notifications you receive
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              {/* Notification Toggles */}
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <div className="space-y-0.5">
-                    <Label htmlFor="reactions" className="text-base font-medium">
-                      Reactions
-                    </Label>
-                    <p className="text-sm text-muted-foreground">
-                      Get notified when someone likes your posts
-                    </p>
+                {[
+                  { id: 'reactions', label: 'Reactions', desc: 'When someone likes your posts' },
+                  { id: 'comments', label: 'Comments', desc: 'When someone comments on your work' },
+                  { id: 'mentions', label: 'Mentions', desc: 'When you are tagged in a post or comment' },
+                  { id: 'event_updates', label: 'Event Updates', desc: 'Reminders and changes to events you follow' },
+                  { id: 'project_updates', label: 'Project Updates', desc: 'New milestones and activity on projects' },
+                  { id: 'collaboration_invitations', label: 'Collaborations', desc: 'Invitations to work together' },
+                ].map((pref, i) => (
+                  <div key={pref.id}>
+                    <div className="flex items-center justify-between py-4 group">
+                      <div className="space-y-0.5">
+                        <Label htmlFor={pref.id} className="text-base font-medium group-hover:text-primary transition-colors cursor-pointer">
+                          {pref.label}
+                        </Label>
+                        <p className="text-sm text-muted-foreground font-normal">
+                          {pref.desc}
+                        </p>
+                      </div>
+                      <Switch
+                        id={pref.id}
+                        checked={notifications[pref.id as keyof NotificationPreferences] as boolean}
+                        onCheckedChange={(checked) =>
+                          handleNotificationToggle(pref.id as keyof NotificationPreferences, checked)
+                        }
+                        className="data-[state=checked]:bg-primary"
+                      />
+                    </div>
+                    {i < 5 && <Separator className="bg-border/40" />}
                   </div>
-                  <Switch
-                    id="reactions"
-                    checked={notifications.reactions}
-                    onCheckedChange={(checked) =>
-                      handleNotificationToggle('reactions', checked)
-                    }
-                  />
-                </div>
+                ))}
 
-                <Separator />
-
-                <div className="flex items-center justify-between">
-                  <div className="space-y-0.5">
-                    <Label htmlFor="comments" className="text-base font-medium">
-                      Comments
-                    </Label>
-                    <p className="text-sm text-muted-foreground">
-                      Get notified when someone comments on your posts
-                    </p>
-                  </div>
-                  <Switch
-                    id="comments"
-                    checked={notifications.comments}
-                    onCheckedChange={(checked) =>
-                      handleNotificationToggle('comments', checked)
-                    }
-                  />
-                </div>
-
-                <Separator />
-
-                <div className="flex items-center justify-between">
-                  <div className="space-y-0.5">
-                    <Label htmlFor="mentions" className="text-base font-medium">
-                      Mentions
-                    </Label>
-                    <p className="text-sm text-muted-foreground">
-                      Get notified when someone mentions you
-                    </p>
-                  </div>
-                  <Switch
-                    id="mentions"
-                    checked={notifications.mentions}
-                    onCheckedChange={(checked) =>
-                      handleNotificationToggle('mentions', checked)
-                    }
-                  />
-                </div>
-
-                <Separator />
-
-                <div className="flex items-center justify-between">
-                  <div className="space-y-0.5">
-                    <Label htmlFor="event_updates" className="text-base font-medium">
-                      Event Updates
-                    </Label>
-                    <p className="text-sm text-muted-foreground">
-                      Get notified about RSVPs and event reminders
-                    </p>
-                  </div>
-                  <Switch
-                    id="event_updates"
-                    checked={notifications.event_updates}
-                    onCheckedChange={(checked) =>
-                      handleNotificationToggle('event_updates', checked)
-                    }
-                  />
-                </div>
-
-                <Separator />
-
-                <div className="flex items-center justify-between">
-                  <div className="space-y-0.5">
-                    <Label htmlFor="project_updates" className="text-base font-medium">
-                      Project Updates
-                    </Label>
-                    <p className="text-sm text-muted-foreground">
-                      Get notified about project activity and milestones
-                    </p>
-                  </div>
-                  <Switch
-                    id="project_updates"
-                    checked={notifications.project_updates}
-                    onCheckedChange={(checked) =>
-                      handleNotificationToggle('project_updates', checked)
-                    }
-                  />
-                </div>
-
-                <Separator />
-
-                <div className="flex items-center justify-between">
-                  <div className="space-y-0.5">
-                    <Label htmlFor="collaboration_invitations" className="text-base font-medium">
-                      Collaboration Invitations
-                    </Label>
-                    <p className="text-sm text-muted-foreground">
-                      Get notified when invited to collaborate
-                    </p>
-                  </div>
-                  <Switch
-                    id="collaboration_invitations"
-                    checked={notifications.collaboration_invitations}
-                    onCheckedChange={(checked) =>
-                      handleNotificationToggle('collaboration_invitations', checked)
-                    }
-                  />
-                </div>
-
-                <Separator />
-
-                <div className="flex items-center justify-between">
+                <div className="mt-8 flex items-center justify-between py-4 px-5 rounded-2xl bg-muted/40 border border-border/50">
                   <div className="space-y-0.5">
                     <div className="flex items-center gap-2">
-                      <Label htmlFor="priority_alerts" className="text-base font-medium">
+                      <Label htmlFor="priority_alerts" className="text-base font-medium text-muted-foreground">
                         Priority Alerts
                       </Label>
-                      <CheckCircle2 className="h-4 w-4 text-primary" />
+                      <Shield className="h-3.5 w-3.5 text-primary" />
                     </div>
-                    <p className="text-sm text-muted-foreground">
-                      Critical updates and security alerts (always enabled)
+                    <p className="text-xs text-muted-foreground font-normal">
+                      Critical updates and security alerts (required)
                     </p>
                   </div>
                   <Switch
@@ -450,77 +492,75 @@ export default function SettingsPage() {
                     className="opacity-50"
                   />
                 </div>
+
+                <div className="mt-8 flex items-start gap-4 p-5 rounded-2xl bg-white/50 border border-blue-100/50">
+                  <div className="h-10 w-10 rounded-xl bg-blue-50 flex items-center justify-center border border-blue-100 shrink-0">
+                    <Info className="h-5 w-5 text-blue-600" />
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-sm font-semibold text-blue-900">Email Notifications</p>
+                    <p className="text-sm text-blue-800/70 leading-relaxed font-normal">
+                      Email digest and push notifications are currently being optimized. You'll receive all updates in your Village activity feed for now.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            {/* Privacy Section */}
+            <section
+              id="privacy"
+              ref={(el) => { sectionRefs.current["privacy"] = el }}
+              className="scroll-mt-28"
+            >
+              <div className="flex items-center justify-between mb-8">
+                <div>
+                  <h2 className="text-2xl font-semibold text-foreground">Privacy</h2>
+                  <p className="text-muted-foreground mt-1">
+                    Control how your data is used and shared.
+                  </p>
+                </div>
+                <div className="h-10 w-10 rounded-xl bg-emerald-50 flex items-center justify-center border border-emerald-100">
+                  <Shield className="h-5 w-5 text-emerald-600" />
+                </div>
               </div>
 
-              <Separator />
-
-              {/* Email notifications info */}
-              <div className="flex items-start gap-3 rounded-lg border border-border/50 bg-muted/50 p-4">
-                <Info className="h-5 w-5 text-muted-foreground flex-shrink-0 mt-0.5" />
+              <div className="flex items-start gap-4 p-5 rounded-2xl bg-emerald-50/30 border border-emerald-100/50">
+                <div className="h-10 w-10 rounded-xl bg-white flex items-center justify-center shadow-sm shrink-0">
+                  <Info className="h-5 w-5 text-emerald-600" />
+                </div>
                 <div className="space-y-1">
-                  <p className="text-sm font-medium">Email Notifications</p>
-                  <p className="text-sm text-muted-foreground">
-                    Email notifications are coming soon. For now, you'll receive all notifications in-app.
+                  <p className="text-sm font-semibold text-emerald-900">Profile Visibility</p>
+                  <p className="text-sm text-emerald-800/70 leading-relaxed font-normal">
+                    By default, your profile and activity are visible to other verified members of The Village. This enables transparency and trust across the network.
                   </p>
                 </div>
               </div>
+            </section>
 
-              {saving && (
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary"></div>
-                  Saving...
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* Privacy Section */}
-          <Card>
-            <CardHeader>
-              <div className="flex items-center gap-2">
-                <Shield className="h-5 w-5 text-primary" />
-                <CardTitle>Privacy</CardTitle>
+            {/* Sign Out Section */}
+            <section
+              id="signout"
+              ref={(el) => { sectionRefs.current["signout"] = el }}
+              className="scroll-mt-28"
+            >
+              <div className="mb-8">
+                <h2 className="text-xl font-semibold text-red-900">Sign Out</h2>
+                <p className="text-red-800/60 mt-1">
+                  Sign out of your Village account on this device.
+                </p>
               </div>
-              <CardDescription>
-                Control who can see your information
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-start gap-3 rounded-lg border border-border/50 bg-muted/50 p-4">
-                <Info className="h-5 w-5 text-muted-foreground flex-shrink-0 mt-0.5" />
-                <div className="space-y-1">
-                  <p className="text-sm font-medium">Profile Visibility</p>
-                  <p className="text-sm text-muted-foreground">
-                    Your profile is visible to all members of your organization. This helps foster collaboration and transparency within The Village Hub.
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Sign Out Section */}
-          <Card className="border-destructive/50">
-            <CardHeader>
-              <div className="flex items-center gap-2">
-                <LogOut className="h-5 w-5 text-destructive" />
-                <CardTitle className="text-destructive">Sign Out</CardTitle>
-              </div>
-              <CardDescription>
-                Sign out of your account on this device
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
               <Button
                 variant="destructive"
                 onClick={handleSignOut}
-                className="w-full sm:w-auto"
+                className="w-full sm:w-auto rounded-xl bg-red-600 hover:bg-red-700 shadow-lg shadow-red-600/20 font-semibold"
               >
                 <LogOut className="h-4 w-4 mr-2" />
-                Sign Out
+                Log Out of My Account
               </Button>
-            </CardContent>
-          </Card>
-        </main>
+            </section>
+          </main>
+        </div>
       </div>
     </div>
   )

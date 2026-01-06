@@ -70,7 +70,12 @@ export default defineConfig({
       name: 'chromium',
       use: { 
         ...devices['Desktop Chrome'],
-        headless: true, // Force headless mode - no browser window
+        headless: true,
+        channel: undefined, // Don't use system Chrome
+        launchOptions: {
+          executablePath: '/Users/josh/Library/Caches/ms-playwright/chromium-1200/chrome-mac-arm64/Google Chrome for Testing.app/Contents/MacOS/Google Chrome for Testing',
+          args: ['--disable-crash-reporter', '--disable-breakpad', '--no-sandbox']
+        }
       },
     },
   ],

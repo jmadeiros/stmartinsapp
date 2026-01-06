@@ -1,8 +1,10 @@
 'use client'
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { getNotifications, markNotificationAsRead, markAllNotificationsAsRead } from '@/lib/actions/notifications'
+import { markNotificationAsRead, markAllNotificationsAsRead } from '@/lib/actions/notifications'
+import { subscribeToUserNotifications } from '@/lib/queries/notifications'
 import type { Notification } from '@/lib/collaboration.types'
+import { createClient } from '@/lib/supabase/client'
 import { useCallback, useEffect, useRef } from 'react'
 
 // Query keys for cache management
@@ -38,6 +40,7 @@ export function useNotifications({
   unreadOnly = false,
 }: UseNotificationsOptions): UseNotificationsResult {
   const queryClient = useQueryClient()
+  const supabaseRef = useRef(createClient())
 
   // Main notifications query with stale-while-revalidate
   const {
@@ -54,13 +57,59 @@ export function useNotifications({
         return []
       }
 
-      const result = await getNotifications(userId, { limit, unreadOnly })
-
-      if (!result.success || !result.data) {
-        throw new Error(result.error || 'Failed to fetch notifications')
+      const supabase = supabaseRef.current
+      const startedAt = typeof window !== 'undefined' ? window.performance.now() : Date.now()
+      if (process.env.NODE_ENV !== 'production') {
+        console.log('[useNotifications] Fetching notifications for user:', userId)
       }
 
-      return result.data as Notification[]
+      // Ensure we have a valid session (RLS requires authenticated role)
+      const { data: sessionData, error: sessionError } = await supabase.auth.getSession()
+      if (sessionError) {
+        throw new Error(sessionError.message)
+      }
+      if (!sessionData.session) {
+        return []
+      }
+
+      let query = supabase
+        .from('notifications')
+        .select('*')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false })
+
+      if (unreadOnly) {
+        query = query.eq('read', false)
+      }
+
+      if (limit) {
+        query = query.limit(limit)
+      }
+
+      const { data: rows, error: queryError } = await (query as any)
+
+      if (queryError) {
+        throw new Error(queryError.message || 'Failed to fetch notifications')
+      }
+
+      const notifications = (rows || []).map((row: any) => ({
+        ...row,
+        read: Boolean(row.read),
+        created_at: row.created_at ?? new Date().toISOString(),
+      })) as Notification[]
+
+      if (process.env.NODE_ENV !== 'production') {
+        const elapsedMs =
+          typeof window !== 'undefined'
+            ? Math.round(window.performance.now() - startedAt)
+            : Date.now() - startedAt
+        console.log('[useNotifications] Fetched notifications:', {
+          count: notifications.length,
+          elapsedMs,
+        })
+      }
+
+      return notifications
     },
     enabled: enabled && !!userId,
     // Stale-while-revalidate settings for instant feel
@@ -68,7 +117,7 @@ export function useNotifications({
     gcTime: 5 * 60 * 1000, // Keep in cache for 5 minutes
     refetchOnMount: true, // Refetch when component mounts (background)
     refetchOnWindowFocus: true, // Refetch when user returns to tab
-    refetchInterval: 60 * 1000, // Poll every 60 seconds for new notifications
+    refetchInterval: 30 * 1000, // Poll every 30 seconds as fallback (realtime is primary)
     // Return stale data immediately while fetching fresh data
     placeholderData: (previousData) => previousData,
   })
@@ -92,6 +141,89 @@ export function useNotifications({
       }, 100)
     }
   }, [userId, refetch])
+
+  // Realtime subscription for instant notifications
+  useEffect(() => {
+    if (!userId) {
+      console.log('[useNotifications] No userId, skipping realtime subscription')
+      return
+    }
+
+    const supabase = supabaseRef.current
+    let channelCleanup: (() => void) | undefined
+
+    async function setupSubscription() {
+      console.log('[useNotifications] Setting up realtime subscription for user:', userId)
+
+      // Ensure the client has an authenticated session before subscribing
+      const { data: sessionData, error: sessionError } = await supabase.auth.getSession()
+      if (sessionError) {
+        console.error('[useNotifications] Failed to load session for realtime:', sessionError)
+        return
+      }
+      if (!sessionData.session) {
+        console.warn('[useNotifications] No session available for realtime; skipping subscription')
+        return
+      }
+
+      // Make sure realtime uses the user's access token (otherwise RLS will block events)
+      supabase.realtime.setAuth(sessionData.session.access_token)
+
+      const channel = subscribeToUserNotifications(
+        supabase,
+        userId,
+        // On INSERT - new notification arrived
+        (newNotification) => {
+          console.log('[useNotifications] Received new notification via realtime:', newNotification)
+          if (newNotification.user_id !== userId) {
+            console.warn('[useNotifications] Dropping realtime notification for different user', {
+              expected: userId,
+              received: newNotification.user_id,
+            })
+            return
+          }
+          queryClient.setQueryData<Notification[]>(
+            notificationKeys.list(userId),
+            (old) => old ? [newNotification, ...old] : [newNotification]
+          )
+        },
+        // On UPDATE - notification changed (e.g., marked as read on another device)
+        (updatedNotification) => {
+          console.log('[useNotifications] Received notification update via realtime:', updatedNotification)
+          if (updatedNotification.user_id !== userId) {
+            console.warn('[useNotifications] Dropping realtime notification update for different user', {
+              expected: userId,
+              received: updatedNotification.user_id,
+            })
+            return
+          }
+          queryClient.setQueryData<Notification[]>(
+            notificationKeys.list(userId),
+            (old) => {
+              if (!old) return old
+              // Check if already in sync to prevent optimistic update flicker
+              const existing = old.find(n => n.id === updatedNotification.id)
+              if (existing?.read === updatedNotification.read) return old
+              return old.map(n => n.id === updatedNotification.id ? updatedNotification : n)
+            }
+          )
+        }
+      )
+
+      channelCleanup = () => {
+        console.log('[useNotifications] Cleaning up realtime subscription for user:', userId)
+        channel.unsubscribe()
+      }
+    }
+
+    setupSubscription()
+
+    return () => {
+      if (channelCleanup) {
+        channelCleanup()
+      }
+    }
+  }, [userId, queryClient])
 
   // Mutation for marking notifications as read
   const markReadMutation = useMutation({

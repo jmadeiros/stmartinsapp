@@ -18,6 +18,16 @@ export default async function EventDetailPage({ params }: PageProps) {
     redirect('/login')
   }
 
+  // Get current user's organization
+  const { data: profile } = await supabase
+    .from("user_profiles")
+    .select("organization_id")
+    .eq("user_id", user.id)
+    .single()
+
+  const profileData = profile as { organization_id?: string } | null
+  const currentUserOrgId = profileData?.organization_id || ''
+
   // Fetch event details
   const result = await getEventById(id)
 
@@ -25,5 +35,5 @@ export default async function EventDetailPage({ params }: PageProps) {
     notFound()
   }
 
-  return <EventDetail event={result.data} currentUserId={user.id} />
+  return <EventDetail event={result.data} currentUserId={user.id} currentUserOrgId={currentUserOrgId} />
 }

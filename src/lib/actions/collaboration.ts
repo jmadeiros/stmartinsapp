@@ -449,3 +449,273 @@ export async function markNotificationRead(notificationId: string) {
     }
   }
 }
+
+// =============================================================================
+// Collaboration Management (Task 3.12)
+// =============================================================================
+
+export type RemoveCollaboratorParams = {
+  resourceType: 'event' | 'project'
+  resourceId: string
+  collaboratorOrgId: string
+  currentUserOrgId: string
+}
+
+export type CollaborationItem = {
+  id: string
+  title: string
+  type: 'event' | 'project'
+  ownerOrgId: string
+  ownerOrgName: string
+  ownerOrgLogo?: string | null
+  createdAt: string
+}
+
+/**
+ * Remove a collaborator from an event or project
+ * Only the owner organization can remove collaborators
+ */
+export async function removeCollaborator(params: RemoveCollaboratorParams) {
+  const supabase = await createClient()
+
+  try {
+    const table = params.resourceType === 'event' ? 'events' : 'projects'
+    const arrayColumn = params.resourceType === 'event' ? 'collaborating_orgs' : 'collaborators'
+
+    // First, verify the current user's org is the owner
+    const { data: resource, error: fetchError } = await supabase
+      .from(table)
+      .select(`id, org_id, ${arrayColumn}`)
+      .eq('id', params.resourceId)
+      .single()
+
+    if (fetchError || !resource) {
+      console.error('[removeCollaborator] Resource not found:', fetchError)
+      return { success: false, error: 'Resource not found' }
+    }
+
+    // Check ownership
+    if ((resource as any).org_id !== params.currentUserOrgId) {
+      return { success: false, error: 'Only the owner can remove collaborators' }
+    }
+
+    // Get current collaborators and filter out the one to remove
+    const currentCollaborators = (resource as any)[arrayColumn] || []
+    const newCollaborators = currentCollaborators.filter(
+      (orgId: string) => orgId !== params.collaboratorOrgId
+    )
+
+    // Update the resource
+    const { error: updateError } = await (supabase
+      .from(table) as any)
+      .update({ [arrayColumn]: newCollaborators })
+      .eq('id', params.resourceId)
+
+    if (updateError) {
+      console.error('[removeCollaborator] Error updating:', updateError)
+      return { success: false, error: updateError.message }
+    }
+
+    console.log(`[removeCollaborator] Removed org ${params.collaboratorOrgId} from ${params.resourceType} ${params.resourceId}`)
+    return { success: true }
+  } catch (error) {
+    console.error('[removeCollaborator] Exception:', error)
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error'
+    }
+  }
+}
+
+/**
+ * Get all events and projects where the organization is a collaborator (not owner)
+ */
+export async function getMyCollaborations(orgId: string): Promise<{
+  success: boolean
+  data: CollaborationItem[]
+  error?: string
+}> {
+  const supabase = await createClient()
+
+  try {
+    // Query events where org is in collaborating_orgs
+    const { data: events, error: eventsError } = await supabase
+      .from('events')
+      .select(`
+        id,
+        title,
+        org_id,
+        created_at,
+        organization:organizations!events_org_id_fkey(id, name, logo_url)
+      `)
+      .contains('collaborating_orgs', [orgId])
+      .is('deleted_at', null)
+      .order('created_at', { ascending: false })
+
+    if (eventsError) {
+      console.error('[getMyCollaborations] Events error:', eventsError)
+    }
+
+    // Query projects where org is in collaborators
+    const { data: projects, error: projectsError } = await supabase
+      .from('projects')
+      .select(`
+        id,
+        title,
+        org_id,
+        created_at,
+        organization:organizations!projects_org_id_fkey(id, name, logo_url)
+      `)
+      .contains('collaborators', [orgId])
+      .is('deleted_at', null)
+      .order('created_at', { ascending: false })
+
+    if (projectsError) {
+      console.error('[getMyCollaborations] Projects error:', projectsError)
+    }
+
+    // Combine and format results
+    const collaborations: CollaborationItem[] = []
+
+    if (events) {
+      for (const event of events as any[]) {
+        const org = event.organization as { id: string; name: string; logo_url?: string | null } | null
+        collaborations.push({
+          id: event.id,
+          title: event.title,
+          type: 'event',
+          ownerOrgId: event.org_id,
+          ownerOrgName: org?.name || 'Unknown Organization',
+          ownerOrgLogo: org?.logo_url,
+          createdAt: event.created_at,
+        })
+      }
+    }
+
+    if (projects) {
+      for (const project of projects as any[]) {
+        const org = project.organization as { id: string; name: string; logo_url?: string | null } | null
+        collaborations.push({
+          id: project.id,
+          title: project.title,
+          type: 'project',
+          ownerOrgId: project.org_id,
+          ownerOrgName: org?.name || 'Unknown Organization',
+          ownerOrgLogo: org?.logo_url,
+          createdAt: project.created_at,
+        })
+      }
+    }
+
+    // Sort by created_at descending
+    collaborations.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+
+    console.log(`[getMyCollaborations] Found ${collaborations.length} collaborations for org ${orgId}`)
+    return { success: true, data: collaborations }
+  } catch (error) {
+    console.error('[getMyCollaborations] Exception:', error)
+    return {
+      success: false,
+      data: [],
+      error: error instanceof Error ? error.message : 'Unknown error'
+    }
+  }
+}
+
+/**
+ * Check if a user's organization can edit a resource
+ * Returns true if the org is the owner OR a collaborator
+ */
+export async function canEditResource(
+  resourceType: 'event' | 'project',
+  resourceId: string,
+  userOrgId: string
+): Promise<{ canEdit: boolean; isOwner: boolean; error?: string }> {
+  const supabase = await createClient()
+
+  try {
+    const table = resourceType === 'event' ? 'events' : 'projects'
+    const arrayColumn = resourceType === 'event' ? 'collaborating_orgs' : 'collaborators'
+
+    const { data: resource, error } = await supabase
+      .from(table)
+      .select(`org_id, ${arrayColumn}`)
+      .eq('id', resourceId)
+      .single()
+
+    if (error || !resource) {
+      console.error('[canEditResource] Resource not found:', error)
+      return { canEdit: false, isOwner: false, error: 'Resource not found' }
+    }
+
+    const isOwner = (resource as any).org_id === userOrgId
+    const collaborators = (resource as any)[arrayColumn] || []
+    const isCollaborator = collaborators.includes(userOrgId)
+
+    return {
+      canEdit: isOwner || isCollaborator,
+      isOwner,
+    }
+  } catch (error) {
+    console.error('[canEditResource] Exception:', error)
+    return {
+      canEdit: false,
+      isOwner: false,
+      error: error instanceof Error ? error.message : 'Unknown error'
+    }
+  }
+}
+
+/**
+ * Get collaborators for an event or project with organization details
+ */
+export async function getCollaborators(
+  resourceType: 'event' | 'project',
+  resourceId: string
+): Promise<{
+  success: boolean
+  data: Array<{ id: string; name: string; logo_url?: string | null }>
+  error?: string
+}> {
+  const supabase = await createClient()
+
+  try {
+    const table = resourceType === 'event' ? 'events' : 'projects'
+    const arrayColumn = resourceType === 'event' ? 'collaborating_orgs' : 'collaborators'
+
+    const { data: resource, error: resourceError } = await supabase
+      .from(table)
+      .select(arrayColumn)
+      .eq('id', resourceId)
+      .single()
+
+    if (resourceError || !resource) {
+      return { success: false, data: [], error: 'Resource not found' }
+    }
+
+    const collaboratorIds = (resource as any)[arrayColumn] || []
+    if (collaboratorIds.length === 0) {
+      return { success: true, data: [] }
+    }
+
+    // Fetch organization details
+    const { data: orgs, error: orgsError } = await supabase
+      .from('organizations')
+      .select('id, name, logo_url')
+      .in('id', collaboratorIds)
+
+    if (orgsError) {
+      console.error('[getCollaborators] Error fetching orgs:', orgsError)
+      return { success: false, data: [], error: orgsError.message }
+    }
+
+    return { success: true, data: orgs || [] }
+  } catch (error) {
+    console.error('[getCollaborators] Exception:', error)
+    return {
+      success: false,
+      data: [],
+      error: error instanceof Error ? error.message : 'Unknown error'
+    }
+  }
+}

@@ -3,16 +3,18 @@
 import { useEffect, useState } from 'react'
 import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Calendar, MapPin, Heart, MessageCircle, Share2, MoreHorizontal, FileText, CalendarDays, Loader2 } from "lucide-react"
+import { Calendar, MapPin, Heart, MessageCircle, Share2, MoreHorizontal, FileText, CalendarDays, Loader2, Users } from "lucide-react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { getUserPosts } from '@/lib/actions/posts'
 import { getUserEvents, getUserRSVPs } from '@/lib/actions/events'
+import { ProfileCollaborations } from './profile-collaborations'
 
 interface ProfileActivityProps {
   userId: string
   userName?: string
   userAvatar?: string
+  orgId?: string
 }
 
 type PostItem = {
@@ -33,7 +35,7 @@ type EventItem = {
   organization?: { name: string } | null
 }
 
-export function ProfileActivity({ userId, userName = 'User', userAvatar }: ProfileActivityProps) {
+export function ProfileActivity({ userId, userName = 'User', userAvatar, orgId }: ProfileActivityProps) {
   const [posts, setPosts] = useState<PostItem[]>([])
   const [organizedEvents, setOrganizedEvents] = useState<EventItem[]>([])
   const [attendingEvents, setAttendingEvents] = useState<EventItem[]>([])
@@ -127,6 +129,12 @@ export function ProfileActivity({ userId, userName = 'User', userAvatar }: Profi
             Attending
             {attendingEvents.length > 0 && <span className="text-xs text-muted-foreground">({attendingEvents.length})</span>}
           </TabsTrigger>
+          {orgId && (
+            <TabsTrigger value="collaborations" className="gap-2 data-[state=active]:bg-white">
+              <Users className="h-4 w-4" />
+              Collaborations
+            </TabsTrigger>
+          )}
         </TabsList>
 
         {/* Posts Tab */}
@@ -251,6 +259,13 @@ export function ProfileActivity({ userId, userName = 'User', userAvatar }: Profi
             </div>
           )}
         </TabsContent>
+
+        {/* Collaborations Tab */}
+        {orgId && (
+          <TabsContent value="collaborations" className="mt-4">
+            <ProfileCollaborations orgId={orgId} />
+          </TabsContent>
+        )}
       </Tabs>
     </div>
   )

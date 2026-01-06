@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useRef, useState } from "react"
+import { useEffect, useRef, useState, useCallback } from "react"
 import { useRouter } from "next/navigation"
 import { AnimatePresence, motion } from "framer-motion"
 import { Card } from "@/components/ui/card"
@@ -20,15 +20,35 @@ import {
   ClipboardList,
   X,
   MoreHorizontal,
-  Sparkles
+  Sparkles,
+  Send,
+  Trash2
 } from "lucide-react"
 import { ContentBadge } from "@/components/ui/content-badge"
 import { NeedsChips } from "@/components/ui/needs-chip"
 import { PartnerAvatars } from "@/components/ui/partner-avatars"
 import { InterestCounter } from "@/components/ui/interest-counter"
 import { PostMenu } from "@/components/ui/post-menu"
+import { Textarea } from "@/components/ui/textarea"
 import type { ProjectPost } from "@/lib/types"
 import { cn } from "@/lib/utils"
+import { createClient } from "@/lib/supabase/client"
+import {
+  getProjectComments,
+  addProjectComment,
+  deleteProjectComment,
+  getProjectCommentCount,
+  type ProjectCommentWithAuthor
+} from "@/lib/actions/project-comments"
+import {
+  toggleProjectReaction,
+  getProjectReactionData
+} from "@/lib/actions/project-reactions"
+import {
+  toggleProjectInterest,
+  getProjectInterestStatus,
+  updateProjectInterestSupport
+} from "@/lib/actions/project-interest"
 
 type ProjectSupportResponse = {
   volunteer: boolean
@@ -59,11 +79,22 @@ export function ProjectCard({ project }: ProjectCardProps) {
   const supportTriggerRef = useRef<HTMLButtonElement | null>(null)
   const [liked, setLiked] = useState(false)
   const [likeCount, setLikeCount] = useState<number>(0)
-  const [commentCount] = useState<number>(0)
+  const [isLoadingReaction, setIsLoadingReaction] = useState(false)
+  const [isLoadingInterest, setIsLoadingInterest] = useState(false)
   const [popoverPosition, setPopoverPosition] = useState<{ alignRight: boolean; alignBottom: boolean }>({
     alignRight: true,
     alignBottom: false
   })
+
+  // Comment state
+  const [showComments, setShowComments] = useState(false)
+  const [comments, setComments] = useState<ProjectCommentWithAuthor[]>([])
+  const [commentCount, setCommentCount] = useState<number>(0)
+  const [newCommentText, setNewCommentText] = useState("")
+  const [replyingTo, setReplyingTo] = useState<string | null>(null)
+  const [replyText, setReplyText] = useState("")
+  const [loading, setLoading] = useState(false)
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null)
 
   // Collaboration display logic
   // Force rebuild
@@ -139,14 +170,158 @@ export function ProjectCard({ project }: ProjectCardProps) {
       contributeFunding: false
     })
 
-  const handleInterestedToggle = () => {
-    if (!interested) {
-      setInterested(true)
-      setSupportPanelOpen(true)
-    } else {
-      setSupportPanelOpen((prev) => !prev)
+  // Get current user
+  useEffect(() => {
+    const supabase = createClient()
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (user) {
+        setCurrentUserId(user.id)
+      }
+    })
+  }, [])
+
+  // Fetch comment count on mount
+  useEffect(() => {
+    async function fetchCommentCount() {
+      const { count } = await getProjectCommentCount(project.id)
+      setCommentCount(count)
     }
-    setTimeout(() => calculatePopoverPosition(), 0)
+    fetchCommentCount()
+  }, [project.id])
+
+  // Fetch reaction data on mount
+  useEffect(() => {
+    async function fetchReactionData() {
+      const { count, hasReacted } = await getProjectReactionData(project.id)
+      setLikeCount(count)
+      setLiked(hasReacted)
+    }
+    fetchReactionData()
+  }, [project.id])
+
+  // Fetch interest status on mount
+  useEffect(() => {
+    async function fetchInterestStatus() {
+      const { isInterested, interestData } = await getProjectInterestStatus(project.id)
+      setInterested(isInterested)
+      if (interestData) {
+        // Populate support choices if they exist
+        setSupportChoices({
+          volunteer: interestData.volunteer_offered || false,
+          bringParticipants: !!interestData.participants_count,
+          participantCount: interestData.participants_count?.toString() || "",
+          canPartner: interestData.can_partner || false,
+          provideResources: interestData.provide_resources || false,
+          contributeFunding: interestData.contribute_funding || false
+        })
+      }
+    }
+    fetchInterestStatus()
+  }, [project.id])
+
+  // Handle like toggle
+  const handleLikeToggle = async () => {
+    if (isLoadingReaction) return
+
+    setIsLoadingReaction(true)
+    // Optimistic update
+    const wasLiked = liked
+    setLiked(!wasLiked)
+    setLikeCount(prev => wasLiked ? prev - 1 : prev + 1)
+
+    const { success, hasReacted } = await toggleProjectReaction(project.id)
+
+    if (success) {
+      setLiked(hasReacted)
+    } else {
+      // Revert on failure
+      setLiked(wasLiked)
+      setLikeCount(prev => wasLiked ? prev + 1 : prev - 1)
+    }
+    setIsLoadingReaction(false)
+  }
+
+  const loadComments = useCallback(async () => {
+    setLoading(true)
+    const { data, error } = await getProjectComments(project.id)
+    if (!error && data) {
+      setComments(data)
+      setCommentCount(data.reduce((acc, c) => acc + 1 + (c.replies?.length || 0), 0))
+    }
+    setLoading(false)
+  }, [project.id])
+
+  // Load comments when expanded
+  useEffect(() => {
+    if (showComments && comments.length === 0) {
+      loadComments()
+    }
+  }, [showComments, comments.length, loadComments])
+
+  const handleAddComment = async () => {
+    if (!newCommentText.trim()) return
+
+    setLoading(true)
+    const { success, data } = await addProjectComment(project.id, newCommentText)
+    if (success && data) {
+      setNewCommentText("")
+      await loadComments()
+    }
+    setLoading(false)
+  }
+
+  const handleAddReply = async (parentId: string) => {
+    if (!replyText.trim()) return
+
+    setLoading(true)
+    const { success } = await addProjectComment(project.id, replyText, parentId)
+    if (success) {
+      setReplyText("")
+      setReplyingTo(null)
+      await loadComments()
+    }
+    setLoading(false)
+  }
+
+  const handleDeleteComment = async (commentId: string) => {
+    if (!confirm("Are you sure you want to delete this comment?")) return
+
+    setLoading(true)
+    const { success } = await deleteProjectComment(commentId)
+    if (success) {
+      await loadComments()
+    }
+    setLoading(false)
+  }
+
+  const handleInterestedToggle = async () => {
+    if (isLoadingInterest) return
+
+    setIsLoadingInterest(true)
+
+    // Optimistic update
+    const wasInterested = interested
+    setInterested(!wasInterested)
+
+    const { success, isInterested: newInterestState } = await toggleProjectInterest(project.id)
+
+    if (success) {
+      setInterested(newInterestState)
+      if (newInterestState) {
+        // Just became interested - open support panel
+        setSupportPanelOpen(true)
+        setTimeout(() => calculatePopoverPosition(), 0)
+      } else {
+        // Just removed interest - close panel and reset choices
+        setSupportPanelOpen(false)
+        resetSupportChoices()
+      }
+    } else {
+      // Revert on failure
+      setInterested(wasInterested)
+    }
+
+    setIsLoadingInterest(false)
   }
 
   const calculatePopoverPosition = () => {
@@ -169,25 +344,55 @@ export function ProjectCard({ project }: ProjectCardProps) {
     setPopoverPosition({ alignRight, alignBottom })
   }
 
-  const handleCancelInterest = () => {
-    setInterested(false)
-    setSupportPanelOpen(false)
-    resetSupportChoices()
+  const handleCancelInterest = async () => {
+    if (isLoadingInterest) return
+
+    setIsLoadingInterest(true)
+
+    // Remove interest
+    const { success } = await toggleProjectInterest(project.id)
+
+    if (success) {
+      setInterested(false)
+      setSupportPanelOpen(false)
+      resetSupportChoices()
+    }
+
+    setIsLoadingInterest(false)
   }
 
-  const handleSupportSubmit = () => {
-    console.log("Project support response:", {
-      volunteer: supportChoices.volunteer,
-      bringParticipants: supportChoices.bringParticipants,
-      participantCount: supportChoices.participantCount
+  const handleSupportSubmit = async () => {
+    if (isLoadingInterest) return
+
+    setIsLoadingInterest(true)
+
+    // Update support options
+    const { success } = await updateProjectInterestSupport(project.id, {
+      volunteerOffered: supportChoices.volunteer,
+      participantsCount: supportChoices.participantCount
         ? Number(supportChoices.participantCount)
         : undefined,
       canPartner: supportChoices.canPartner,
       provideResources: supportChoices.provideResources,
       contributeFunding: supportChoices.contributeFunding
     })
-    console.log("Add project to tracker:", project.title)
-    setSupportPanelOpen(false)
+
+    if (success) {
+      console.log("Project support options updated:", {
+        volunteer: supportChoices.volunteer,
+        bringParticipants: supportChoices.bringParticipants,
+        participantCount: supportChoices.participantCount
+          ? Number(supportChoices.participantCount)
+          : undefined,
+        canPartner: supportChoices.canPartner,
+        provideResources: supportChoices.provideResources,
+        contributeFunding: supportChoices.contributeFunding
+      })
+      console.log("Add project to tracker:", project.title)
+      setSupportPanelOpen(false)
+    }
+
+    setIsLoadingInterest(false)
   }
 
   const supportCtaLabel = hasSelectedSupport ? "Confirm & add to tracker" : "Add to tracker"
@@ -422,12 +627,9 @@ export function ProjectCard({ project }: ProjectCardProps) {
             {/* Left: Like / Comment */}
             <div className="flex items-center gap-3">
               <button
-                onClick={() => {
-                  const next = !liked
-                  setLiked(next)
-                  setLikeCount((c) => c + (next ? 1 : -1))
-                }}
-                className="flex items-center gap-1.5 px-2 py-1.5 text-muted-foreground hover:text-foreground transition-colors"
+                onClick={handleLikeToggle}
+                disabled={isLoadingReaction}
+                className="flex items-center gap-1.5 px-2 py-1.5 text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
               >
                 <Heart className={cn(
                   "h-5 w-5 transition-all duration-200",
@@ -438,10 +640,10 @@ export function ProjectCard({ project }: ProjectCardProps) {
                 </span>
               </button>
               <button
-                onClick={() => console.log("Open comments")}
+                onClick={() => setShowComments(!showComments)}
                 className="flex items-center gap-1.5 px-2 py-1.5 text-muted-foreground hover:text-foreground transition-colors"
               >
-                <MessageCircle className="h-5 w-5" />
+                <MessageCircle className={cn("h-5 w-5", showComments && "text-primary")} />
                 <span className="text-sm tabular-nums">{commentCount}</span>
               </button>
             </div>
@@ -452,11 +654,13 @@ export function ProjectCard({ project }: ProjectCardProps) {
                 <button
                   ref={supportTriggerRef}
                   onClick={handleInterestedToggle}
+                  disabled={isLoadingInterest}
                   className={cn(
                     "inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-200",
                     interested
                       ? "bg-primary text-primary-foreground shadow-sm"
-                      : "bg-primary/10 border border-primary/30 text-primary hover:bg-primary/20 hover:border-primary/50"
+                      : "bg-primary/10 border border-primary/30 text-primary hover:bg-primary/20 hover:border-primary/50",
+                    isLoadingInterest && "opacity-50 cursor-not-allowed"
                   )}
                 >
                   {interested ? (
@@ -690,6 +894,212 @@ export function ProjectCard({ project }: ProjectCardProps) {
           </div>
         </div>
       </div>
+
+      {/* Comments Section */}
+      {showComments && (
+        <div className="px-4 pb-4 space-y-3 border-t border-border pt-3">
+          {/* Comment Input */}
+          <div className="flex gap-3">
+            <Avatar className="h-8 w-8">
+              <AvatarFallback className="bg-primary/20 text-primary text-xs">You</AvatarFallback>
+            </Avatar>
+            <div className="flex-1 space-y-2">
+              <Textarea
+                placeholder="Add a comment..."
+                value={newCommentText}
+                onChange={(e) => setNewCommentText(e.target.value)}
+                className="min-h-[40px] resize-none text-sm"
+                disabled={loading}
+              />
+              <div className="flex justify-end">
+                <Button
+                  size="sm"
+                  onClick={handleAddComment}
+                  disabled={loading || !newCommentText.trim()}
+                  className="gap-2"
+                >
+                  <Send className="h-3.5 w-3.5" />
+                  Comment
+                </Button>
+              </div>
+            </div>
+          </div>
+
+          {/* Comments List */}
+          {loading && comments.length === 0 ? (
+            <div className="text-center text-sm text-muted-foreground py-4">
+              Loading comments...
+            </div>
+          ) : comments.length === 0 ? (
+            <div className="text-center text-sm text-muted-foreground py-4">
+              No comments yet. Be the first to comment!
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {comments.map((comment) => (
+                <ProjectCommentItem
+                  key={comment.id}
+                  comment={comment}
+                  currentUserId={currentUserId}
+                  onDelete={handleDeleteComment}
+                  onReply={(commentId) => setReplyingTo(commentId)}
+                  replyingTo={replyingTo}
+                  replyText={replyText}
+                  setReplyText={setReplyText}
+                  handleAddReply={handleAddReply}
+                  loading={loading}
+                />
+              ))}
+            </div>
+          )}
+        </div>
+      )}
     </Card>
+  )
+}
+
+// Project Comment Item Component
+interface ProjectCommentItemProps {
+  comment: ProjectCommentWithAuthor
+  currentUserId: string | null
+  onDelete: (commentId: string) => void
+  onReply: (commentId: string) => void
+  replyingTo: string | null
+  replyText: string
+  setReplyText: (text: string) => void
+  handleAddReply: (parentId: string) => void
+  loading: boolean
+  isReply?: boolean
+}
+
+function ProjectCommentItem({
+  comment,
+  currentUserId,
+  onDelete,
+  onReply,
+  replyingTo,
+  replyText,
+  setReplyText,
+  handleAddReply,
+  loading,
+  isReply = false
+}: ProjectCommentItemProps) {
+  const isAuthor = currentUserId === comment.author_id
+  const showReplyForm = replyingTo === comment.id
+
+  const formatTimeAgo = (dateString: string) => {
+    const date = new Date(dateString)
+    const now = new Date()
+    const seconds = Math.floor((now.getTime() - date.getTime()) / 1000)
+
+    if (seconds < 60) return "just now"
+    const minutes = Math.floor(seconds / 60)
+    if (minutes < 60) return `${minutes}m ago`
+    const hours = Math.floor(minutes / 60)
+    if (hours < 24) return `${hours}h ago`
+    const days = Math.floor(hours / 24)
+    if (days < 7) return `${days}d ago`
+    const weeks = Math.floor(days / 7)
+    if (weeks < 4) return `${weeks}w ago`
+    return date.toLocaleDateString()
+  }
+
+  return (
+    <div className={isReply ? "ml-12" : ""}>
+      <div className="flex gap-3 group">
+        <Avatar className="h-8 w-8 ring-2 ring-primary/10">
+          <AvatarImage src={comment.author.avatar_url || "/placeholder.svg"} alt={comment.author.full_name} />
+          <AvatarFallback className="bg-gradient-to-br from-primary/20 to-accent/20 text-primary text-xs">
+            {comment.author.full_name[0]}
+          </AvatarFallback>
+        </Avatar>
+        <div className="flex-1 space-y-1">
+          <div className="bg-muted/50 rounded-lg p-3">
+            <div className="flex items-center gap-2 mb-1">
+              <span className="text-sm font-semibold text-foreground">
+                {comment.author.full_name}
+              </span>
+              <span className="text-xs text-muted-foreground">
+                {comment.created_at ? formatTimeAgo(comment.created_at) : 'just now'}
+              </span>
+            </div>
+            <p className="text-sm text-foreground whitespace-pre-wrap">{comment.content}</p>
+          </div>
+          <div className="flex items-center gap-3 px-3">
+            {!isReply && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-auto py-1 px-2 text-xs text-muted-foreground hover:text-foreground"
+                onClick={() => onReply(comment.id)}
+              >
+                Reply
+              </Button>
+            )}
+            {isAuthor && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-auto py-1 px-2 text-xs text-muted-foreground hover:text-destructive"
+                onClick={() => onDelete(comment.id)}
+              >
+                <Trash2 className="h-3 w-3" />
+              </Button>
+            )}
+          </div>
+
+          {/* Reply Form */}
+          {showReplyForm && (
+            <div className="mt-2 ml-3 flex gap-2">
+              <Textarea
+                placeholder="Write a reply..."
+                value={replyText}
+                onChange={(e) => setReplyText(e.target.value)}
+                className="min-h-[40px] resize-none text-sm"
+                disabled={loading}
+              />
+              <div className="flex flex-col gap-2">
+                <Button
+                  size="sm"
+                  onClick={() => handleAddReply(comment.id)}
+                  disabled={loading || !replyText.trim()}
+                >
+                  <Send className="h-3.5 w-3.5" />
+                </Button>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => onReply("")}
+                  disabled={loading}
+                >
+                  Cancel
+                </Button>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Nested Replies */}
+      {comment.replies && comment.replies.length > 0 && (
+        <div className="mt-3 space-y-3">
+          {comment.replies.map((reply) => (
+            <ProjectCommentItem
+              key={reply.id}
+              comment={reply}
+              currentUserId={currentUserId}
+              onDelete={onDelete}
+              onReply={onReply}
+              replyingTo={replyingTo}
+              replyText={replyText}
+              setReplyText={setReplyText}
+              handleAddReply={handleAddReply}
+              loading={loading}
+              isReply={true}
+            />
+          ))}
+        </div>
+      )}
+    </div>
   )
 }
