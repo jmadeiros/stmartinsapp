@@ -1,5 +1,5 @@
 // @ts-nocheck
-// TODO(Wave 2): Remove @ts-nocheck after regenerating database types (Task 4.13)
+// TODO(Wave 2): Remove @ts-nocheck after fixing complex type inference issues
 'use server'
 
 import { createClient } from "@/lib/supabase/server"
