@@ -276,12 +276,18 @@ export async function getCalendarEvents(
     const orgIds = dbEvents.map((e: any) => e.org_id)
     const eventIds = dbEvents.map((e: any) => e.id)
 
-    // Fetch related data in parallel
-    const [profilesResult, orgsResult, rsvpsResult] = await Promise.all([
-      getOrganizerProfiles(supabase, organizerIds),
+    // First fetch RSVPs and orgs (we need RSVPs to know which user profiles to fetch)
+    const [orgsResult, rsvpsResult] = await Promise.all([
       getOrganizations(supabase, orgIds),
       getEventRsvps(supabase, eventIds),
     ])
+
+    // Collect ALL user IDs we need profiles for (organizers + RSVP users)
+    const rsvpUserIds = (rsvpsResult.data ?? []).map((r: any) => r.user_id)
+    const allUserIds = [...new Set([...organizerIds, ...rsvpUserIds])]
+
+    // Now fetch all needed profiles
+    const profilesResult = await getOrganizerProfiles(supabase, allUserIds)
 
     // Transform to calendar format
     const calendarEvents = transformEventsToCalendarFormat(

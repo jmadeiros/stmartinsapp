@@ -596,8 +596,8 @@ export function MonthlyCalendarView({ events, initialDate, onMonthChange }: Mont
                           </span>
                         )}
                         {/* Tooltip */}
-                        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:block z-10">
-                          <div className="rounded-lg bg-gray-900 px-2 py-1 text-xs text-white whitespace-nowrap">
+                        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:block z-50">
+                          <div className="rounded-lg bg-gray-900 px-2 py-1 text-xs text-white whitespace-nowrap shadow-lg">
                             {attendee.name}
                             {attendee.isOrganizer && " (Host)"}
                           </div>

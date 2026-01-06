@@ -8,37 +8,38 @@ import { createClient } from "@/lib/supabase/server"
  * - If user hasn't RSVPed, create an RSVP and notify the event organizer
  */
 export async function toggleEventRsvp(eventId: string) {
+  console.log('[toggleEventRsvp] Called with eventId:', eventId)
   const supabase = await createClient()
 
   try {
     // Get current user
     const { data: { user }, error: userError } = await supabase.auth.getUser()
+    console.log('[toggleEventRsvp] User:', user?.id || 'none', 'AuthError:', userError?.message || 'none')
 
     if (userError || !user) {
       console.error('[toggleEventRsvp] Not authenticated:', userError)
       return { success: false, error: 'Not authenticated', isRsvped: false }
     }
 
-    // Get user's primary org_id
-    type MembershipResult = {
-      org_id: string
+    // Get user's org_id from their profile
+    type ProfileResult = {
+      organization_id: string | null
     }
 
-    const { data: membership, error: membershipError } = await supabase
-      .from('user_memberships')
-      .select('org_id')
+    const { data: profile, error: profileError } = await supabase
+      .from('user_profiles')
+      .select('organization_id')
       .eq('user_id', user.id)
-      .eq('is_primary', true)
-      .maybeSingle()
+      .single()
 
-    const typedMembership = membership as MembershipResult | null
+    const typedProfile = profile as ProfileResult | null
 
-    if (membershipError || !typedMembership) {
-      console.error('[toggleEventRsvp] Error fetching user org:', membershipError)
+    if (profileError || !typedProfile?.organization_id) {
+      console.error('[toggleEventRsvp] Error fetching user org:', profileError)
       return { success: false, error: 'Could not determine user organization', isRsvped: false }
     }
 
-    const orgId = typedMembership.org_id
+    const orgId = typedProfile.organization_id
 
     // Check if user has already RSVPed to this event
     type RsvpCheck = {

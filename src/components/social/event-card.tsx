@@ -21,6 +21,7 @@ import {
 } from "lucide-react"
 
 import { cn } from "@/lib/utils"
+import { useToast } from "@/hooks/use-toast"
 import type { EventPost } from "@/lib/types"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -59,6 +60,7 @@ interface EventCardProps {
 }
 
 export function EventCard({ event }: EventCardProps) {
+  const { toast } = useToast()
   const [attending, setAttending] = useState(false)
   const [supportPanelOpen, setSupportPanelOpen] = useState(false)
   const [supportChoices, setSupportChoices] = useState<EventSupportResponse>({
@@ -220,6 +222,11 @@ export function EventCard({ event }: EventCardProps) {
       // Revert on failure
       setLiked(wasLiked)
       setLikeCount(prev => wasLiked ? prev + 1 : prev - 1)
+      toast({
+        title: "Action failed",
+        description: "Unable to update your reaction. Please try again.",
+        variant: "destructive"
+      })
     }
     setIsLoadingReaction(false)
   }
@@ -308,6 +315,11 @@ export function EventCard({ event }: EventCardProps) {
       // Revert on failure
       setAttending(wasAttending)
       setSupportPanelOpen(false)
+      toast({
+        title: "RSVP failed",
+        description: "Unable to update your RSVP. Please try again.",
+        variant: "destructive"
+      })
     }
 
     setIsLoadingRsvp(false)
@@ -349,6 +361,11 @@ export function EventCard({ event }: EventCardProps) {
     if (!success) {
       // Revert on failure
       setAttending(true)
+      toast({
+        title: "Cancel failed",
+        description: "Unable to cancel your RSVP. Please try again.",
+        variant: "destructive"
+      })
     }
 
     setIsLoadingRsvp(false)
@@ -384,7 +401,11 @@ export function EventCard({ event }: EventCardProps) {
     if (success) {
       setSupportPanelOpen(false)
     } else {
-      console.error("Failed to save support options")
+      toast({
+        title: "Update failed",
+        description: "Unable to save your support options. Please try again.",
+        variant: "destructive"
+      })
     }
 
     setIsLoadingRsvp(false)

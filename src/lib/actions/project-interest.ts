@@ -12,34 +12,35 @@ type ProjectInterestInsert = Database['public']['Tables']['project_interest']['I
  * If the user hasn't expressed interest, add it and create notification for project author
  */
 export async function toggleProjectInterest(projectId: string) {
+  console.log('[toggleProjectInterest] Called with projectId:', projectId)
   const supabase = await createClient()
 
   try {
     // Get current user
     const { data: { user }, error: userError } = await supabase.auth.getUser()
+    console.log('[toggleProjectInterest] User:', user?.id || 'none', 'AuthError:', userError?.message || 'none')
 
     if (userError || !user) {
       console.error('[toggleProjectInterest] Not authenticated:', userError)
       return { success: false, error: 'Not authenticated', isInterested: false }
     }
 
-    // Get user's org_id from organization_members
-    type OrgMembership = {
-      org_id: string
+    // Get user's org_id from their profile
+    type ProfileResult = {
+      organization_id: string | null
     }
 
-    const { data: membership, error: membershipError } = await supabase
-      .from('organization_members')
-      .select('org_id')
+    const { data: profile, error: profileError } = await supabase
+      .from('user_profiles')
+      .select('organization_id')
       .eq('user_id', user.id)
-      .eq('is_primary', true)
       .single()
 
-    const typedMembership = membership as OrgMembership | null
+    const typedProfile = profile as ProfileResult | null
 
-    if (membershipError || !typedMembership) {
-      console.error('[toggleProjectInterest] Error fetching org membership:', membershipError)
-      return { success: false, error: 'Organization membership not found', isInterested: false }
+    if (profileError || !typedProfile?.organization_id) {
+      console.error('[toggleProjectInterest] Error fetching user org:', profileError)
+      return { success: false, error: 'Could not determine user organization', isInterested: false }
     }
 
     // Check if interest already exists
@@ -82,7 +83,7 @@ export async function toggleProjectInterest(projectId: string) {
       const interestData: ProjectInterestInsert = {
         project_id: projectId,
         user_id: user.id,
-        org_id: typedMembership.org_id
+        org_id: typedProfile.organization_id
       }
 
       const { error: insertError } = await (supabase

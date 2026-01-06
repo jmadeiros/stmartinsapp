@@ -91,17 +91,11 @@ export async function getProjectById(id: string): Promise<ProjectPost | null> {
   const supabase = await createClient()
 
   try {
-    // Fetch the project with author profile and organization
+    // Fetch the project with organization (foreign key exists)
     const { data: project, error } = await supabase
       .from('projects')
       .select(`
         *,
-        author:profiles!projects_author_id_fkey (
-          id,
-          display_name,
-          avatar_url,
-          job_title
-        ),
         organization:organizations!projects_org_id_fkey (
           id,
           name
@@ -118,6 +112,23 @@ export async function getProjectById(id: string): Promise<ProjectPost | null> {
 
     // Cast project to expected shape
     const p = project as any
+
+    // Fetch author profile separately (no foreign key exists)
+    type AuthorProfile = {
+      user_id: string
+      full_name: string
+      avatar_url: string | null
+      job_title: string | null
+      organization_id: string | null
+    }
+
+    const { data: authorProfileData } = await supabase
+      .from('user_profiles')
+      .select('user_id, full_name, avatar_url, job_title, organization_id')
+      .eq('user_id', p.author_id)
+      .single()
+
+    const authorProfile = authorProfileData as AuthorProfile | null
 
     // Fetch collaborator organization details if collaborators exist
     let collaboratorOrgs: Array<{id: string, name: string, logo_url?: string | null}> = []
@@ -141,10 +152,10 @@ export async function getProjectById(id: string): Promise<ProjectPost | null> {
       id: p.id,
       type: "project",
       author: {
-        name: p.author?.display_name || 'Unknown',
-        handle: `@${(p.author?.display_name || 'unknown').toLowerCase().replace(/\s+/g, '.')}`,
-        avatar: p.author?.avatar_url || '/placeholder.svg',
-        role: p.author?.job_title || undefined,
+        name: authorProfile?.full_name || 'Unknown',
+        handle: `@${(authorProfile?.full_name || 'unknown').toLowerCase().replace(/\s+/g, '.')}`,
+        avatar: authorProfile?.avatar_url || '/placeholder.svg',
+        role: authorProfile?.job_title || undefined,
         organization: p.organization?.name || undefined,
       },
       title: p.title,
@@ -158,6 +169,7 @@ export async function getProjectById(id: string): Promise<ProjectPost | null> {
         volunteersNeeded: p.volunteers_needed || undefined,
         seekingPartners: p.seeking_partners || undefined,
         fundraisingGoal: p.fundraising_goal || undefined,
+        // Note: resourcesRequested and participantRequests not in database schema
       },
       progress: p.progress_current !== null && p.progress_target !== null ? {
         current: p.progress_current,

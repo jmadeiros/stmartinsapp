@@ -726,14 +726,10 @@ export async function getPostAcknowledgments(postId: string) {
   const supabase = await createClient()
 
   try {
-    // Get acknowledgments with user profile data
+    // Get acknowledgments first (no foreign key join - use separate query)
     const { data: acknowledgments, error } = await (supabase
       .from('post_acknowledgments') as any)
-      .select(`
-        user_id,
-        acknowledged_at,
-        user_profiles!inner(user_id, full_name, avatar_url)
-      `)
+      .select('user_id, acknowledged_at')
       .eq('post_id', postId)
       .order('acknowledged_at', { ascending: false })
 
@@ -745,19 +741,38 @@ export async function getPostAcknowledgments(postId: string) {
     type AcknowledgmentData = {
       user_id: string
       acknowledged_at: string
-      user_profiles: {
-        user_id: string
-        full_name: string
-        avatar_url: string | null
-      }
     }
 
     const typedAcknowledgments = (acknowledgments || []) as AcknowledgmentData[]
 
+    // If no acknowledgments, return early
+    if (typedAcknowledgments.length === 0) {
+      return { success: true, data: { count: 0, users: [] }, error: null }
+    }
+
+    // Fetch user profiles separately (no foreign key relationship exists)
+    const userIds = typedAcknowledgments.map(ack => ack.user_id)
+    const { data: profiles } = await supabase
+      .from('user_profiles')
+      .select('user_id, full_name, avatar_url')
+      .in('user_id', userIds)
+
+    type ProfileData = {
+      user_id: string
+      full_name: string
+      avatar_url: string | null
+    }
+
+    const typedProfiles = (profiles || []) as ProfileData[]
+    const profileMap = typedProfiles.reduce((acc, p) => {
+      acc[p.user_id] = p
+      return acc
+    }, {} as Record<string, ProfileData>)
+
     const users = typedAcknowledgments.map(ack => ({
       userId: ack.user_id,
-      fullName: ack.user_profiles.full_name,
-      avatarUrl: ack.user_profiles.avatar_url,
+      fullName: profileMap[ack.user_id]?.full_name || 'Unknown',
+      avatarUrl: profileMap[ack.user_id]?.avatar_url || null,
       acknowledgedAt: ack.acknowledged_at
     }))
 

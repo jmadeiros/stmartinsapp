@@ -101,40 +101,16 @@ export async function getEventById(eventId: string) {
   const supabase = await createClient()
 
   try {
-    // Fetch the event with related data
+    // Fetch the event with organization (foreign key exists)
     const { data: event, error } = await supabase
       .from('events')
       .select(`
         *,
         collaborating_orgs,
-        organizer:user_profiles!events_organizer_id_fkey(
-          user_id,
-          full_name,
-          avatar_url,
-          role,
-          organization:organization_members!user_profiles_user_id_fkey(
-            organization:organizations(name)
-          )
-        ),
         organization:organizations!events_org_id_fkey(
           id,
           name,
           logo_url
-        ),
-        rsvps:event_rsvps(
-          id,
-          user_id,
-          status,
-          volunteer_offered,
-          participants_count,
-          can_partner,
-          created_at,
-          attendee:user_profiles!event_rsvps_user_id_fkey(
-            user_id,
-            full_name,
-            avatar_url,
-            role
-          )
         )
       `)
       .eq('id', eventId)
@@ -149,9 +125,55 @@ export async function getEventById(eventId: string) {
       return { success: false, error: 'Event not found', data: null }
     }
 
-    // After getting event data, fetch collaborator org details
+    const eventData = event as { organizer_id: string; collaborating_orgs?: string[] | null }
+
+    // Fetch organizer profile separately (no foreign key exists)
+    const { data: organizerProfile } = await supabase
+      .from('user_profiles')
+      .select('user_id, full_name, avatar_url, role, job_title, organization_id')
+      .eq('user_id', eventData.organizer_id)
+      .single()
+
+    // Fetch organizer's organization if they have one
+    let organizerOrg: { name: string } | null = null
+    if (organizerProfile?.organization_id) {
+      const { data: org } = await supabase
+        .from('organizations')
+        .select('name')
+        .eq('id', organizerProfile.organization_id)
+        .single()
+      organizerOrg = org
+    }
+
+    // Fetch RSVPs with attendee profiles separately
+    const { data: rsvps } = await supabase
+      .from('event_rsvps')
+      .select('id, user_id, status, volunteer_offered, participants_count, can_partner, created_at')
+      .eq('event_id', eventId)
+
+    // Fetch attendee profiles for RSVPs
+    const rsvpUserIds = (rsvps || []).map(r => r.user_id)
+    let attendeeProfiles: Record<string, { user_id: string; full_name: string; avatar_url: string | null; role: string }> = {}
+    if (rsvpUserIds.length > 0) {
+      const { data: profiles } = await supabase
+        .from('user_profiles')
+        .select('user_id, full_name, avatar_url, role')
+        .in('user_id', rsvpUserIds)
+
+      attendeeProfiles = (profiles || []).reduce((acc, p) => {
+        acc[p.user_id] = p
+        return acc
+      }, {} as Record<string, { user_id: string; full_name: string; avatar_url: string | null; role: string }>)
+    }
+
+    // Attach attendee profiles to RSVPs
+    const rsvpsWithAttendees = (rsvps || []).map(rsvp => ({
+      ...rsvp,
+      attendee: attendeeProfiles[rsvp.user_id] || null
+    }))
+
+    // Fetch collaborator org details
     let collaboratorOrgs: Array<{id: string, name: string, logo_url?: string | null}> = []
-    const eventData = event as { collaborating_orgs?: string[] | null }
     if (eventData.collaborating_orgs && eventData.collaborating_orgs.length > 0) {
       const { data: orgs } = await supabase
         .from('organizations')
@@ -160,7 +182,26 @@ export async function getEventById(eventId: string) {
       collaboratorOrgs = orgs || []
     }
 
-    return { success: true, data: { ...(event as Record<string, unknown>), collaboratorOrgs }, error: null }
+    // Construct the organizer object
+    const organizer = organizerProfile ? {
+      user_id: organizerProfile.user_id,
+      full_name: organizerProfile.full_name,
+      avatar_url: organizerProfile.avatar_url,
+      role: organizerProfile.role,
+      job_title: organizerProfile.job_title,
+      organization: organizerOrg ? [{ organization: organizerOrg }] : []
+    } : null
+
+    return {
+      success: true,
+      data: {
+        ...(event as Record<string, unknown>),
+        organizer,
+        rsvps: rsvpsWithAttendees,
+        collaboratorOrgs
+      },
+      error: null
+    }
   } catch (error) {
     console.error('[getEventById] Exception:', error)
     return {

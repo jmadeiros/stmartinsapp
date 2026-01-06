@@ -32,6 +32,7 @@ import { PostMenu } from "@/components/ui/post-menu"
 import { Textarea } from "@/components/ui/textarea"
 import type { ProjectPost } from "@/lib/types"
 import { cn } from "@/lib/utils"
+import { useToast } from "@/hooks/use-toast"
 import { createClient } from "@/lib/supabase/client"
 import {
   getProjectComments,
@@ -65,6 +66,7 @@ interface ProjectCardProps {
 
 export function ProjectCard({ project }: ProjectCardProps) {
   const router = useRouter()
+  const { toast } = useToast()
   const [interested, setInterested] = useState(false)
   const [supportPanelOpen, setSupportPanelOpen] = useState(false)
   const [supportChoices, setSupportChoices] = useState<ProjectSupportResponse>({
@@ -237,6 +239,11 @@ export function ProjectCard({ project }: ProjectCardProps) {
       // Revert on failure
       setLiked(wasLiked)
       setLikeCount(prev => wasLiked ? prev + 1 : prev - 1)
+      toast({
+        title: "Action failed",
+        description: "Unable to update your reaction. Please try again.",
+        variant: "destructive"
+      })
     }
     setIsLoadingReaction(false)
   }
@@ -319,6 +326,11 @@ export function ProjectCard({ project }: ProjectCardProps) {
     } else {
       // Revert on failure
       setInterested(wasInterested)
+      toast({
+        title: "Interest update failed",
+        description: "Unable to update your interest. Please try again.",
+        variant: "destructive"
+      })
     }
 
     setIsLoadingInterest(false)
@@ -356,6 +368,12 @@ export function ProjectCard({ project }: ProjectCardProps) {
       setInterested(false)
       setSupportPanelOpen(false)
       resetSupportChoices()
+    } else {
+      toast({
+        title: "Cancel failed",
+        description: "Unable to remove your interest. Please try again.",
+        variant: "destructive"
+      })
     }
 
     setIsLoadingInterest(false)
@@ -379,6 +397,12 @@ export function ProjectCard({ project }: ProjectCardProps) {
 
     if (success) {
       setSupportPanelOpen(false)
+    } else {
+      toast({
+        title: "Update failed",
+        description: "Unable to save your support options. Please try again.",
+        variant: "destructive"
+      })
     }
 
     setIsLoadingInterest(false)
