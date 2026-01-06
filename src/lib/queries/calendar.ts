@@ -284,7 +284,7 @@ export async function getCalendarEvents(
 
     // Collect ALL user IDs we need profiles for (organizers + RSVP users)
     const rsvpUserIds = (rsvpsResult.data ?? []).map((r: any) => r.user_id)
-    const allUserIds = [...new Set([...organizerIds, ...rsvpUserIds])]
+    const allUserIds = Array.from(new Set([...organizerIds, ...rsvpUserIds]))
 
     // Now fetch all needed profiles
     const profilesResult = await getOrganizerProfiles(supabase, allUserIds)

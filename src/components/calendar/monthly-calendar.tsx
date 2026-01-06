@@ -29,6 +29,7 @@ import {
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { Tooltip } from "@/components/ui/tooltip"
 import { cn } from "@/lib/utils"
 
 export type CalendarEventKind =
@@ -580,29 +581,33 @@ export function MonthlyCalendarView({ events, initialDate, onMonthChange }: Mont
                   {selectedEvent.attendees
                     .filter(a => a.status === "yes")
                     .map(attendee => (
-                      <div key={attendee.id} className="group relative">
-                        <Avatar className="h-10 w-10 border-2 border-background ring-1 ring-primary/10 shadow-sm transition-transform hover:scale-110">
-                          {attendee.avatar ? (
-                            <AvatarImage src={attendee.avatar} alt={attendee.name} />
-                          ) : (
-                            <AvatarFallback className="text-xs font-semibold bg-gradient-to-br from-primary/10 to-emerald-50 text-primary/80">
-                              {getInitials(attendee.name)}
-                            </AvatarFallback>
-                          )}
-                        </Avatar>
-                        {attendee.isOrganizer && (
-                          <span className="absolute -bottom-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-[8px] text-white shadow-sm">
-                            ★
-                          </span>
-                        )}
-                        {/* Tooltip */}
-                        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:block z-50">
-                          <div className="rounded-lg bg-gray-900 px-2 py-1 text-xs text-white whitespace-nowrap shadow-lg">
+                      <Tooltip
+                        key={attendee.id}
+                        content={
+                          <span className="whitespace-nowrap">
                             {attendee.name}
                             {attendee.isOrganizer && " (Host)"}
-                          </div>
+                          </span>
+                        }
+                        side="top"
+                      >
+                        <div className="relative">
+                          <Avatar className="h-10 w-10 border-2 border-background ring-1 ring-primary/10 shadow-sm transition-transform hover:scale-110">
+                            {attendee.avatar ? (
+                              <AvatarImage src={attendee.avatar} alt={attendee.name} />
+                            ) : (
+                              <AvatarFallback className="text-xs font-semibold bg-gradient-to-br from-primary/10 to-emerald-50 text-primary/80">
+                                {getInitials(attendee.name)}
+                              </AvatarFallback>
+                            )}
+                          </Avatar>
+                          {attendee.isOrganizer && (
+                            <span className="absolute -bottom-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-[8px] text-white shadow-sm">
+                              ★
+                            </span>
+                          )}
                         </div>
-                      </div>
+                      </Tooltip>
                     ))}
                 </div>
               </div>
