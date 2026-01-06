@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect, useCallback } from "react"
+import { useRouter } from "next/navigation"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
@@ -26,6 +27,7 @@ interface PostCardProps {
 }
 
 export function PostCard({ post }: PostCardProps) {
+  const router = useRouter()
   const [showComments, setShowComments] = useState(false)
   const [comments, setComments] = useState<CommentWithAuthor[]>([])
   const [commentCount, setCommentCount] = useState(post.comments || 0)
@@ -285,20 +287,14 @@ export function PostCard({ post }: PostCardProps) {
       return {
         text: "View Event",
         icon: Calendar,
-        onClick: () => {
-          console.log("Navigate to event:", post.linkedEventId)
-          // TODO: Implement navigation to event
-        }
+        onClick: () => router.push(`/events/${post.linkedEventId}`)
       }
     }
     if (post.linkedProjectId) {
       return {
         text: "View Project",
         icon: Target,
-        onClick: () => {
-          console.log("Navigate to project:", post.linkedProjectId)
-          // TODO: Implement navigation to project
-        }
+        onClick: () => router.push(`/projects/${post.linkedProjectId}`)
       }
     }
     return null
@@ -345,11 +341,11 @@ export function PostCard({ post }: PostCardProps) {
             isAuthor={false}
             isAdmin={isAdmin}
             isPinned={isPinned}
-            onEdit={() => console.log("Edit post")}
-            onShare={() => console.log("Share post")}
-            onReport={() => console.log("Report post")}
-            onLinkToEvent={() => console.log("Link to event")}
-            onLinkToProject={() => console.log("Link to project")}
+            onEdit={() => {}}
+            onShare={() => {}}
+            onReport={() => {}}
+            onLinkToEvent={() => {}}
+            onLinkToProject={() => {}}
             onPin={handlePinPost}
             onUnpin={handleUnpinPost}
           />
@@ -376,16 +372,26 @@ export function PostCard({ post }: PostCardProps) {
 
         {/* Linked Content Indicator */}
         {(post.linkedEventId || post.linkedProjectId) && (
-          <div className="mb-4 p-3 rounded-lg bg-muted/50 border border-border/50">
+          <div
+            className="mb-4 p-3 rounded-lg bg-muted/50 border border-border/50 cursor-pointer hover:bg-muted/70 transition-colors"
+            onClick={() => {
+              if (post.linkedEventId) {
+                router.push(`/events/${post.linkedEventId}`)
+              } else if (post.linkedProjectId) {
+                router.push(`/projects/${post.linkedProjectId}`)
+              }
+            }}
+          >
             <div className="flex items-center gap-2 text-sm">
-              <ExternalLink className="h-3.5 w-3.5 text-muted-foreground" />
+              {post.linkedEventId ? (
+                <Calendar className="h-3.5 w-3.5 text-muted-foreground" />
+              ) : (
+                <Target className="h-3.5 w-3.5 text-muted-foreground" />
+              )}
               <span className="text-xs text-muted-foreground">
-                {post.linkedEventId ? "About:" : "About:"}
+                {post.linkedEventId ? "Related Event" : "Related Project"}
               </span>
-              <span className="font-medium text-foreground">
-                {/* TODO: Show actual linked item name */}
-                {post.linkedEventId ? "Linked Event" : "Linked Project"}
-              </span>
+              <ExternalLink className="h-3 w-3 text-muted-foreground ml-auto" />
             </div>
           </div>
         )}

@@ -1,7 +1,7 @@
-import type { SupabaseClient } from '@supabase/supabase-js'
 import type { Database } from '@/lib/database.types'
 
-type Client = SupabaseClient<Database>
+// eslint-disable-next-line
+type Client = any // Supabase client type varies between browser and server
 
 /**
  * Fetch feed items from the unified feed view

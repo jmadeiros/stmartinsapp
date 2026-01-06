@@ -500,7 +500,7 @@ export default function SettingsPage() {
                   <div className="space-y-1">
                     <p className="text-sm font-semibold text-blue-900">Email Notifications</p>
                     <p className="text-sm text-blue-800/70 leading-relaxed font-normal">
-                      Email digest and push notifications are currently being optimized. You'll receive all updates in your Village activity feed for now.
+                      Email digest and push notifications are currently being optimized. You&apos;ll receive all updates in your Village activity feed for now.
                     </p>
                   </div>
                 </div>

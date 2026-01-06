@@ -66,7 +66,7 @@ export function ProfileCollaborations({ orgId }: ProfileCollaborationsProps) {
         <Users className="h-8 w-8 mx-auto mb-2 opacity-50" />
         <p>No collaborations yet</p>
         <p className="text-sm mt-1">
-          When your organization joins events or projects as a collaborator, they'll appear here.
+          When your organization joins events or projects as a collaborator, they&apos;ll appear here.
         </p>
       </Card>
     )

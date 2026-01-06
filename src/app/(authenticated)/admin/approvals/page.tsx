@@ -107,7 +107,7 @@ export default async function ApprovalsPage() {
           About User Approvals
         </h4>
         <p className="text-sm text-blue-800">
-          This page shows users who have signed up but haven't been assigned to an
+          This page shows users who have signed up but haven&apos;t been assigned to an
           organization yet. When OAuth is enabled (Task 4.7), new sign-ups will appear
           here for admin approval before gaining full access.
         </p>

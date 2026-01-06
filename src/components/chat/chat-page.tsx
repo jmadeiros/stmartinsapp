@@ -29,13 +29,13 @@ import {
 } from "./chat-types"
 import type { RealtimeChannel } from "@supabase/supabase-js"
 
-// Mock data imports for fallback
-import {
-  mockConversations,
-  currentUser as mockCurrentUser,
-  mockUsers,
-  getMessagesForConversation,
-} from "./mock-data"
+// Default fallback user for when not authenticated
+const defaultUser: ChatUser = {
+  id: 'anonymous',
+  name: 'Guest',
+  initials: 'G',
+  isOnline: false,
+}
 
 // Default org ID for development
 const DEFAULT_ORG_ID = "00000000-0000-0000-0000-000000000001"
@@ -44,7 +44,7 @@ export function ChatPage() {
   // State
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [useMockData, setUseMockData] = useState(false)
+  const [needsAuth, setNeedsAuth] = useState(false)
 
   const [currentUser, setCurrentUser] = useState<ChatUser | null>(null)
   const [orgId, setOrgId] = useState<string>(DEFAULT_ORG_ID)
@@ -71,12 +71,8 @@ export function ChatPage() {
         const userResult = await getCurrentChatUser()
 
         if (!userResult.success || !userResult.data) {
-          console.log("No authenticated user, falling back to mock data")
-          setUseMockData(true)
-          setCurrentUser(mockCurrentUser)
-          setConversations(mockConversations)
-          setActiveConversation(mockConversations[0])
-          setMessages(getMessagesForConversation(mockConversations[0].id))
+          console.log("No authenticated user")
+          setNeedsAuth(true)
           setIsLoading(false)
           return
         }
@@ -107,11 +103,8 @@ export function ChatPage() {
         const convResult = await fetchUserConversations(user.id, userOrgId)
 
         if (!convResult.success || !convResult.data || convResult.data.length === 0) {
-          console.log("No conversations found, falling back to mock data")
-          setUseMockData(true)
-          setConversations(mockConversations)
-          setActiveConversation(mockConversations[0])
-          setMessages(getMessagesForConversation(mockConversations[0].id))
+          console.log("No conversations found")
+          // Stay on empty state - user can create new conversations
           setIsLoading(false)
           return
         }
@@ -169,12 +162,7 @@ export function ChatPage() {
         )
       } catch (err) {
         console.error("Error initializing chat:", err)
-        setError("Failed to load chat. Using demo mode.")
-        setUseMockData(true)
-        setCurrentUser(mockCurrentUser)
-        setConversations(mockConversations)
-        setActiveConversation(mockConversations[0])
-        setMessages(getMessagesForConversation(mockConversations[0].id))
+        setError("Failed to load chat. Please try again.")
       } finally {
         setIsLoading(false)
       }
@@ -197,11 +185,6 @@ export function ChatPage() {
   // Load messages for a conversation
   // Accept optional user param for initial load (before state is updated)
   const loadMessages = useCallback(async (conversationId: string, user?: ChatUser) => {
-    if (useMockData) {
-      setMessages(getMessagesForConversation(conversationId))
-      return
-    }
-
     const effectiveUser = user || currentUser
 
     try {
@@ -226,11 +209,11 @@ export function ChatPage() {
     } catch (err) {
       console.error("Error loading messages:", err)
     }
-  }, [currentUser, useMockData])
+  }, [currentUser])
 
   // Subscribe to messages when conversation changes
   useEffect(() => {
-    if (!activeConversation || useMockData || !currentUser) return
+    if (!activeConversation || !currentUser) return
 
     // Unsubscribe from previous conversation
     if (messageSubscriptionRef.current) {
@@ -274,7 +257,7 @@ export function ChatPage() {
     }
     // We intentionally use activeConversation?.id to only re-subscribe when the ID changes
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeConversation?.id, useMockData, currentUser])
+  }, [activeConversation?.id, currentUser])
 
   // Handle selecting a conversation
   const handleSelectConversation = useCallback(async (conversation: Conversation) => {
@@ -285,46 +268,19 @@ export function ChatPage() {
     await loadMessages(conversation.id)
 
     // Mark as read
-    if (currentUser && !useMockData) {
+    if (currentUser) {
       markAsRead(conversation.id, currentUser.id)
       setConversations(prev => prev.map(c =>
         c.id === conversation.id ? { ...c, unreadCount: 0 } : c
       ))
     }
-  }, [currentUser, loadMessages, useMockData])
+  }, [currentUser, loadMessages])
 
   // Handle sending a message
   const handleSendMessage = useCallback(async (content: string, mentions?: string[]) => {
     if (!activeConversation || !currentUser) return
 
-    if (useMockData) {
-      // Mock mode - add message locally
-      const newMessage: Message = {
-        id: `msg-${Date.now()}`,
-        conversationId: activeConversation.id,
-        senderId: currentUser.id,
-        sender: currentUser,
-        content,
-        timestamp: new Date(),
-        reactions: [],
-        mentions,
-      }
-      setMessages(prev => [...prev, newMessage])
-      setTypingUsers([])
-
-      // Simulate reply for DMs
-      if (activeConversation.type === "dm") {
-        setTimeout(() => {
-          const otherUser = activeConversation.participants.find(p => p.id !== currentUser.id)
-          if (otherUser) {
-            setTypingUsers([otherUser])
-          }
-        }, 1000)
-      }
-      return
-    }
-
-    // Real mode - add message optimistically first
+    // Add message optimistically first
     const optimisticId = `optimistic-${Date.now()}`
     const optimisticMessage: Message = {
       id: optimisticId,
@@ -377,7 +333,7 @@ export function ChatPage() {
       // Remove optimistic message on error
       setMessages(prev => prev.filter(m => m.id !== optimisticId))
     }
-  }, [activeConversation, currentUser, useMockData])
+  }, [activeConversation, currentUser])
 
   // Handle reactions
   const handleReact = useCallback((messageId: string, emoji: string) => {
@@ -423,14 +379,7 @@ export function ChatPage() {
 
   // Handle starting a new DM
   const handleStartNewDM = useCallback(async (otherUserId: string) => {
-    if (!currentUser || useMockData) {
-      // In mock mode, just show the first DM conversation as a demo
-      const dmConversation = conversations.find(c => c.type === 'dm')
-      if (dmConversation) {
-        handleSelectConversation(dmConversation)
-      }
-      return
-    }
+    if (!currentUser) return
 
     try {
       const result = await startNewDM({
@@ -482,7 +431,7 @@ export function ChatPage() {
     } catch (err) {
       console.error("Error starting new DM:", err)
     }
-  }, [currentUser, orgId, useMockData, conversations, handleSelectConversation])
+  }, [currentUser, orgId, handleSelectConversation])
 
   // Handle back button (mobile)
   const handleBack = useCallback(() => {
@@ -501,18 +450,53 @@ export function ChatPage() {
     )
   }
 
+  // Auth required state
+  if (needsAuth) {
+    return (
+      <div className="min-h-screen bg-background overflow-x-hidden">
+        <SocialHeader />
+        <div className="h-[calc(100vh-4rem)] flex items-center justify-center">
+          <div className="text-center px-4">
+            <div className="h-16 w-16 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto mb-4">
+              <MessageSquare className="h-8 w-8 text-primary" />
+            </div>
+            <h3 className="text-lg font-semibold text-foreground mb-2">
+              Sign in to chat
+            </h3>
+            <p className="text-sm text-muted-foreground max-w-sm">
+              Please sign in to access the chat feature and connect with your team.
+            </p>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  // Error state
+  if (error) {
+    return (
+      <div className="min-h-screen bg-background overflow-x-hidden">
+        <SocialHeader />
+        <div className="h-[calc(100vh-4rem)] flex items-center justify-center">
+          <div className="text-center px-4">
+            <div className="h-16 w-16 rounded-2xl bg-destructive/10 flex items-center justify-center mx-auto mb-4">
+              <MessageSquare className="h-8 w-8 text-destructive" />
+            </div>
+            <h3 className="text-lg font-semibold text-foreground mb-2">
+              Unable to load chat
+            </h3>
+            <p className="text-sm text-muted-foreground max-w-sm">
+              {error}
+            </p>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="min-h-screen bg-background overflow-x-hidden">
       <SocialHeader />
-
-      {/* Demo mode indicator */}
-      {useMockData && (
-        <div className="bg-amber-500/10 border-b border-amber-500/20 px-4 py-2 text-center">
-          <p className="text-sm text-amber-600 dark:text-amber-400">
-            Demo Mode - Using sample data. Sign in to use real chat.
-          </p>
-        </div>
-      )}
 
       <div className="h-[calc(100vh-4rem)] flex overflow-hidden">
         {/* Conversation list */}
@@ -527,7 +511,7 @@ export function ChatPage() {
             conversations={conversations}
             activeConversationId={activeConversation?.id || null}
             onSelectConversation={handleSelectConversation}
-            currentUser={currentUser || mockCurrentUser}
+            currentUser={currentUser || defaultUser}
             onNewDM={handleStartNewDM}
             orgId={orgId}
           />
@@ -545,7 +529,7 @@ export function ChatPage() {
               <ChatView
                 conversation={activeConversation}
                 messages={messages}
-                currentUser={currentUser || mockCurrentUser}
+                currentUser={currentUser || defaultUser}
                 onSendMessage={handleSendMessage}
                 onReact={handleReact}
                 onBack={handleBack}

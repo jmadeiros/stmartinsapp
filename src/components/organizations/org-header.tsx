@@ -41,7 +41,7 @@ export function OrgHeader({ organization, canEdit }: OrgHeaderProps) {
     setIsSubmitting(true)
     try {
       const { success, error } = await updateOrganization(organization.id, {
-        room_location: roomLocation || null,
+        room_location: roomLocation || undefined,
       })
 
       if (success) {

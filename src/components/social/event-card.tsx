@@ -382,8 +382,6 @@ export function EventCard({ event }: EventCardProps) {
     const { success } = await updateEventRsvpSupport(event.id, supportOptions)
 
     if (success) {
-      console.log("Event support response saved:", supportOptions)
-      console.log("Add to calendar:", event.title)
       setSupportPanelOpen(false)
     } else {
       console.error("Failed to save support options")

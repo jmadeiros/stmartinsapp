@@ -59,8 +59,8 @@ export function Component() {
 ### 3. Authentication Flow
 
 1. User authenticates via Supabase Auth (OAuth or dev login)
-2. Profile exists in `app.profiles` (linked via `user_id` FK to `auth.users`)
-3. Organization membership in `app.organization_members`
+2. Profile exists in `user_profiles` (linked via `user_id` FK to `auth.users`)
+3. Organization membership in `user_memberships`
 4. All content scoped by `org_id`
 
 **Fetch user profile:**
@@ -69,21 +69,20 @@ const supabase = await createClient()
 const { data: { user } } = await supabase.auth.getUser()
 
 const { data: profile } = await supabase
-  .schema('app')
-  .from('profiles')
+  .from('user_profiles')
   .select('*')
   .eq('id', user?.id)
   .single()
 ```
 
-**Note:** Auth check is currently disabled in `/src/app/(authenticated)/layout.tsx` for development (lines 11-14 commented out).
+**Note:** Auth check is enabled in `/src/app/(authenticated)/layout.tsx` - unauthenticated users are redirected to `/login`.
 
 ### 4. Route Structure
 
 ```
 src/app/
 ├── (authenticated)/          # Protected route group
-│   ├── layout.tsx           # Auth wrapper (currently disabled)
+│   ├── layout.tsx           # Auth wrapper
 │   └── dashboard/           # Main app
 ├── api/
 │   └── dev-login/           # Dev-only login endpoint
@@ -91,7 +90,7 @@ src/app/
 └── login/                   # Login page
 ```
 
-Route groups with `(authenticated)/` prefix require authentication (when enabled).
+Route groups with `(authenticated)/` prefix require authentication.
 
 ### 5. Data Fetching Patterns
 
@@ -122,7 +121,7 @@ npm run lint        # ESLint
 # Type generation after schema changes
 npx supabase gen types typescript \
   --project-id YOUR_PROJECT_REF \
-  --schema app \
+  --schema public \
   > src/lib/database.types.ts
 ```
 
@@ -191,15 +190,18 @@ Components install to `/src/components/ui/` and are fully customizable.
 
 ## Database Schema Overview
 
-**Core Tables in `app` schema:**
+**Core Tables in `public` schema:**
 - `organizations` - Charity organizations
-- `profiles` - User profiles (extends auth.users)
-- `organization_members` - User-org relationships with roles
+- `user_profiles` - User profiles (extends auth.users)
+- `user_memberships` - User-org relationships with roles
 - `posts` - Community posts (6 categories)
 - `events` - Calendar events with RSVP
 - `projects` - Collaborative projects with progress
 - `event_rsvps` - Event attendance with support options
 - `project_interests` - Project collaboration expressions
+- `chat_rooms` - Chat room definitions
+- `chat_messages` - Chat messages
+- `notifications` - User notifications
 
 **Views:**
 - `feed` - Unified feed (posts + events + projects)
@@ -244,8 +246,7 @@ className={cn("base-classes", condition && "conditional-classes")}
 
 ```typescript
 const { data: membership } = await supabase
-  .schema('app')
-  .from('organization_members')
+  .from('user_memberships')
   .select(`
     *,
     organization:organizations(*)
@@ -281,7 +282,6 @@ export default async function Page() {
   if (!user) redirect('/login')
 
   const { data } = await supabase
-    .schema('app')
     .from('posts')
     .select('*')
     .eq('org_id', orgId)
@@ -296,49 +296,48 @@ export default async function Page() {
 ## Debugging Common Issues
 
 ### "Table not found" errors
-- ✅ Verify using `.schema('app')` in query
-- ✅ Check table exists in Supabase dashboard under "app" schema
+- Verify table name is correct (e.g., `user_profiles` not `profiles`)
+- Check table exists in Supabase dashboard under "public" schema
 
 ### Type errors on queries
-- ✅ Regenerate types if schema changed
-- ✅ Use `Database['app']['Tables']['table_name']` for typing
+- Regenerate types if schema changed
+- Use `Database['public']['Tables']['table_name']` for typing
 
 ### Auth issues
-- ✅ Check environment variables in `.env.local`
-- ✅ Verify middleware is refreshing session
-- ✅ Check if auth wrapper is commented out (current dev state)
+- Check environment variables in `.env.local`
+- Verify middleware is refreshing session
+- Check that auth wrapper in layout.tsx is working
 
 ### Dashboard shows "there" instead of user name
-- ✅ Verify profile exists in `app.profiles`
-- ✅ Check dashboard is fetching from `.schema('app').from('profiles')`
-- ✅ Ensure `display_name` field is populated
+- Verify profile exists in `user_profiles`
+- Check dashboard is fetching from `.from('user_profiles')`
+- Ensure `display_name` field is populated
 
 ---
 
 ## Current Implementation Status
 
-**✅ Complete:**
+**Complete:**
 - Next.js 14 app structure
 - Supabase integration (auth, queries)
 - Dev login system
 - Social dashboard UI (3-column layout)
-- Database schema (26 tables in `app` schema)
+- Database schema (public schema)
 - Type generation
 - Query helpers
 - ShadCN component library
-
-**🚧 In Progress:**
-- Connecting feed to real database data
-- TanStack Query integration
-
-**❌ Not Yet Built:**
-- OAuth providers (Microsoft/Google)
-- Real-time subscriptions
-- File uploads
-- Chat feature
-- Admin panel
+- Chat feature (real-time messaging)
+- Notifications system (real-time)
 - Search functionality
-- Notifications
+- Profile pages with activity feeds
+- Polls feature
+- Comments on events and projects
+- RSVP and project interest functionality
+
+**Not Yet Built:**
+- OAuth providers (Microsoft/Google)
+- File uploads
+- Admin panel
 
 ---
 
@@ -346,7 +345,7 @@ export default async function Page() {
 
 1. **Server-first:** Default to Server Components, use `'use client'` only when needed
 2. **Type-safe:** Leverage TypeScript and Supabase generated types
-3. **Schema-aware:** Always specify `.schema('app')` in queries
+3. **Public schema:** Use default public schema for all queries (no `.schema()` call needed)
 4. **Error handling:** Return `{ data, error }` pattern consistently
 5. **Progressive enhancement:** Build core features first, enhance iteratively
 
@@ -363,5 +362,5 @@ export default async function Page() {
 
 ---
 
-**Last Updated:** November 20, 2025
-**Version:** 1.0
+**Last Updated:** January 6, 2026
+**Version:** 2.0

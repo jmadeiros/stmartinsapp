@@ -11,7 +11,7 @@ import type {
 } from '@/lib/meeting-notes/types'
 
 // Use any for Supabase client to avoid complex type inference issues
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+// eslint-disable-next-line
 type SupabaseClientAny = any
 
 /**

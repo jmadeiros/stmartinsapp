@@ -23,7 +23,7 @@ export default async function OrganizationPage({ params }: OrganizationPageProps
     .from('user_profiles')
     .select('role, organization_id')
     .eq('user_id', user.id)
-    .single()
+    .single() as { data: { role: string; organization_id: string } | null }
 
   // Fetch organization with members
   const { data: organization, error } = await getOrganization(params.id)

@@ -171,7 +171,7 @@ export function useNotifications({
 
       const channel = subscribeToUserNotifications(
         supabase,
-        userId,
+        userId!, // Guarded by the check at the start of useEffect
         // On INSERT - new notification arrived
         (newNotification) => {
           console.log('[useNotifications] Received new notification via realtime:', newNotification)

@@ -425,8 +425,6 @@ export function MainFeed({ initialFeedItems = [], userId, orgId, userRole = 'vol
       },
       timeAgo: "just now"
     })
-    
-    console.log("Alert sent:", alertData)
   }
 
   const handleDismissAlert = (id: string) => {

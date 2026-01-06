@@ -319,7 +319,7 @@ export function EventDetail({ event, currentUserId, currentUserOrgId }: EventDet
                   {isAttending ? (
                     <>
                       <Check className="h-4 w-4" />
-                      You're going
+                      You&apos;re going
                     </>
                   ) : (
                     <>

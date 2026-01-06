@@ -19,7 +19,7 @@ export function MeetingNotesList({ notes }: MeetingNotesListProps) {
         </div>
         <h3 className="text-lg font-medium text-foreground mb-1">No meeting notes yet</h3>
         <p className="text-sm text-muted-foreground text-center max-w-sm">
-          Meeting notes will appear here once they're imported from Granola.
+          Meeting notes will appear here once they&apos;re imported from Granola.
         </p>
       </div>
     )

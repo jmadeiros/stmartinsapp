@@ -67,7 +67,7 @@ export default async function MyActionItemsPage() {
             <CheckSquare className="h-10 w-10 mx-auto mb-3 opacity-40" />
             <p className="font-medium">No action items assigned to you</p>
             <p className="text-sm mt-1">
-              When action items are assigned to you from meeting notes, they'll appear here.
+              When action items are assigned to you from meeting notes, they&apos;ll appear here.
             </p>
           </Card>
         ) : (

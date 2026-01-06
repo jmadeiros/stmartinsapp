@@ -378,17 +378,6 @@ export function ProjectCard({ project }: ProjectCardProps) {
     })
 
     if (success) {
-      console.log("Project support options updated:", {
-        volunteer: supportChoices.volunteer,
-        bringParticipants: supportChoices.bringParticipants,
-        participantCount: supportChoices.participantCount
-          ? Number(supportChoices.participantCount)
-          : undefined,
-        canPartner: supportChoices.canPartner,
-        provideResources: supportChoices.provideResources,
-        contributeFunding: supportChoices.contributeFunding
-      })
-      console.log("Add project to tracker:", project.title)
       setSupportPanelOpen(false)
     }
 
@@ -882,7 +871,6 @@ export function ProjectCard({ project }: ProjectCardProps) {
               </div>
               <button
                 onClick={() => {
-                  console.log("Navigating to project:", project.id)
                   router.push(`/projects/${project.id}`)
                 }}
                 className="inline-flex items-center gap-1.5 px-2 py-1.5 text-sm font-medium text-muted-foreground hover:text-primary transition-colors"
