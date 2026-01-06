@@ -430,7 +430,7 @@ export function SocialHeader() {
               animate={{ x: 0 }}
               exit={{ x: '-100%' }}
               transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-              className="fixed top-16 left-0 bottom-0 w-64 bg-white border-r border-border/40 shadow-xl z-50 xl:hidden overflow-y-auto"
+              className="fixed top-16 left-0 bottom-0 w-[70vw] max-w-64 bg-white border-r border-border/40 shadow-xl z-50 xl:hidden overflow-y-auto"
             >
               <div className="p-4 space-y-1">
                 {navItems.map((item) => {

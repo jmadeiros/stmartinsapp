@@ -541,7 +541,7 @@ export function MainFeed({ initialFeedItems = [], userId, orgId, userRole = 'vol
                         initial={{ opacity: 0, y: -10 }}
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: -10 }}
-                        className="absolute z-50 w-full max-w-md bg-white rounded-lg shadow-lg border border-gray-200 mt-1 max-h-64 overflow-y-auto"
+                        className="absolute z-50 w-[calc(100vw-2rem)] sm:w-full max-w-md bg-white rounded-lg shadow-lg border border-gray-200 mt-1 max-h-64 overflow-y-auto left-0 sm:left-auto"
                       >
                         <div className="p-2">
                           <div className="text-xs text-gray-500 px-3 py-2 font-medium">
@@ -774,7 +774,7 @@ export function MainFeed({ initialFeedItems = [], userId, orgId, userRole = 'vol
                                 initial={{ opacity: 0, y: -10 }}
                                 animate={{ opacity: 1, y: 0 }}
                                 exit={{ opacity: 0, y: -10 }}
-                                className="absolute right-0 top-full mt-2 w-full sm:w-80 bg-white rounded-lg shadow-lg border border-gray-200 z-50"
+                                className="absolute right-0 top-full mt-2 w-[calc(100vw-2rem)] sm:w-80 max-w-[320px] bg-white rounded-lg shadow-lg border border-gray-200 z-50"
                               >
                                 <div className="p-3">
                                   <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
