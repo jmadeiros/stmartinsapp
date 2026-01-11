@@ -268,8 +268,15 @@ export function ProjectDetail({ project, currentUserId, currentUserOrgId }: Proj
               </div>
               
               <div className="p-2">
+                {!hasNeeds && (
+                  <div className="p-4 text-center">
+                    <p className="text-sm text-muted-foreground">No specific needs listed yet.</p>
+                    <p className="text-xs text-muted-foreground mt-1">Click below to express general interest.</p>
+                  </div>
+                )}
+
                 {project.needs?.volunteersNeeded && (
-                  <button 
+                  <button
                     onClick={() => setInterested(!interested)}
                     className="w-full text-left p-4 hover:bg-emerald-50 rounded-xl transition-colors group flex items-start gap-4"
                   >
@@ -287,7 +294,7 @@ export function ProjectDetail({ project, currentUserId, currentUserOrgId }: Proj
                     </div>
                   </button>
                 )}
-                
+
                 {project.needs?.seekingPartners && (
                   <button 
                     onClick={() => setInterested(!interested)}

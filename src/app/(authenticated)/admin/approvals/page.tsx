@@ -1,4 +1,4 @@
-import { getPendingApprovals, getOrganizations } from "@/lib/actions/admin"
+import { getPendingApprovals } from "@/lib/actions/admin"
 import {
   Table,
   TableBody,
@@ -13,7 +13,6 @@ import { UserCheck } from "lucide-react"
 
 export default async function ApprovalsPage() {
   const approvalsResult = await getPendingApprovals()
-  const orgsResult = await getOrganizations()
 
   if ('error' in approvalsResult) {
     return (
@@ -24,7 +23,6 @@ export default async function ApprovalsPage() {
   }
 
   const pendingUsers = approvalsResult.data || []
-  const organizations = 'data' in orgsResult ? orgsResult.data || [] : []
 
   return (
     <div className="p-8">
@@ -51,7 +49,7 @@ export default async function ApprovalsPage() {
             <TableHeader>
               <TableRow>
                 <TableHead>Name</TableHead>
-                <TableHead>Email</TableHead>
+                <TableHead>Organization</TableHead>
                 <TableHead>Job Title</TableHead>
                 <TableHead>Requested</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
@@ -65,6 +63,11 @@ export default async function ApprovalsPage() {
                       <div className="font-medium text-gray-900">
                         {user.full_name}
                       </div>
+                      {user.contact_email && (
+                        <div className="text-xs text-gray-500">
+                          {user.contact_email}
+                        </div>
+                      )}
                       {user.bio && (
                         <div className="text-xs text-gray-500 mt-1 max-w-md">
                           {user.bio.length > 100
@@ -76,7 +79,7 @@ export default async function ApprovalsPage() {
                   </TableCell>
                   <TableCell>
                     <span className="text-sm text-gray-600">
-                      {user.contact_email || '-'}
+                      {user.organizations?.name || '-'}
                     </span>
                   </TableCell>
                   <TableCell>
@@ -92,7 +95,7 @@ export default async function ApprovalsPage() {
                     </span>
                   </TableCell>
                   <TableCell className="text-right">
-                    <ApprovalActions user={user} organizations={organizations} />
+                    <ApprovalActions user={user} />
                   </TableCell>
                 </TableRow>
               ))}
@@ -107,9 +110,9 @@ export default async function ApprovalsPage() {
           About User Approvals
         </h4>
         <p className="text-sm text-blue-800">
-          This page shows users who have signed up but haven&apos;t been assigned to an
-          organization yet. When OAuth is enabled (Task 4.7), new sign-ups will appear
-          here for admin approval before gaining full access.
+          Users who complete onboarding appear here for admin approval. Once approved,
+          they&apos;ll gain access to the Village Hub dashboard. Only admin users can approve
+          or reject applications.
         </p>
       </div>
     </div>

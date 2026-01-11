@@ -1,0 +1,939 @@
+# Page snapshot
+
+```yaml
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - banner [ref=e3]:
+      - generic [ref=e5]:
+        - generic [ref=e6]:
+          - link "Aitrium Oasis St Martins Village" [ref=e7] [cursor=pointer]:
+            - /url: /dashboard
+            - img [ref=e11]
+            - generic [ref=e13]:
+              - heading "Aitrium" [level=1] [ref=e14]:
+                - generic [ref=e15]: Aitrium
+                - img [ref=e16]
+              - paragraph [ref=e18]: Oasis St Martins Village
+          - navigation [ref=e19]:
+            - link "Home" [ref=e20] [cursor=pointer]:
+              - /url: /dashboard
+              - generic [ref=e21]: Home
+            - link "Chat" [ref=e24] [cursor=pointer]:
+              - /url: /chat
+              - generic [ref=e25]: Chat
+            - link "Calendar" [ref=e27] [cursor=pointer]:
+              - /url: /calendar
+              - generic [ref=e28]: Calendar
+            - link "Projects" [ref=e30] [cursor=pointer]:
+              - /url: /projects
+              - generic [ref=e31]: Projects
+            - link "People" [ref=e33] [cursor=pointer]:
+              - /url: /people
+              - generic [ref=e34]: People
+            - link "Opportunities" [ref=e36] [cursor=pointer]:
+              - /url: /opportunities
+              - generic [ref=e37]: Opportunities
+            - link "Notes" [ref=e39] [cursor=pointer]:
+              - /url: /meeting-notes
+              - generic [ref=e40]: Notes
+        - generic [ref=e42]:
+          - generic [ref=e45]:
+            - img [ref=e46]
+            - searchbox "Search..." [ref=e49]
+          - button "Send Feedback" [ref=e50] [cursor=pointer]:
+            - img
+          - button "34" [ref=e52] [cursor=pointer]:
+            - img
+            - generic [ref=e53]: "34"
+          - button [ref=e54] [cursor=pointer]:
+            - img
+    - generic [ref=e56]:
+      - complementary [ref=e57]:
+        - generic [ref=e58]:
+          - generic [ref=e61]:
+            - generic [ref=e63]: MG
+            - heading "Good morning," [level=2] [ref=e64]
+            - paragraph [ref=e65]: Sarah
+          - generic [ref=e67]:
+            - generic [ref=e68]:
+              - heading "My Team" [level=3] [ref=e69]
+              - img [ref=e70]
+            - paragraph [ref=e75]: St Martin's Hub
+            - generic [ref=e76]:
+              - generic [ref=e79] [cursor=pointer]: JC
+              - generic [ref=e82] [cursor=pointer]: SM
+            - button "See all team members" [ref=e83] [cursor=pointer]:
+              - generic [ref=e84]: See all team members
+              - img [ref=e85]
+          - generic [ref=e87]:
+            - generic [ref=e88]:
+              - img [ref=e90]
+              - generic [ref=e92]:
+                - heading "Community Highlights" [level=3] [ref=e93]
+                - paragraph [ref=e94]: Live metrics from across the building
+            - generic [ref=e97]:
+              - img [ref=e100]
+              - generic [ref=e106]:
+                - generic [ref=e107]:
+                  - heading "Events This Week" [level=3] [ref=e108]
+                  - paragraph [ref=e109]: No events scheduled this week yet. Be the first to create one!
+                - generic [ref=e110]:
+                  - generic [ref=e111]:
+                    - paragraph [ref=e112]: "0"
+                    - paragraph [ref=e113]: events
+                  - button "View" [ref=e114] [cursor=pointer]
+      - main [ref=e115]:
+        - generic [ref=e117]:
+          - generic [ref=e118]:
+            - img [ref=e120]
+            - generic [ref=e122]:
+              - heading "Welcome to The Village!" [level=2] [ref=e123]
+              - paragraph [ref=e124]: Discover collaboration opportunities, upcoming events, and initiatives from charities in your network. Together, we can make a greater impact.
+            - button "This Week at the Village" [ref=e125] [cursor=pointer]:
+              - img
+              - generic [ref=e127]: This Week at the Village
+          - generic [ref=e129]:
+            - generic [ref=e131]: You
+            - generic [ref=e132]:
+              - textbox "Share an update with your community... (Type @ to mention people, events, or projects)" [ref=e134]
+              - generic [ref=e135]:
+                - button "Create" [ref=e136] [cursor=pointer]:
+                  - img
+                  - generic [ref=e137]: Create
+                - button "Post" [disabled]:
+                  - img
+                  - generic: Post
+        - generic [ref=e138]:
+          - generic [ref=e139]:
+            - button "All" [ref=e140] [cursor=pointer]
+            - button "Events" [ref=e141] [cursor=pointer]
+            - button "Projects" [ref=e142] [cursor=pointer]
+            - button "Posts" [ref=e143] [cursor=pointer]
+          - button "Latest" [ref=e144] [cursor=pointer]:
+            - generic [ref=e145]: Latest
+            - img
+        - generic [ref=e148]:
+          - generic [ref=e149]:
+            - img [ref=e150]
+            - generic [ref=e152]: Pinned Post
+          - generic [ref=e153]:
+            - generic [ref=e154]:
+              - generic [ref=e155]:
+                - generic [ref=e157]: S
+                - generic [ref=e158]:
+                  - paragraph [ref=e159]: Sarah Mitchell
+                  - paragraph [ref=e160]: St Martins Village · 15 days ago
+              - button [ref=e161] [cursor=pointer]:
+                - img
+            - generic [ref=e163]:
+              - img [ref=e164]
+              - generic [ref=e166]: General
+            - paragraph [ref=e167]: test
+            - generic [ref=e168]:
+              - generic [ref=e169]:
+                - heading "test" [level=3] [ref=e170]
+                - generic [ref=e171]:
+                  - generic [ref=e172]: Single choice
+                  - generic [ref=e173]: •
+                  - generic [ref=e174]: 2 votes
+              - generic [ref=e175]:
+                - button "test Most voted J S 100% 2 votes" [disabled] [ref=e177]:
+                  - generic [ref=e179]:
+                    - generic [ref=e181]:
+                      - generic [ref=e182]: test
+                      - generic [ref=e183]: Most voted
+                    - generic [ref=e184]:
+                      - generic [ref=e185]:
+                        - generic [ref=e187]: J
+                        - generic [ref=e189]: S
+                      - generic [ref=e190]:
+                        - generic [ref=e191]: 100%
+                        - generic [ref=e192]: 2 votes
+                      - img [ref=e194]
+                - button "tst3 0% 0 votes" [disabled] [ref=e197]:
+                  - generic [ref=e198]:
+                    - generic [ref=e201]: tst3
+                    - generic [ref=e203]:
+                      - generic [ref=e204]: 0%
+                      - generic [ref=e205]: 0 votes
+              - generic [ref=e206]:
+                - img [ref=e207]
+                - paragraph [ref=e209]: Vote recorded • Results visible
+            - generic [ref=e211]:
+              - button "1" [ref=e212] [cursor=pointer]:
+                - img [ref=e213]
+                - generic [ref=e215]: "1"
+              - button "1" [ref=e216] [cursor=pointer]:
+                - img
+                - generic [ref=e217]: "1"
+        - generic [ref=e220]:
+          - generic [ref=e221]:
+            - img [ref=e222]
+            - generic [ref=e224]: Pinned Post
+          - generic [ref=e225]:
+            - generic [ref=e226]:
+              - generic [ref=e227]:
+                - generic [ref=e229]: S
+                - generic [ref=e230]:
+                  - paragraph [ref=e231]: Sarah Mitchell
+                  - paragraph [ref=e232]: St Martins Village · 27 days ago
+              - button [ref=e233] [cursor=pointer]:
+                - img
+            - generic [ref=e235]:
+              - img [ref=e236]
+              - generic [ref=e238]: General
+            - paragraph [ref=e239]: Test post for COMMENT notification - 1765796035284
+            - generic [ref=e241]:
+              - button "0" [ref=e242] [cursor=pointer]:
+                - img [ref=e243]
+                - generic [ref=e245]: "0"
+              - button "1" [ref=e246] [cursor=pointer]:
+                - img
+                - generic [ref=e247]: "1"
+        - generic [ref=e251]:
+          - generic [ref=e252]:
+            - generic [ref=e253]:
+              - generic [ref=e255]: S
+              - generic [ref=e256]:
+                - paragraph [ref=e257]: Sarah Mitchell
+                - paragraph [ref=e258]: St Martins Village · 31 minutes ago
+            - button [ref=e259] [cursor=pointer]:
+              - img
+          - generic [ref=e261]:
+            - img [ref=e262]
+            - generic [ref=e264]: General
+          - paragraph [ref=e265]: Phase4 Edit Test - 1768152248034
+          - generic [ref=e267]:
+            - button "0" [ref=e268] [cursor=pointer]:
+              - img [ref=e269]
+              - generic [ref=e271]: "0"
+            - button "0" [ref=e272] [cursor=pointer]:
+              - img
+              - generic [ref=e273]: "0"
+        - generic [ref=e277]:
+          - generic [ref=e278]:
+            - generic [ref=e279]:
+              - generic [ref=e281]: S
+              - generic [ref=e282]:
+                - paragraph [ref=e283]: Sarah Mitchell
+                - paragraph [ref=e284]: St Martins Village · posted 12 days ago
+            - button [ref=e285] [cursor=pointer]:
+              - img
+          - link "teest" [ref=e286] [cursor=pointer]:
+            - /url: /events/7de53eab-d939-441d-9edf-8ae907a2a28b
+            - heading "teest" [level=2] [ref=e287]
+          - paragraph [ref=e288]: testestetestests
+          - generic [ref=e289]:
+            - generic [ref=e290]:
+              - img [ref=e291]
+              - generic [ref=e293]: Dec 24, 2025
+            - generic [ref=e294]:
+              - img [ref=e295]
+              - generic [ref=e298]: 11:47 AM - 1:47 PM
+            - generic [ref=e299]:
+              - img [ref=e300]
+              - generic [ref=e303]: ttetst
+          - generic [ref=e304]:
+            - paragraph [ref=e305]: Looking for
+            - generic [ref=e307]:
+              - img [ref=e308]
+              - text: "Volunteers: 50"
+          - generic [ref=e311]:
+            - generic [ref=e312]:
+              - button "0" [ref=e313] [cursor=pointer]:
+                - img [ref=e314]
+                - generic [ref=e316]: "0"
+              - button "0" [ref=e317] [cursor=pointer]:
+                - img [ref=e318]
+                - generic [ref=e320]: "0"
+            - generic [ref=e321]:
+              - button "RSVP" [ref=e323] [cursor=pointer]:
+                - img [ref=e324]
+                - text: RSVP
+              - link "View event" [ref=e326] [cursor=pointer]:
+                - /url: /events/7de53eab-d939-441d-9edf-8ae907a2a28b
+                - img [ref=e327]
+                - text: View event
+        - generic [ref=e332]:
+          - generic [ref=e333]:
+            - generic [ref=e334]:
+              - generic [ref=e336]: S
+              - generic [ref=e337]:
+                - paragraph [ref=e338]: Sarah Mitchell
+                - paragraph [ref=e339]: St Martins Village · updated 12 days ago
+            - button [ref=e340] [cursor=pointer]:
+              - img
+          - heading "test" [level=2] [ref=e341]
+          - paragraph [ref=e342]: test
+          - generic [ref=e343]:
+            - paragraph [ref=e344]: Impact Goal
+            - paragraph [ref=e345]: test test test test tse
+          - generic [ref=e347]:
+            - img [ref=e348]
+            - generic [ref=e350]:
+              - paragraph [ref=e351]: Target Date
+              - paragraph [ref=e352]: Dec 25, 2025
+          - generic [ref=e353]:
+            - paragraph [ref=e354]: Looking for
+            - generic [ref=e355]:
+              - generic [ref=e356]:
+                - img [ref=e357]
+                - text: "Volunteers: 150"
+              - generic [ref=e359]:
+                - img [ref=e360]
+                - text: Partner Collaboration
+          - generic [ref=e365]:
+            - generic [ref=e366]:
+              - button "0" [ref=e367] [cursor=pointer]:
+                - img [ref=e368]
+                - generic [ref=e370]: "0"
+              - button "0" [ref=e371] [cursor=pointer]:
+                - img [ref=e372]
+                - generic [ref=e374]: "0"
+            - generic [ref=e375]:
+              - button "Interested" [ref=e377] [cursor=pointer]:
+                - img [ref=e378]
+                - text: Interested
+              - button "View project" [ref=e380] [cursor=pointer]:
+                - img [ref=e381]
+                - text: View project
+        - generic [ref=e388]:
+          - generic [ref=e389]:
+            - generic [ref=e390]:
+              - generic [ref=e392]: S
+              - generic [ref=e393]:
+                - paragraph [ref=e394]: Sarah Mitchell
+                - paragraph [ref=e395]: St Martins Village · updated 13 days ago
+            - button [ref=e396] [cursor=pointer]:
+              - img
+          - heading "Test Project for Comments" [level=2] [ref=e397]
+          - paragraph [ref=e398]: Project created for testing comment system
+          - generic [ref=e399]:
+            - paragraph [ref=e400]: Impact Goal
+            - paragraph [ref=e401]: Project created for testing comment system
+          - generic [ref=e403]:
+            - img [ref=e404]
+            - generic [ref=e406]:
+              - paragraph [ref=e407]: Target Date
+              - paragraph [ref=e408]: Jan 28, 2026
+          - paragraph [ref=e410]: Looking for
+          - generic [ref=e412]:
+            - generic [ref=e413]:
+              - button "0" [ref=e414] [cursor=pointer]:
+                - img [ref=e415]
+                - generic [ref=e417]: "0"
+              - button "0" [ref=e418] [cursor=pointer]:
+                - img [ref=e419]
+                - generic [ref=e421]: "0"
+            - generic [ref=e422]:
+              - button "Interested" [ref=e424] [cursor=pointer]:
+                - img [ref=e425]
+                - text: Interested
+              - button "View project" [ref=e427] [cursor=pointer]:
+                - img [ref=e428]
+                - text: View project
+        - generic [ref=e435]:
+          - generic [ref=e436]:
+            - generic [ref=e437]:
+              - generic [ref=e439]: S
+              - generic [ref=e440]:
+                - paragraph [ref=e441]: Sarah Mitchell
+                - paragraph [ref=e442]: St Martins Village · posted 13 days ago
+            - button [ref=e443] [cursor=pointer]:
+              - img
+          - link "Test Event for Comments" [ref=e444] [cursor=pointer]:
+            - /url: /events/8acc74a1-c322-4164-bf1a-fe021054f2b0
+            - heading "Test Event for Comments" [level=2] [ref=e445]
+          - paragraph [ref=e446]: Event created for testing comment system
+          - generic [ref=e447]:
+            - generic [ref=e448]:
+              - img [ref=e449]
+              - generic [ref=e451]: Dec 30, 2025
+            - generic [ref=e452]:
+              - img [ref=e453]
+              - generic [ref=e456]: 1:57 PM - 2:57 PM
+            - generic [ref=e457]:
+              - img [ref=e458]
+              - generic [ref=e461]: Test Location
+          - paragraph [ref=e463]: Looking for
+          - generic [ref=e465]:
+            - generic [ref=e466]:
+              - button "0" [ref=e467] [cursor=pointer]:
+                - img [ref=e468]
+                - generic [ref=e470]: "0"
+              - button "0" [ref=e471] [cursor=pointer]:
+                - img [ref=e472]
+                - generic [ref=e474]: "0"
+            - generic [ref=e475]:
+              - button "RSVP" [ref=e477] [cursor=pointer]:
+                - img [ref=e478]
+                - text: RSVP
+              - link "View event" [ref=e480] [cursor=pointer]:
+                - /url: /events/8acc74a1-c322-4164-bf1a-fe021054f2b0
+                - img [ref=e481]
+                - text: View event
+        - generic [ref=e486]:
+          - generic [ref=e487]:
+            - generic [ref=e488]:
+              - generic [ref=e490]: S
+              - generic [ref=e491]:
+                - paragraph [ref=e492]: Sarah Mitchell
+                - paragraph [ref=e493]: St Martins Village · 15 days ago
+            - button [ref=e494] [cursor=pointer]:
+              - img
+          - generic [ref=e496]:
+            - img [ref=e497]
+            - generic [ref=e503]: Wins
+          - paragraph [ref=e504]: test
+          - generic [ref=e506]:
+            - button "0" [ref=e507] [cursor=pointer]:
+              - img [ref=e508]
+              - generic [ref=e510]: "0"
+            - button "0" [ref=e511] [cursor=pointer]:
+              - img
+              - generic [ref=e512]: "0"
+        - generic [ref=e516]:
+          - generic [ref=e517]:
+            - generic [ref=e518]:
+              - generic [ref=e520]: S
+              - generic [ref=e521]:
+                - paragraph [ref=e522]: Sarah Mitchell
+                - paragraph [ref=e523]: St Martins Village · 15 days ago
+            - button [ref=e524] [cursor=pointer]:
+              - img
+          - generic [ref=e526]:
+            - img [ref=e527]
+            - generic [ref=e529]: General
+          - paragraph [ref=e530]: erww12121212ugubub
+          - generic [ref=e532]:
+            - button "0" [ref=e533] [cursor=pointer]:
+              - img [ref=e534]
+              - generic [ref=e536]: "0"
+            - button "0" [ref=e537] [cursor=pointer]:
+              - img
+              - generic [ref=e538]: "0"
+        - generic [ref=e542]:
+          - generic [ref=e543]:
+            - generic [ref=e544]:
+              - generic [ref=e546]: S
+              - generic [ref=e547]:
+                - paragraph [ref=e548]: Sarah Mitchell
+                - paragraph [ref=e549]: St Martins Village · 15 days ago
+            - button [ref=e550] [cursor=pointer]:
+              - img
+          - generic [ref=e552]:
+            - img [ref=e553]
+            - generic [ref=e555]: General
+          - paragraph [ref=e556]: gfg
+          - generic [ref=e558]:
+            - button "0" [ref=e559] [cursor=pointer]:
+              - img [ref=e560]
+              - generic [ref=e562]: "0"
+            - button "0" [ref=e563] [cursor=pointer]:
+              - img
+              - generic [ref=e564]: "0"
+        - generic [ref=e568]:
+          - generic [ref=e569]:
+            - generic [ref=e570]:
+              - generic [ref=e572]: S
+              - generic [ref=e573]:
+                - paragraph [ref=e574]: Sarah Mitchell
+                - paragraph [ref=e575]: St Martins Village · 27 days ago
+            - button [ref=e576] [cursor=pointer]:
+              - img
+          - generic [ref=e578]:
+            - img [ref=e579]
+            - generic [ref=e581]: General
+          - paragraph [ref=e582]: Test post for COMMENT notification - 1765796087907
+          - generic [ref=e584]:
+            - button "0" [ref=e585] [cursor=pointer]:
+              - img [ref=e586]
+              - generic [ref=e588]: "0"
+            - button "0" [ref=e589] [cursor=pointer]:
+              - img
+              - generic [ref=e590]: "0"
+        - generic [ref=e594]:
+          - generic [ref=e595]:
+            - generic [ref=e596]:
+              - generic [ref=e598]: S
+              - generic [ref=e599]:
+                - paragraph [ref=e600]: Sarah Mitchell
+                - paragraph [ref=e601]: St Martins Village · 27 days ago
+            - button [ref=e602] [cursor=pointer]:
+              - img
+          - generic [ref=e604]:
+            - img [ref=e605]
+            - generic [ref=e607]: General
+          - paragraph [ref=e608]: Test post for COMMENT notification - 1765795073717
+          - generic [ref=e610]:
+            - button "0" [ref=e611] [cursor=pointer]:
+              - img [ref=e612]
+              - generic [ref=e614]: "0"
+            - button "0" [ref=e615] [cursor=pointer]:
+              - img
+              - generic [ref=e616]: "0"
+        - generic [ref=e620]:
+          - generic [ref=e621]:
+            - generic [ref=e622]:
+              - generic [ref=e624]: S
+              - generic [ref=e625]:
+                - paragraph [ref=e626]: Sarah Mitchell
+                - paragraph [ref=e627]: St Martins Village · 27 days ago
+            - button [ref=e628] [cursor=pointer]:
+              - img
+          - generic [ref=e630]:
+            - img [ref=e631]
+            - generic [ref=e633]: General
+          - paragraph [ref=e634]: Test post for COMMENT notification - 1765794585392
+          - generic [ref=e636]:
+            - button "0" [ref=e637] [cursor=pointer]:
+              - img [ref=e638]
+              - generic [ref=e640]: "0"
+            - button "0" [ref=e641] [cursor=pointer]:
+              - img
+              - generic [ref=e642]: "0"
+        - generic [ref=e646]:
+          - generic [ref=e647]:
+            - generic [ref=e648]:
+              - generic [ref=e650]: S
+              - generic [ref=e651]:
+                - paragraph [ref=e652]: Sarah Mitchell
+                - paragraph [ref=e653]: St Martins Village · 27 days ago
+            - button [ref=e654] [cursor=pointer]:
+              - img
+          - generic [ref=e656]:
+            - img [ref=e657]
+            - generic [ref=e659]: General
+          - paragraph [ref=e660]: Test post for COMMENT notification - 1765794175488
+          - generic [ref=e662]:
+            - button "0" [ref=e663] [cursor=pointer]:
+              - img [ref=e664]
+              - generic [ref=e666]: "0"
+            - button "0" [ref=e667] [cursor=pointer]:
+              - img
+              - generic [ref=e668]: "0"
+        - generic [ref=e672]:
+          - generic [ref=e673]:
+            - generic [ref=e674]:
+              - generic [ref=e676]: T
+              - generic [ref=e677]:
+                - paragraph [ref=e678]: Team Member
+                - paragraph [ref=e679]: St Martins Village · posted about 1 month ago
+            - button [ref=e680] [cursor=pointer]:
+              - img
+          - link "QA EVENT TEST QA-1765373187083" [ref=e681] [cursor=pointer]:
+            - /url: /events/5c0cdefe-96a4-4377-bca1-76353cee539d
+            - heading "QA EVENT TEST QA-1765373187083" [level=2] [ref=e682]
+          - paragraph [ref=e683]: Test event description
+          - generic [ref=e684]:
+            - generic [ref=e685]:
+              - img [ref=e686]
+              - generic [ref=e688]: Dec 11, 2025
+            - generic [ref=e689]:
+              - img [ref=e690]
+              - generic [ref=e693]: 8:00 PM - 10:00 PM
+            - generic [ref=e694]:
+              - img [ref=e695]
+              - generic [ref=e698]: Test Location
+          - paragraph [ref=e700]: Looking for
+          - generic [ref=e702]:
+            - generic [ref=e703]:
+              - button "0" [ref=e704] [cursor=pointer]:
+                - img [ref=e705]
+                - generic [ref=e707]: "0"
+              - button "0" [ref=e708] [cursor=pointer]:
+                - img [ref=e709]
+                - generic [ref=e711]: "0"
+            - generic [ref=e712]:
+              - button "RSVP" [ref=e714] [cursor=pointer]:
+                - img [ref=e715]
+                - text: RSVP
+              - link "View event" [ref=e717] [cursor=pointer]:
+                - /url: /events/5c0cdefe-96a4-4377-bca1-76353cee539d
+                - img [ref=e718]
+                - text: View event
+        - generic [ref=e723]:
+          - generic [ref=e724]:
+            - generic [ref=e725]:
+              - generic [ref=e727]: T
+              - generic [ref=e728]:
+                - paragraph [ref=e729]: Team Member
+                - paragraph [ref=e730]: St Martins Village · posted about 1 month ago
+            - button [ref=e731] [cursor=pointer]:
+              - img
+          - link "QA FINAL EVENT 1765372821522" [ref=e732] [cursor=pointer]:
+            - /url: /events/7db7b366-61f5-4436-9bd3-ba8ae61fdb5d
+            - heading "QA FINAL EVENT 1765372821522" [level=2] [ref=e733]
+          - paragraph [ref=e734]: Final rigorous test event
+          - generic [ref=e735]:
+            - generic [ref=e736]:
+              - img [ref=e737]
+              - generic [ref=e739]: Dec 11, 2025
+            - generic [ref=e740]:
+              - img [ref=e741]
+              - generic [ref=e744]: 7:00 PM - 9:00 PM
+            - generic [ref=e745]:
+              - img [ref=e746]
+              - generic [ref=e749]: Final Test Location
+          - paragraph [ref=e751]: Looking for
+          - generic [ref=e753]:
+            - generic [ref=e754]:
+              - button "0" [ref=e755] [cursor=pointer]:
+                - img [ref=e756]
+                - generic [ref=e758]: "0"
+              - button "0" [ref=e759] [cursor=pointer]:
+                - img [ref=e760]
+                - generic [ref=e762]: "0"
+            - generic [ref=e763]:
+              - button "RSVP" [ref=e765] [cursor=pointer]:
+                - img [ref=e766]
+                - text: RSVP
+              - link "View event" [ref=e768] [cursor=pointer]:
+                - /url: /events/7db7b366-61f5-4436-9bd3-ba8ae61fdb5d
+                - img [ref=e769]
+                - text: View event
+        - generic [ref=e774]:
+          - generic [ref=e775]:
+            - generic [ref=e776]:
+              - generic [ref=e778]: T
+              - generic [ref=e779]:
+                - paragraph [ref=e780]: Team Member
+                - paragraph [ref=e781]: St Martins Village · posted about 1 month ago
+            - button [ref=e782] [cursor=pointer]:
+              - img
+          - link "QA FINAL EVENT 1765372743107" [ref=e783] [cursor=pointer]:
+            - /url: /events/2ee424be-2bbe-4332-af6a-caf64e6205c6
+            - heading "QA FINAL EVENT 1765372743107" [level=2] [ref=e784]
+          - paragraph [ref=e785]: Final test event description
+          - generic [ref=e786]:
+            - generic [ref=e787]:
+              - img [ref=e788]
+              - generic [ref=e790]: Dec 11, 2025
+            - generic [ref=e791]:
+              - img [ref=e792]
+              - generic [ref=e795]: 5:00 PM - 7:00 PM
+            - generic [ref=e796]:
+              - img [ref=e797]
+              - generic [ref=e800]: Test Location Final
+          - paragraph [ref=e802]: Looking for
+          - generic [ref=e804]:
+            - generic [ref=e805]:
+              - button "0" [ref=e806] [cursor=pointer]:
+                - img [ref=e807]
+                - generic [ref=e809]: "0"
+              - button "0" [ref=e810] [cursor=pointer]:
+                - img [ref=e811]
+                - generic [ref=e813]: "0"
+            - generic [ref=e814]:
+              - button "RSVP" [ref=e816] [cursor=pointer]:
+                - img [ref=e817]
+                - text: RSVP
+              - link "View event" [ref=e819] [cursor=pointer]:
+                - /url: /events/2ee424be-2bbe-4332-af6a-caf64e6205c6
+                - img [ref=e820]
+                - text: View event
+        - generic [ref=e825]:
+          - generic [ref=e826]:
+            - generic [ref=e827]:
+              - generic [ref=e829]: T
+              - generic [ref=e830]:
+                - paragraph [ref=e831]: Team Member
+                - paragraph [ref=e832]: St Martins Village · posted about 1 month ago
+            - button [ref=e833] [cursor=pointer]:
+              - img
+          - link "QA Test Event - 1:08:40 PM" [ref=e834] [cursor=pointer]:
+            - /url: /events/62b23b7c-9c02-4501-81cf-1cdf0c9f6c8e
+            - heading "QA Test Event - 1:08:40 PM" [level=2] [ref=e835]
+          - paragraph [ref=e836]: This is a test event created by QA automation to verify event creation works.
+          - generic [ref=e837]:
+            - generic [ref=e838]:
+              - img [ref=e839]
+              - generic [ref=e841]: Dec 11, 2025
+            - generic [ref=e842]:
+              - img [ref=e843]
+              - generic [ref=e846]: 2:00 PM - 4:00 PM
+            - generic [ref=e847]:
+              - img [ref=e848]
+              - generic [ref=e851]: Village Community Center
+          - paragraph [ref=e853]: Looking for
+          - generic [ref=e855]:
+            - generic [ref=e856]:
+              - button "0" [ref=e857] [cursor=pointer]:
+                - img [ref=e858]
+                - generic [ref=e860]: "0"
+              - button "0" [ref=e861] [cursor=pointer]:
+                - img [ref=e862]
+                - generic [ref=e864]: "0"
+            - generic [ref=e865]:
+              - button "RSVP" [ref=e867] [cursor=pointer]:
+                - img [ref=e868]
+                - text: RSVP
+              - link "View event" [ref=e870] [cursor=pointer]:
+                - /url: /events/62b23b7c-9c02-4501-81cf-1cdf0c9f6c8e
+                - img [ref=e871]
+                - text: View event
+        - generic [ref=e876]:
+          - generic [ref=e877]:
+            - generic [ref=e878]:
+              - generic [ref=e880]: T
+              - generic [ref=e881]:
+                - paragraph [ref=e882]: Team Member
+                - paragraph [ref=e883]: St Martins Village · updated about 1 month ago
+            - button [ref=e884] [cursor=pointer]:
+              - img
+          - generic [ref=e886]:
+            - img [ref=e887]
+            - generic [ref=e889]: beautification
+          - heading "Community Mural Project" [level=2] [ref=e890]
+          - paragraph [ref=e891]: Transform our community center's blank wall into a vibrant mural celebrating our neighborhood's diversity and history! We're seeking artists, designers, and anyone interested in contributing ideas or helping with painting.
+          - generic [ref=e892]:
+            - paragraph [ref=e893]: Impact Goal
+            - paragraph [ref=e894]: Create a 30ft x 15ft mural by spring 2025
+          - generic [ref=e895]:
+            - generic [ref=e896]:
+              - generic [ref=e897]: Progress
+              - generic [ref=e898]: 35%
+            - paragraph [ref=e901]: 35 / 100 percent · Updated about 1 month ago
+          - generic [ref=e902]:
+            - paragraph [ref=e903]: Looking for
+            - generic [ref=e904]:
+              - generic [ref=e905]:
+                - img [ref=e906]
+                - text: "Volunteers: 15"
+              - generic [ref=e908]:
+                - img [ref=e909]
+                - text: Partner Collaboration
+          - generic [ref=e914]:
+            - generic [ref=e915]:
+              - button "0" [ref=e916] [cursor=pointer]:
+                - img [ref=e917]
+                - generic [ref=e919]: "0"
+              - button "0" [ref=e920] [cursor=pointer]:
+                - img [ref=e921]
+                - generic [ref=e923]: "0"
+            - generic [ref=e924]:
+              - button "Interested" [ref=e926] [cursor=pointer]:
+                - img [ref=e927]
+                - text: Interested
+              - button "View project" [ref=e929] [cursor=pointer]:
+                - img [ref=e930]
+                - text: View project
+        - generic [ref=e937]:
+          - generic [ref=e938]:
+            - generic [ref=e939]:
+              - generic [ref=e941]: T
+              - generic [ref=e942]:
+                - paragraph [ref=e943]: Team Member
+                - paragraph [ref=e944]: St Martins Village · updated about 1 month ago
+            - button [ref=e945] [cursor=pointer]:
+              - img
+          - generic [ref=e947]:
+            - img [ref=e948]
+            - generic [ref=e950]: education
+          - heading "Youth Mentorship Program" [level=2] [ref=e951]
+          - paragraph [ref=e952]: Launch a structured mentorship program pairing local professionals with teens (ages 14-18) interested in career exploration. Looking for mentors in tech, healthcare, trades, arts, and business.
+          - generic [ref=e953]:
+            - paragraph [ref=e954]: Impact Goal
+            - paragraph [ref=e955]: Match 50 teens with mentors by February 2025
+          - generic [ref=e956]:
+            - generic [ref=e957]:
+              - generic [ref=e958]: Progress
+              - generic [ref=e959]: 24%
+            - paragraph [ref=e962]: 12 / 50 matches · Updated about 1 month ago
+          - generic [ref=e963]:
+            - paragraph [ref=e964]: Looking for
+            - generic [ref=e965]:
+              - generic [ref=e966]:
+                - img [ref=e967]
+                - text: "Volunteers: 20"
+              - generic [ref=e969]:
+                - img [ref=e970]
+                - text: Partner Collaboration
+          - generic [ref=e975]:
+            - generic [ref=e976]:
+              - button "0" [ref=e977] [cursor=pointer]:
+                - img [ref=e978]
+                - generic [ref=e980]: "0"
+              - button "0" [ref=e981] [cursor=pointer]:
+                - img [ref=e982]
+                - generic [ref=e984]: "0"
+            - generic [ref=e985]:
+              - button "Interested" [ref=e987] [cursor=pointer]:
+                - img [ref=e988]
+                - text: Interested
+              - button "View project" [ref=e990] [cursor=pointer]:
+                - img [ref=e991]
+                - text: View project
+        - generic [ref=e998]:
+          - generic [ref=e999]:
+            - generic [ref=e1000]:
+              - generic [ref=e1002]: T
+              - generic [ref=e1003]:
+                - paragraph [ref=e1004]: Team Member
+                - paragraph [ref=e1005]: St Martins Village · posted about 1 month ago
+            - button [ref=e1006] [cursor=pointer]:
+              - img
+          - link "Community Food Drive & Distribution" [ref=e1007] [cursor=pointer]:
+            - /url: /events/fe3d6ce1-8507-4108-aa84-09dc81d9d485
+            - heading "Community Food Drive & Distribution" [level=2] [ref=e1008]
+          - paragraph [ref=e1009]: Join us for our monthly food drive! We'll be collecting non-perishable items and distributing food boxes to families in need. Volunteers welcome - we need help with sorting, packing, and distribution.
+          - generic [ref=e1010]:
+            - generic [ref=e1011]:
+              - img [ref=e1012]
+              - generic [ref=e1014]: Dec 15, 2024
+            - generic [ref=e1015]:
+              - img [ref=e1016]
+              - generic [ref=e1019]: 9:00 AM - 3:00 PM
+            - generic [ref=e1020]:
+              - img [ref=e1021]
+              - generic [ref=e1024]: St Martin's Community Center - Main Hall
+          - generic [ref=e1025]:
+            - paragraph [ref=e1026]: Looking for
+            - generic [ref=e1027]:
+              - generic [ref=e1028]:
+                - img [ref=e1029]
+                - text: "Volunteers: 25"
+              - generic [ref=e1031]:
+                - img [ref=e1032]
+                - text: Partner Collaboration
+          - generic [ref=e1037]:
+            - generic [ref=e1038]:
+              - button "0" [ref=e1039] [cursor=pointer]:
+                - img [ref=e1040]
+                - generic [ref=e1042]: "0"
+              - button "0" [ref=e1043] [cursor=pointer]:
+                - img [ref=e1044]
+                - generic [ref=e1046]: "0"
+            - generic [ref=e1047]:
+              - button "RSVP" [ref=e1049] [cursor=pointer]:
+                - img [ref=e1050]
+                - text: RSVP
+              - link "View event" [ref=e1052] [cursor=pointer]:
+                - /url: /events/fe3d6ce1-8507-4108-aa84-09dc81d9d485
+                - img [ref=e1053]
+                - text: View event
+        - generic [ref=e1058]:
+          - generic [ref=e1059]:
+            - generic [ref=e1060]:
+              - generic [ref=e1062]: T
+              - generic [ref=e1063]:
+                - paragraph [ref=e1064]: Team Member
+                - paragraph [ref=e1065]: St Martins Village · posted about 1 month ago
+            - button [ref=e1066] [cursor=pointer]:
+              - img
+          - link "New Year Community Potluck" [ref=e1067] [cursor=pointer]:
+            - /url: /events/b4732738-4f75-4bd5-895a-ea26556cd820
+            - heading "New Year Community Potluck" [level=2] [ref=e1068]
+          - paragraph [ref=e1069]: Ring in 2025 with your neighbors! Bring a dish to share (serves 8-10) and join us for food, games, and fellowship. Kid-friendly activities starting at 6pm, adult social hour at 8pm.
+          - generic [ref=e1070]:
+            - generic [ref=e1071]:
+              - img [ref=e1072]
+              - generic [ref=e1074]: Dec 31, 2024
+            - generic [ref=e1075]:
+              - img [ref=e1076]
+              - generic [ref=e1079]: 6:00 PM - 12:00 AM
+            - generic [ref=e1080]:
+              - img [ref=e1081]
+              - generic [ref=e1084]: St Martin's Hub - Rooftop Garden
+          - paragraph [ref=e1086]: Looking for
+          - generic [ref=e1088]:
+            - generic [ref=e1089]:
+              - button "0" [ref=e1090] [cursor=pointer]:
+                - img [ref=e1091]
+                - generic [ref=e1093]: "0"
+              - button "0" [ref=e1094] [cursor=pointer]:
+                - img [ref=e1095]
+                - generic [ref=e1097]: "0"
+            - generic [ref=e1098]:
+              - button "RSVP" [ref=e1100] [cursor=pointer]:
+                - img [ref=e1101]
+                - text: RSVP
+              - link "View event" [ref=e1103] [cursor=pointer]:
+                - /url: /events/b4732738-4f75-4bd5-895a-ea26556cd820
+                - img [ref=e1104]
+                - text: View event
+        - generic [ref=e1109]:
+          - generic [ref=e1110]:
+            - generic [ref=e1111]:
+              - generic [ref=e1113]: T
+              - generic [ref=e1114]:
+                - paragraph [ref=e1115]: Team Member
+                - paragraph [ref=e1116]: St Martins Village · posted about 1 month ago
+            - button [ref=e1117] [cursor=pointer]:
+              - img
+          - link "Holiday Lights Installation Workshop" [ref=e1118] [cursor=pointer]:
+            - /url: /events/8b2eec7c-f6f0-41c4-83c4-00666b3ffc3e
+            - heading "Holiday Lights Installation Workshop" [level=2] [ref=e1119]
+          - paragraph [ref=e1120]: Learn how to safely install holiday lights and decorations! Our facilities team will teach best practices for outdoor lighting, ladder safety, and energy-efficient displays. Hot cocoa provided!
+          - generic [ref=e1121]:
+            - generic [ref=e1122]:
+              - img [ref=e1123]
+              - generic [ref=e1125]: Dec 18, 2024
+            - generic [ref=e1126]:
+              - img [ref=e1127]
+              - generic [ref=e1130]: 6:00 PM - 8:00 PM
+            - generic [ref=e1131]:
+              - img [ref=e1132]
+              - generic [ref=e1135]: Community Center - Workshop Room
+          - generic [ref=e1136]:
+            - paragraph [ref=e1137]: Looking for
+            - generic [ref=e1139]:
+              - img [ref=e1140]
+              - text: "Volunteers: 5"
+          - generic [ref=e1143]:
+            - generic [ref=e1144]:
+              - button "0" [ref=e1145] [cursor=pointer]:
+                - img [ref=e1146]
+                - generic [ref=e1148]: "0"
+              - button "0" [ref=e1149] [cursor=pointer]:
+                - img [ref=e1150]
+                - generic [ref=e1152]: "0"
+            - generic [ref=e1153]:
+              - button "RSVP" [ref=e1155] [cursor=pointer]:
+                - img [ref=e1156]
+                - text: RSVP
+              - link "View event" [ref=e1158] [cursor=pointer]:
+                - /url: /events/8b2eec7c-f6f0-41c4-83c4-00666b3ffc3e
+                - img [ref=e1159]
+                - text: View event
+      - complementary [ref=e1161]:
+        - generic [ref=e1166]:
+          - generic [ref=e1167]:
+            - img "Charity Run" [ref=e1169]
+            - generic [ref=e1172]: Next Week
+          - generic [ref=e1173]:
+            - heading "Charity Run" [level=3] [ref=e1174]
+            - paragraph [ref=e1175]: 5K run to raise funds for local children's hospital
+          - generic [ref=e1176]:
+            - generic [ref=e1177]:
+              - img [ref=e1178]
+              - generic [ref=e1180]: March 22, 2024
+            - generic [ref=e1181]:
+              - img [ref=e1182]
+              - generic [ref=e1185]: 7:00 AM - 10:00 AM
+            - generic [ref=e1186]:
+              - img [ref=e1187]
+              - generic [ref=e1190]: Riverside Trail
+          - generic [ref=e1191]:
+            - generic [ref=e1192]:
+              - generic [ref=e1194]: U
+              - generic [ref=e1196]: U
+              - generic [ref=e1198]: U
+            - generic [ref=e1199]: 42 attending
+          - button "Join Event" [ref=e1200] [cursor=pointer]
+          - generic [ref=e1201]:
+            - generic [ref=e1202]:
+              - button "Previous event" [ref=e1203] [cursor=pointer]:
+                - img [ref=e1204]
+              - button "Next event" [ref=e1206] [cursor=pointer]:
+                - img [ref=e1207]
+            - generic [ref=e1209]:
+              - button "Go to event 1" [ref=e1210] [cursor=pointer]
+              - button "Go to event 2" [ref=e1211] [cursor=pointer]
+              - button "Go to event 3" [ref=e1212] [cursor=pointer]
+              - button "Go to event 4" [ref=e1213] [cursor=pointer]
+              - button "Go to event 5" [ref=e1214] [cursor=pointer]
+  - region "Notifications (F8)":
+    - list
+  - alert [ref=e1215]
+```

@@ -3,13 +3,12 @@ import { createClient } from "@/lib/supabase/server"
 import { getProjectById } from "@/lib/actions/projects"
 import { ProjectDetail } from "@/components/social/project-detail"
 
-interface ProjectPageProps {
-  params: {
-    id: string
-  }
+type PageProps = {
+  params: Promise<{ id: string }>
 }
 
-export default async function ProjectPage({ params }: ProjectPageProps) {
+export default async function ProjectPage({ params }: PageProps) {
+  const { id } = await params
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
@@ -26,7 +25,7 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
   const profileData = profile as { organization_id?: string } | null
   const currentUserOrgId = profileData?.organization_id || ''
 
-  const project = await getProjectById(params.id)
+  const project = await getProjectById(id)
 
   if (!project) {
     notFound()

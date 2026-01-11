@@ -5,7 +5,7 @@ import { Database } from "@/lib/database.types"
 
 type UserRole = Database['public']['Enums']['user_role']
 
-// Authorization helper
+// Authorization helper - allows admin and st_martins_staff
 async function checkAdminAccess(): Promise<
   | { authorized: false; error: string }
   | { authorized: true; supabase: Awaited<ReturnType<typeof createClient>>; user: { id: string } }
@@ -32,6 +32,32 @@ async function checkAdminAccess(): Promise<
   return { authorized: true, supabase, user }
 }
 
+// Stricter authorization helper - only allows admin role (for user approvals)
+async function checkApprovalAccess(): Promise<
+  | { authorized: false; error: string }
+  | { authorized: true; supabase: Awaited<ReturnType<typeof createClient>>; user: { id: string } }
+> {
+  const supabase = await createClient()
+  const { data: { user }, error: authError } = await supabase.auth.getUser()
+
+  if (authError || !user) {
+    return { authorized: false, error: 'Unauthorized' }
+  }
+
+  const { data: profile } = await (supabase
+    .from('user_profiles') as any)
+    .select('role')
+    .eq('user_id', user.id)
+    .single()
+
+  // Only admin role can approve/reject users
+  if (profile?.role !== 'admin') {
+    return { authorized: false, error: 'Only admins can approve or reject users' }
+  }
+
+  return { authorized: true, supabase, user }
+}
+
 // Dashboard Stats
 export async function getAdminStats() {
   const auth = await checkAdminAccess()
@@ -46,15 +72,11 @@ export async function getAdminStats() {
     .from('user_profiles')
     .select('*', { count: 'exact', head: true })
 
-  // Get pending approvals (users created in last 7 days without org membership)
-  const sevenDaysAgo = new Date()
-  sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7)
-
+  // Get pending approvals (users with approval_status = 'pending')
   const { count: pendingApprovals } = await supabase
     .from('user_profiles')
     .select('*', { count: 'exact', head: true })
-    .gte('created_at', sevenDaysAgo.toISOString())
-    .is('organization_id', null)
+    .eq('approval_status', 'pending')
 
   // Get active posts (not deleted, created in last 30 days)
   const thirtyDaysAgo = new Date()
@@ -257,18 +279,23 @@ export async function restoreUser(userId: string) {
 
 // User Approvals (for OAuth onboarding flow)
 export async function getPendingApprovals() {
-  const auth = await checkAdminAccess()
+  const auth = await checkApprovalAccess()
   if (!auth.authorized) {
     return { error: auth.error }
   }
 
   const { supabase } = auth
 
-  // Get users without organization membership
+  // Get users with pending approval status
   const { data, error } = await supabase
     .from('user_profiles')
-    .select('*')
-    .is('organization_id', null)
+    .select(`
+      *,
+      organizations:organization_id (
+        name
+      )
+    `)
+    .eq('approval_status', 'pending')
     .order('created_at', { ascending: false })
 
   if (error) {
@@ -278,61 +305,124 @@ export async function getPendingApprovals() {
   return { data }
 }
 
-export async function approveUser(userId: string, orgId: string, role: UserRole = 'volunteer') {
-  const auth = await checkAdminAccess()
+export async function approveUser(userId: string, role: UserRole = 'partner_staff') {
+  const auth = await checkApprovalAccess()
   if (!auth.authorized) {
     return { error: auth.error }
   }
 
-  const { supabase } = auth
+  const { supabase, user: approver } = auth
 
-  // Update user's organization
+  // Update user's approval status
   const { error: updateError } = await (supabase
     .from('user_profiles') as any)
-    .update({ organization_id: orgId, role })
+    .update({
+      approval_status: 'approved',
+      approved_at: new Date().toISOString(),
+      approved_by: approver.id,
+      role,
+    })
     .eq('user_id', userId)
 
   if (updateError) {
     return { error: updateError.message }
   }
 
-  // Create membership record
-  const { error: membershipError } = await (supabase
-    .from('user_memberships') as any)
-    .insert({
-      user_id: userId,
-      org_id: orgId,
-      role,
-      is_primary: true,
-    })
-
-  if (membershipError) {
-    return { error: membershipError.message }
-  }
+  // Notify the user they've been approved
+  await notifyUserApproved(supabase, userId, approver.id)
 
   return { success: true }
 }
 
+/**
+ * Notify user that their account has been approved
+ */
+async function notifyUserApproved(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  userId: string,
+  approverId: string
+) {
+  try {
+    const { error } = await (supabase
+      .from('notifications') as any)
+      .insert({
+        user_id: userId,
+        actor_id: approverId,
+        type: 'account_approved',
+        title: 'Welcome to Village Hub!',
+        reference_type: 'user',
+        reference_id: userId,
+        link: '/dashboard',
+        read: false,
+      })
+
+    if (error) {
+      console.error('[notifyUserApproved] Error:', error)
+    }
+  } catch (error) {
+    console.error('[notifyUserApproved] Exception:', error)
+  }
+}
+
 export async function rejectUser(userId: string, reason: string) {
-  const auth = await checkAdminAccess()
+  const auth = await checkApprovalAccess()
   if (!auth.authorized) {
     return { error: auth.error }
   }
 
-  // For now, we'll just soft delete by removing their profile
-  // In production, you might want to send an email with the reason
-  const { supabase } = auth
+  const { supabase, user: approver } = auth
 
-  const { error } = await supabase
-    .from('user_profiles')
-    .delete()
+  // Update user's approval status to rejected
+  const { error } = await (supabase
+    .from('user_profiles') as any)
+    .update({
+      approval_status: 'rejected',
+      rejection_reason: reason,
+      approved_at: new Date().toISOString(),
+      approved_by: approver.id,
+    })
     .eq('user_id', userId)
 
   if (error) {
     return { error: error.message }
   }
 
+  // Notify the user they've been rejected
+  await notifyUserRejected(supabase, userId, approver.id, reason)
+
   return { success: true }
+}
+
+/**
+ * Notify user that their account has been rejected
+ */
+async function notifyUserRejected(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  userId: string,
+  approverId: string,
+  reason: string
+) {
+  try {
+    const { error } = await (supabase
+      .from('notifications') as any)
+      .insert({
+        user_id: userId,
+        actor_id: approverId,
+        type: 'account_rejected',
+        title: 'Account application update',
+        reference_type: 'user',
+        reference_id: userId,
+        link: '/pending-approval',
+        action_data: { reason },
+        read: false,
+      })
+
+    if (error) {
+      console.error('[notifyUserRejected] Error:', error)
+    }
+  } catch (error) {
+    console.error('[notifyUserRejected] Exception:', error)
+  }
 }
 
 // Website Publishing Queue

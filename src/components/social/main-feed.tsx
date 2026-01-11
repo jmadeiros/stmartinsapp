@@ -20,14 +20,16 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { WeeklyUpdateDialog } from "@/components/social/weekly-update-dialog"
-import { Sparkles, Send, Image as ImageIcon, Smile, Calendar, Target, BarChart3, Paperclip, Tag, X, Plus, AlertTriangle, Loader2, User, ChevronDown } from "lucide-react"
-import { useState, useRef, useEffect } from "react"
+import { Sparkles, Send, Image as ImageIcon, Smile, Calendar, Target, BarChart3, Paperclip, Tag, X, Plus, AlertTriangle, Loader2, User, ChevronDown, Trash2 } from "lucide-react"
+import { useState, useRef, useEffect, useCallback } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import type { FeedItem, FilterType, PostCategory } from "@/lib/types"
 import { CategorySelector } from "@/components/ui/category-selector"
 import { createPost } from "@/lib/actions/posts"
+import { uploadPostImage } from "@/lib/actions/storage"
 import { useRouter } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
+import { useFeedRealtime } from "@/hooks/use-feed-realtime"
 
 const filterOptions: FilterType[] = ["All", "Events", "Projects", "Posts"]
 const sortOptions = ["Latest", "Shared by", "Shared with"]
@@ -64,6 +66,25 @@ interface MainFeedProps {
 export function MainFeed({ initialFeedItems = [], userId, orgId, userRole = 'volunteer', userName = 'User' }: MainFeedProps) {
   const [feedItems, setFeedItems] = useState<FeedItem[]>(initialFeedItems)
   const [activeFilter, setActiveFilter] = useState<FilterType>("All")
+
+  // Real-time feed subscription for live updates
+  useFeedRealtime({
+    orgId,
+    enabled: !!orgId,
+    onNewPost: useCallback(() => {
+      // New posts trigger a router refresh to fetch full data with author info
+      // The hook already updates the cache optimistically
+      console.log('[MainFeed] New post detected via realtime')
+    }, []),
+    onPostUpdate: useCallback(() => {
+      console.log('[MainFeed] Post update detected via realtime')
+    }, []),
+    onPostDelete: useCallback((postId: string) => {
+      console.log('[MainFeed] Post delete detected via realtime:', postId)
+      // Remove from local state immediately
+      setFeedItems(prev => prev.filter(item => item.id !== postId))
+    }, []),
+  })
   const [activeSort, setActiveSort] = useState("Latest")
   const [postContent, setPostContent] = useState("")
   const [postFocused, setPostFocused] = useState(false)
@@ -78,6 +99,12 @@ export function MainFeed({ initialFeedItems = [], userId, orgId, userRole = 'vol
   const [existingEvents, setExistingEvents] = useState<Array<{ id: string; title: string; date?: string }>>([])
   const [existingProjects, setExistingProjects] = useState<Array<{ id: string; title: string; date?: string }>>([])
   const [existingOrganizations, setExistingOrganizations] = useState<Array<{ id: string; name: string }>>([])
+  // Image upload state
+  const [selectedImage, setSelectedImage] = useState<{ preview: string; file: File } | null>(null)
+  const [isUploadingImage, setIsUploadingImage] = useState(false)
+  const [uploadedImageUrl, setUploadedImageUrl] = useState<string | null>(null)
+  const [imageUploadError, setImageUploadError] = useState<string | null>(null)
+  const imageInputRef = useRef<HTMLInputElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const tagSelectorRef = useRef<HTMLDivElement>(null)
 
@@ -231,6 +258,58 @@ export function MainFeed({ initialFeedItems = [], userId, orgId, userRole = 'vol
     return true
   })
 
+  // Image selection handler
+  const handleImageSelect = useCallback((base64Data: string, file: File) => {
+    setSelectedImage({ preview: base64Data, file })
+    setImageUploadError(null)
+    setUploadedImageUrl(null)
+  }, [])
+
+  // Clear selected image
+  const handleImageClear = useCallback(() => {
+    setSelectedImage(null)
+    setUploadedImageUrl(null)
+    setImageUploadError(null)
+    if (imageInputRef.current) {
+      imageInputRef.current.value = ''
+    }
+  }, [])
+
+  // File input change handler
+  const handleImageInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    // Validate file type
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp']
+    if (!allowedTypes.includes(file.type)) {
+      setImageUploadError('Invalid file type. Please use JPEG, PNG, GIF, or WebP.')
+      return
+    }
+
+    // Validate file size (50MB)
+    if (file.size > 50 * 1024 * 1024) {
+      setImageUploadError('File too large. Maximum size is 50MB.')
+      return
+    }
+
+    // Read and set preview
+    const reader = new FileReader()
+    reader.onload = (e) => {
+      const base64Data = e.target?.result as string
+      handleImageSelect(base64Data, file)
+    }
+    reader.onerror = () => {
+      setImageUploadError('Failed to read file')
+    }
+    reader.readAsDataURL(file)
+
+    // Reset input to allow re-selecting same file
+    if (imageInputRef.current) {
+      imageInputRef.current.value = ''
+    }
+  }, [handleImageSelect])
+
   const handlePostSubmit = async () => {
     if (!userId || !orgId) {
       setPostError("User ID or Organization ID is missing")
@@ -241,6 +320,24 @@ export function MainFeed({ initialFeedItems = [], userId, orgId, userRole = 'vol
     setPostError(null)
 
     try {
+      // Upload image first if selected
+      let imageUrl: string | null = uploadedImageUrl
+
+      if (selectedImage && !uploadedImageUrl) {
+        setIsUploadingImage(true)
+        const uploadResult = await uploadPostImage(selectedImage.preview)
+        setIsUploadingImage(false)
+
+        if (!uploadResult.success) {
+          setImageUploadError(uploadResult.error || 'Failed to upload image')
+          setIsPostSubmitting(false)
+          return
+        }
+
+        imageUrl = uploadResult.data?.publicUrl || null
+        setUploadedImageUrl(imageUrl)
+      }
+
       // Find linked event/project IDs
       const linkedEvent = linkedItems.find(item => item.type === 'event')
       const linkedProject = linkedItems.find(item => item.type === 'project')
@@ -261,6 +358,7 @@ export function MainFeed({ initialFeedItems = [], userId, orgId, userRole = 'vol
         linkedEventId: linkedEvent?.id,
         linkedProjectId: linkedProject?.id,
         mentionedUserIds: allMentionedUserIds.length > 0 ? allMentionedUserIds : undefined,
+        imageUrl: imageUrl || undefined,
       })
 
       if (result.success && result.data) {
@@ -272,6 +370,9 @@ export function MainFeed({ initialFeedItems = [], userId, orgId, userRole = 'vol
         setPostCategory("general")
         setLinkedItems([])
         setMentionedUserIds([])
+        setSelectedImage(null)
+        setUploadedImageUrl(null)
+        setImageUploadError(null)
         setPostFocused(false)
         // Refresh to show new post
         router.refresh()
@@ -541,7 +642,7 @@ export function MainFeed({ initialFeedItems = [], userId, orgId, userRole = 'vol
                         initial={{ opacity: 0, y: -10 }}
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: -10 }}
-                        className="absolute z-50 w-full max-w-md bg-white rounded-lg shadow-lg border border-gray-200 mt-1 max-h-64 overflow-y-auto"
+                        className="absolute z-50 w-[calc(100vw-2rem)] sm:w-full max-w-md bg-white rounded-lg shadow-lg border border-gray-200 mt-1 max-h-64 overflow-y-auto left-0 sm:left-auto"
                       >
                         <div className="p-2">
                           <div className="text-xs text-gray-500 px-3 py-2 font-medium">
@@ -656,6 +757,49 @@ export function MainFeed({ initialFeedItems = [], userId, orgId, userRole = 'vol
                   )}
                 </AnimatePresence>
 
+                {/* Image Preview - Shows when image is selected */}
+                <AnimatePresence>
+                  {selectedImage && (
+                    <motion.div
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: "auto" }}
+                      exit={{ opacity: 0, height: 0 }}
+                      className="mb-3 pb-3 border-b border-gray-200"
+                    >
+                      <div className="relative rounded-lg overflow-hidden border border-border bg-muted">
+                        <img
+                          src={selectedImage.preview}
+                          alt="Preview"
+                          className="w-full max-h-64 object-cover"
+                        />
+                        {/* Remove image button */}
+                        <Button
+                          variant="destructive"
+                          size="icon-sm"
+                          className="absolute top-2 right-2 h-8 w-8 rounded-full"
+                          onClick={handleImageClear}
+                          disabled={isPostSubmitting || isUploadingImage}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                        {/* Upload indicator overlay */}
+                        {isUploadingImage && (
+                          <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                            <div className="flex items-center gap-2 text-white">
+                              <Loader2 className="h-6 w-6 animate-spin" />
+                              <span className="text-sm font-medium">Uploading...</span>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                      {/* Image upload error */}
+                      {imageUploadError && (
+                        <p className="mt-2 text-sm text-destructive">{imageUploadError}</p>
+                      )}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+
                 {/* Action Buttons Row - Shows attachment options when focused */}
                 <AnimatePresence>
                   {postFocused && (
@@ -666,13 +810,33 @@ export function MainFeed({ initialFeedItems = [], userId, orgId, userRole = 'vol
                       className="mb-3 pb-3 border-b border-gray-200"
                     >
                       <div className="flex items-center gap-2 flex-nowrap overflow-x-auto sm:overflow-visible">
+                        {/* Hidden file input for image upload */}
+                        <input
+                          ref={imageInputRef}
+                          type="file"
+                          accept="image/jpeg,image/png,image/gif,image/webp"
+                          onChange={handleImageInputChange}
+                          className="hidden"
+                          disabled={isPostSubmitting || isUploadingImage}
+                        />
                         <Button
                           variant="ghost"
                           size="sm"
-                          className="text-gray-500 hover:text-primary hover:bg-primary/5 h-9 px-3 gap-2"
+                          onClick={() => imageInputRef.current?.click()}
+                          disabled={isPostSubmitting || isUploadingImage}
+                          className={cn(
+                            "text-gray-500 hover:text-primary hover:bg-primary/5 h-9 px-3 gap-2",
+                            selectedImage && "text-primary bg-primary/10"
+                          )}
                         >
-                          <ImageIcon className="h-4 w-4" />
-                          <span className="text-sm hidden sm:inline">Photo</span>
+                          {isUploadingImage ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <ImageIcon className="h-4 w-4" />
+                          )}
+                          <span className="text-sm hidden sm:inline">
+                            {selectedImage ? "Change Photo" : "Photo"}
+                          </span>
                         </Button>
                         <Button
                           variant="ghost"
@@ -774,7 +938,7 @@ export function MainFeed({ initialFeedItems = [], userId, orgId, userRole = 'vol
                                 initial={{ opacity: 0, y: -10 }}
                                 animate={{ opacity: 1, y: 0 }}
                                 exit={{ opacity: 0, y: -10 }}
-                                className="absolute right-0 top-full mt-2 w-full sm:w-80 bg-white rounded-lg shadow-lg border border-gray-200 z-50"
+                                className="absolute right-0 top-full mt-2 w-[calc(100vw-2rem)] sm:w-80 max-w-[320px] bg-white rounded-lg shadow-lg border border-gray-200 z-50"
                               >
                                 <div className="p-3">
                                   <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">

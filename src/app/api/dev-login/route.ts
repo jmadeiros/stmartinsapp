@@ -36,11 +36,13 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Not available in production' }, { status: 403 })
   }
 
-  // Check if a specific role was requested
+  // Check request body for options
   let requestedRole: UserRole | undefined
+  let testOnboarding = false
   try {
     const body = await request.json().catch(() => ({}))
     requestedRole = body.role as UserRole | undefined
+    testOnboarding = body.testOnboarding === true
   } catch {
     // No body, use default (admin)
   }
@@ -208,6 +210,26 @@ export async function POST(request: Request) {
 
     if (!targetUser) {
       return NextResponse.json({ error: 'No test users could be created' }, { status: 500 })
+    }
+
+    // If testing onboarding, clear the profile fields so user goes through wizard
+    if (testOnboarding) {
+      console.log(`[DEV-LOGIN] Clearing profile for onboarding test: ${targetUser.email}`)
+      const { error: clearError } = await supabaseAdmin
+        .from('user_profiles')
+        .update({
+          organization_id: null,
+          skills: null,
+          interests: null,
+          approval_status: 'approved',  // Reset so they can access onboarding
+        } as any)
+        .eq('user_id', targetUser.userId)
+
+      if (clearError) {
+        console.error('[DEV-LOGIN] Error clearing profile for onboarding:', clearError)
+      } else {
+        console.log('[DEV-LOGIN] Profile cleared for onboarding test')
+      }
     }
 
     // Return credentials for client-side sign in
