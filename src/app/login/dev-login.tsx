@@ -4,10 +4,11 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
-import { Code } from 'lucide-react'
+import { Code, Sparkles } from 'lucide-react'
 
 export function DevLogin() {
   const [isLoading, setIsLoading] = useState(false)
+  const [isTestingOnboarding, setIsTestingOnboarding] = useState(false)
   const [role, setRole] = useState<'admin' | 'st_martins_staff' | 'partner_staff' | 'volunteer'>('admin')
   const router = useRouter()
   const supabase = createClient()
@@ -57,6 +58,46 @@ export function DevLogin() {
     }
   }
 
+  const handleTestOnboarding = async () => {
+    setIsTestingOnboarding(true)
+    try {
+      // Create/ensure test user and clear profile for onboarding (server-side)
+      const response = await fetch('/api/dev-login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ role: 'volunteer', testOnboarding: true }),
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        alert(`Failed to create test user: ${errorData.error || 'Unknown error'}`)
+        return
+      }
+
+      const data = await response.json()
+
+      // Sign in with the test user
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email: data.email,
+        password: data.password,
+      })
+
+      if (signInError) {
+        alert(`Failed to sign in: ${signInError.message}`)
+        return
+      }
+
+      // Redirect to onboarding (profile already cleared by API)
+      router.push('/onboarding')
+      router.refresh()
+    } catch (error) {
+      console.error('Test onboarding error:', error)
+      alert(`An error occurred: ${error instanceof Error ? error.message : 'Unknown error'}`)
+    } finally {
+      setIsTestingOnboarding(false)
+    }
+  }
+
   // Only show in development
   if (process.env.NODE_ENV !== 'development') {
     return null
@@ -90,15 +131,26 @@ export function DevLogin() {
                 <option value="volunteer">Volunteer (volunteer@stmartins.dev)</option>
               </select>
             </div>
-            <Button
-              onClick={handleDevLogin}
-              disabled={isLoading}
-              variant="outline"
-              size="sm"
-              className="mt-3"
-            >
-              {isLoading ? 'Creating test user...' : 'Dev Login (Test Mode)'}
-            </Button>
+            <div className="mt-3 flex flex-col gap-2 sm:flex-row">
+              <Button
+                onClick={handleDevLogin}
+                disabled={isLoading || isTestingOnboarding}
+                variant="outline"
+                size="sm"
+              >
+                {isLoading ? 'Creating test user...' : 'Dev Login (Test Mode)'}
+              </Button>
+              <Button
+                onClick={handleTestOnboarding}
+                disabled={isLoading || isTestingOnboarding}
+                variant="outline"
+                size="sm"
+                className="gap-2"
+              >
+                <Sparkles className="w-4 h-4" />
+                {isTestingOnboarding ? 'Setting up...' : 'Test Onboarding'}
+              </Button>
+            </div>
           </div>
         </div>
       </div>

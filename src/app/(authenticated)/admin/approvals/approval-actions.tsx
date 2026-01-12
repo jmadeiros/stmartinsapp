@@ -9,37 +9,26 @@ type User = {
   user_id: string
   full_name: string
   contact_email?: string
-}
-
-type Organization = {
-  id: string
-  name: string
-  slug: string
+  job_title?: string
+  organization_id?: string
+  organizations?: { name: string } | null
 }
 
 export function ApprovalActions({
   user,
-  organizations,
 }: {
   user: User
-  organizations: Organization[]
 }) {
   const [showApproveDialog, setShowApproveDialog] = useState(false)
   const [showRejectDialog, setShowRejectDialog] = useState(false)
-  const [selectedOrg, setSelectedOrg] = useState('')
-  const [selectedRole, setSelectedRole] = useState('volunteer')
+  const [selectedRole, setSelectedRole] = useState('partner_staff')
   const [rejectReason, setRejectReason] = useState('')
   const [isPending, startTransition] = useTransition()
   const router = useRouter()
 
   const handleApprove = () => {
-    if (!selectedOrg) {
-      alert('Please select an organization')
-      return
-    }
-
     startTransition(async () => {
-      const result = await approveUser(user.user_id, selectedOrg, selectedRole as any)
+      const result = await approveUser(user.user_id, selectedRole as any)
       if ('error' in result) {
         alert(`Error: ${result.error}`)
       } else {
@@ -91,49 +80,40 @@ export function ApprovalActions({
           <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
             <h3 className="text-lg font-semibold mb-4">Approve User</h3>
             <p className="text-sm text-gray-600 mb-4">
-              Approve <strong>{user.full_name}</strong> and assign them to an organization.
+              Approve <strong>{user.full_name}</strong> to access Village Hub.
             </p>
 
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Organization
-                </label>
-                <select
-                  value={selectedOrg}
-                  onChange={(e) => setSelectedOrg(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                >
-                  <option value="">Select organization...</option>
-                  {organizations.map((org) => (
-                    <option key={org.id} value={org.id}>
-                      {org.name}
-                    </option>
-                  ))}
-                </select>
+            {/* Show user's selected organization */}
+            {user.organizations?.name && (
+              <div className="bg-gray-50 rounded-lg p-3 mb-4">
+                <p className="text-xs text-gray-500">Organization</p>
+                <p className="font-medium">{user.organizations.name}</p>
+                {user.job_title && (
+                  <p className="text-sm text-gray-600">{user.job_title}</p>
+                )}
               </div>
+            )}
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Role
-                </label>
-                <select
-                  value={selectedRole}
-                  onChange={(e) => setSelectedRole(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                >
-                  <option value="volunteer">Volunteer</option>
-                  <option value="partner_staff">Partner Staff</option>
-                  <option value="st_martins_staff">St Martins Staff</option>
-                  <option value="admin">Admin</option>
-                </select>
-              </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Role
+              </label>
+              <select
+                value={selectedRole}
+                onChange={(e) => setSelectedRole(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              >
+                <option value="partner_staff">Partner Staff</option>
+                <option value="volunteer">Volunteer</option>
+                <option value="st_martins_staff">St Martins Staff</option>
+                <option value="admin">Admin</option>
+              </select>
             </div>
 
             <div className="flex gap-2 mt-6">
               <button
                 onClick={handleApprove}
-                disabled={isPending || !selectedOrg}
+                disabled={isPending}
                 className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 transition-colors"
               >
                 {isPending ? 'Approving...' : 'Approve'}
@@ -156,7 +136,7 @@ export function ApprovalActions({
           <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
             <h3 className="text-lg font-semibold mb-4">Reject User</h3>
             <p className="text-sm text-gray-600 mb-4">
-              Reject <strong>{user.full_name}</strong>&apos;s application. This will delete their profile.
+              Reject <strong>{user.full_name}</strong>&apos;s application. They will be notified of the decision.
             </p>
 
             <div>

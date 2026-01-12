@@ -6,8 +6,8 @@
 > Last verified: December 15, 2024
 
 > **Created:** December 9, 2024
-> **Last Updated:** January 6, 2025
-> **Status:** Phase 3 Complete (15 done, 3 on hold/removed) - Ready for Phase 4
+> **Last Updated:** January 11, 2026
+> **Status:** Phase 4 COMPLETE ✅ | Phase 5 COMPLETE ✅ | Ready for Production
 > **Related Docs:** [ARCHITECTURE_MAP.md](./ARCHITECTURE_MAP.md), [AI_FEATURES_ROADMAP.md](./AI_FEATURES_ROADMAP.md)
 
 ---
@@ -20,75 +20,63 @@
 | User → Org Connection | ✅ Works | `user_memberships` table |
 | Create Event | ✅ Works | Dialog → `createEvent()` → DB |
 | Create Project | ✅ Works | Dialog → `createProject()` → DB |
-| Create Post | ❌ NOT WIRED | Dialog only console.logs |
-| OAuth UI | ✅ Built | Buttons exist, providers not configured |
-| OAuth callback | ✅ Built | Route exists at `/auth/callback` |
-| Post-OAuth user setup | ❌ Missing | Need trigger to create profile + membership |
+| Create Post | ✅ Works | Wired in Phase 1.8 |
+| OAuth UI | ✅ Works | Google + Microsoft configured |
+| OAuth callback | ✅ Works | Route at `/auth/callback` detects new users |
+| Post-OAuth user setup | ✅ Works | Redirects to `/onboarding` wizard |
+| File Uploads | ✅ Works | 3 storage buckets configured |
+| Real-time Feed | ✅ Works | Multi-table subscriptions |
+| User Approval | ✅ Works | Admin panel at `/admin/approvals` |
 
-### Production User Onboarding (Task 4.7)
+### Production User Onboarding ✅ IMPLEMENTED
 
 For real users (not dev login), the full sign-up flow:
 
 **1. OAuth Sign-In**
-- User clicks Microsoft/Google on login page
+- User clicks "Continue with Google" or "Continue with Microsoft"
 - Supabase creates `auth.users` row
-- Redirects to `/onboarding`
+- Auth callback detects incomplete profile → redirects to `/onboarding`
 
-**2. Onboarding Form (`/onboarding`)**
-```
-┌─────────────────────────────────────────────────────────────┐
-│  Welcome to Village Hub!                                    │
-│  Complete your profile to get started                       │
-├─────────────────────────────────────────────────────────────┤
-│                                                             │
-│  Profile Photo *        [Upload]                            │
-│                                                             │
-│  Full Name *            [________________________]          │
-│                                                             │
-│  Email *                [________________________]          │
-│                                                             │
-│  Phone *                [________________________]          │
-│                                                             │
-│  Job Title *            [________________________]          │
-│                                                             │
-│  Organization *         [▼ Select your organization ]       │
-│                                                             │
-│  ┌─────────────────────────────────────────────────────┐   │
-│  │ ☐ I agree to the Terms of Service and Privacy      │   │
-│  │   Policy. I consent to Village Hub storing and     │   │
-│  │   processing my personal data as described. *      │   │
-│  │   [View Privacy Policy] [View Terms]               │   │
-│  └─────────────────────────────────────────────────────┘   │
-│                                                             │
-│                    [Complete Sign Up]                       │
-│                                                             │
-├─────────────────────────────────────────────────────────────┤
-│  ℹ️ Your account will be reviewed by an admin before you    │
-│     can access the hub.                                     │
-└─────────────────────────────────────────────────────────────┘
-```
+**2. Onboarding Wizard (`/onboarding`) - 4 Steps**
 
-**Required fields:** Photo, Full Name, Email, Phone, Job Title, Organization, GDPR Consent
-**Optional (add later in profile):** Bio, Skills, Interests, LinkedIn
+**Step 1: Profile**
+- Full Name (required)
+- Job Title (optional)
+- Bio (optional)
+- Avatar with initials preview
+
+**Step 2: Organization**
+- Select from list of organizations
+- Creates `user_membership` entry with role='member'
+
+**Step 3: Skills & Interests**
+- Multi-select badges for 16 skills
+- Multi-select badges for 16 interest areas
+- Social links (LinkedIn, Twitter, Website)
+
+**Step 4: Notifications**
+- Email notifications toggle
+- Push notifications toggle
+- Digest frequency (daily/weekly/never)
 
 **3. Pending Approval**
-- User sees "Account Pending" screen
-- Admin reviews in `/admin/user-approvals`
-- Admin approves → user gets email + can access app
+- User sees `/pending-approval` screen
+- Admin reviews in `/admin/approvals`
+- Admin approves with role selection → user redirected to dashboard
+- Admin rejects with reason → user sees rejection message
 
-**Database Changes Needed:**
+**Database Changes Implemented:**
 | Field | Table | Purpose |
 |-------|-------|---------|
-| `account_status` | `user_profiles` | 'pending', 'approved', 'rejected' |
+| `approval_status` | `user_profiles` | 'pending', 'approved', 'rejected' |
 | `approved_at` | `user_profiles` | When admin approved |
 | `approved_by` | `user_profiles` | Admin who approved |
-| `gdpr_consent` | `user_profiles` | Boolean - user accepted terms |
-| `gdpr_consent_at` | `user_profiles` | Timestamp of consent |
+| `rejection_reason` | `user_profiles` | Text explaining rejection |
 
-**Admin User Approval Queue** (part of 3.11):
-- Shows pending user sign-ups
-- Admin can view profile, approve, or reject
-- Rejection sends email with reason
+**Future Enhancements (Phase 6):**
+- Avatar upload during onboarding
+- GDPR consent checkbox
+- Email notifications on approval/rejection
 
 ---
 
@@ -209,7 +197,7 @@ Most RLS already exists for core tables. The above are additions for new feature
 
 ---
 
-## PHASE 3: New Features ✨ 🚧 IN PROGRESS (13/18)
+## PHASE 3: New Features ✨ ✅ COMPLETE (15/18)
 *Build missing functionality*
 
 | # | Task | Files | Complexity | Status |
@@ -237,27 +225,52 @@ Most RLS already exists for core tables. The above are additions for new feature
 
 ---
 
-## PHASE 4: Polish & Production 🚀 ⏳ NOT STARTED
+## PHASE 4: Polish & Production 🚀 ✅ COMPLETE
 *Production readiness*
 
 | # | Task | Files | Complexity | Status |
 |---|------|-------|------------|--------|
-| 4.1 | **Re-enable auth check** | `layout.tsx` | 🟢 Small | 🟡 Partial (logout exists, auth check disabled) |
-| 4.2 | **Remove all console.log** | Multiple files | 🟡 Medium | ❌ Not Done |
-| 4.3 | **Remove TODO comments** | Various | 🟢 Small | ❌ Not Done |
-| 4.4 | **Clean up old routes** | Route files | 🟢 Small | ❌ Not Done |
-| 4.5 | **Real-time subscriptions** | Chat, feed, notifications | 🟡 Medium | 🟡 Partial (notifications only) |
-| 4.6 | **File uploads** | Post creation, profiles | 🟡 Medium | ❌ Not Done |
-| 4.7 | **OAuth + User Onboarding** | Supabase config | 🟡 Medium | ❌ Not Done |
-| 4.8 | **Mobile responsiveness audit** | All components | 🟡 Medium | ❌ Not Done |
-| 4.9 | **Error handling & loading states** | All pages | 🟡 Medium | ❌ Not Done |
-| 4.10 | **Linked event/project navigation** | `post-card.tsx` | 🟢 Small | ❌ Not Done |
-| 4.11 | **Post editing** | `post-card.tsx`, actions | 🟡 Medium | ❌ Not Done |
-| 4.12 | **Toast notifications for errors** | RSVP, interest flows | 🟢 Small | ❌ Not Done |
-| 4.13 | **Regenerate database types** | `database.types.ts` | 🟢 Small | ❌ Not Done |
-| 4.14 | **Fix `as any` type casts** | Multiple files (186 instances) | 🟡 Medium | ❌ Not Done |
-| 4.15 | **Update CLAUDE.md docs** | `CLAUDE.md` | 🟢 Small | ❌ Not Done |
-| 4.16 | **Remove hardcoded mock data** | Various components | 🟢 Small | ❌ Not Done |
+| 4.1 | **Re-enable auth check** | `layout.tsx` | 🟢 Small | ✅ Done |
+| 4.2 | **Remove all console.log** | Multiple files | 🟡 Medium | ✅ Done (contextual logging kept) |
+| 4.3 | **Remove TODO comments** | Various | 🟢 Small | ✅ Done |
+| 4.4 | **Clean up old routes** | Route files | 🟢 Small | ✅ Done |
+| 4.5 | **Real-time subscriptions** | Chat, feed, notifications | 🟡 Medium | ✅ Done (use-feed-realtime.ts) |
+| 4.6 | **File uploads** | Post creation, profiles | 🟡 Medium | ✅ Done (3 buckets: avatars, post-images, event-images) |
+| 4.7 | **OAuth + User Onboarding** | Supabase config | 🟡 Medium | ✅ Done (Google + Microsoft OAuth) |
+| 4.8 | **Mobile responsiveness audit** | All components | 🟡 Medium | ✅ Done |
+| 4.9 | **Error handling & loading states** | All pages | 🟡 Medium | ✅ Done (8+ error.tsx/loading.tsx files) |
+| 4.10 | **Linked event/project navigation** | `post-card.tsx` | 🟢 Small | ✅ Done |
+| 4.11 | **Post editing** | `post-card.tsx`, actions | 🟡 Medium | ✅ Done (inline edit + updatePost action) |
+| 4.12 | **Toast notifications for errors** | RSVP, interest flows | 🟢 Small | ✅ Done |
+| 4.13 | **Regenerate database types** | `database.types.ts` | 🟢 Small | ✅ Done |
+| 4.14 | **Fix `as any` type casts** | Multiple files | 🟡 Medium | ✅ Done (reduced to necessary casts) |
+| 4.15 | **Update CLAUDE.md docs** | `CLAUDE.md` | 🟢 Small | ✅ Done |
+| 4.16 | **Remove hardcoded mock data** | Various components | 🟢 Small | ✅ Done |
+
+### Phase 4 Implementation Details
+
+**4.5 Real-time Subscriptions:**
+- Hook: `/src/hooks/use-feed-realtime.ts`
+- Migration: `20260106200000_enable_feed_realtime.sql`
+- Subscribes to: posts, comments, reactions, RSVPs, project interests
+- React Query cache integration for instant updates
+
+**4.6 File Uploads:**
+- Storage actions: `/src/lib/actions/storage.ts`
+- UI component: `/src/components/ui/image-upload.tsx`
+- Migration: `20260106200001_create_storage_buckets.sql`
+- Functions: `uploadAvatar()`, `uploadPostImage()`, `uploadEventImage()`
+- Max 50MB, JPEG/PNG/GIF/WebP supported
+
+**4.7 OAuth:**
+- Google OAuth via `signInWithOAuth({ provider: 'google' })`
+- Microsoft OAuth via `signInWithOAuth({ provider: 'azure' })`
+- Auth callback detects new users → redirects to `/onboarding`
+
+**4.11 Post Editing:**
+- Inline edit in post-card.tsx with category selector
+- Server action: `updatePost()` in posts.ts
+- Real-time updates broadcast to all subscribers
 
 ---
 
@@ -276,14 +289,15 @@ Most RLS already exists for core tables. The above are additions for new feature
 
 ## Summary by Complexity
 
-| | 🟢 Small | 🟡 Medium | 🔴 Large | Total |
-|---|----------|-----------|----------|-------|
-| **Phase 1** | 8 | 0 | 0 | 8 |
-| **Phase 2** | 4 | 6 | 1 | 11 |
-| **Phase 3** | 7 | 6 | 2 | 15 |
-| **Phase 4** | 9 | 7 | 0 | 16 |
-| **Phase 5** | 0 | 3 | 1 | 4 |
-| **Total** | **28** | **22** | **4** | **54** |
+| | 🟢 Small | 🟡 Medium | 🔴 Large | Total | Status |
+|---|----------|-----------|----------|-------|--------|
+| **Phase 1** | 8 | 0 | 0 | 8 | ✅ Complete |
+| **Phase 2** | 4 | 6 | 1 | 11 | ✅ Complete |
+| **Phase 3** | 7 | 6 | 2 | 15 | ✅ Complete |
+| **Phase 4** | 9 | 7 | 0 | 16 | ✅ Complete |
+| **Phase 5** | 2 | 2 | 1 | 5 | ✅ Complete |
+| **Phase 6** | 2 | 4 | 1 | 7 | ⏳ On Hold |
+| **Total** | **32** | **25** | **5** | **62** | |
 
 ---
 
@@ -453,7 +467,62 @@ CREATE TABLE user_feedback (
 
 ---
 
-## PHASE 5: Future / On Hold
+## PHASE 5: User Onboarding & Admin Features ✅ COMPLETE
+
+*New user onboarding flow and admin approval system*
+
+### Implemented Features
+
+| # | Task | Files | Complexity | Status |
+|---|------|-------|------------|--------|
+| 5.1 | **Onboarding Wizard** | `/src/components/onboarding/` | 🔴 Large | ✅ Done |
+| 5.2 | **User Approval Workflow** | `user_profiles` + actions | 🟡 Medium | ✅ Done |
+| 5.3 | **Admin Approvals Panel** | `/admin/approvals/` | 🟡 Medium | ✅ Done |
+| 5.4 | **Pending Approval Page** | `/pending-approval/` | 🟢 Small | ✅ Done |
+| 5.5 | **Dev Login Enhancements** | `dev-login.tsx` | 🟢 Small | ✅ Done |
+
+### Phase 5 Implementation Details
+
+**5.1 Onboarding Wizard (4-step flow):**
+- Page: `/src/app/onboarding/page.tsx`
+- Component: `/src/components/onboarding/onboarding-wizard.tsx`
+- Actions: `/src/lib/actions/onboarding.ts`
+- **Step 1:** Profile (name, job title, bio)
+- **Step 2:** Organization selection (creates user_membership)
+- **Step 3:** Skills & Interests (16 predefined each + social links)
+- **Step 4:** Notification preferences
+- Progress saved after each step
+
+**5.2 User Approval Workflow:**
+- Migration: `20260107000000_add_approval_status.sql`
+- New enum: `approval_status` (pending, approved, rejected)
+- New columns: `approval_status`, `approved_at`, `approved_by`, `rejection_reason`
+- New users default to 'pending' after completing onboarding
+- Admin notifications sent when new user completes onboarding
+
+**5.3 Admin Approvals Panel:**
+- Page: `/src/app/(authenticated)/admin/approvals/page.tsx`
+- Actions: `/src/app/(authenticated)/admin/approvals/approval-actions.tsx`
+- Server actions: `/src/lib/actions/admin.ts`
+- Shows pending users with profile info
+- Approve (with role selection) or Reject (with reason)
+- Authorization: admin role only
+
+**5.4 Pending Approval Page:**
+- Page: `/src/app/pending-approval/page.tsx`
+- Component: `/src/components/onboarding/pending-approval-content.tsx`
+- Shows "Awaiting Approval" for pending users
+- Shows "Application Not Approved" with reason for rejected users
+- Redirects to /dashboard if already approved
+
+**5.5 Dev Login Enhancements:**
+- "Test Onboarding" button to simulate new user flow
+- Role selector (admin, staff, partner, volunteer)
+- Clears profile to force onboarding wizard
+
+---
+
+## PHASE 6: Future / On Hold
 
 *Features deferred from earlier phases, plus optional AI enhancements.*
 
@@ -461,10 +530,13 @@ CREATE TABLE user_feedback (
 
 | # | Task | Original Phase | Complexity | Notes |
 |---|------|----------------|------------|-------|
-| 5.1 | **Build Opportunities Page** | Phase 3.7 | 🟡 Medium | `/opportunities` route |
-| 5.2 | **Publish to Website** | Phase 3.17 | 🔴 Large | Admin queue, API integration |
-| 5.3 | **Audit tables** | Phase 4.17 | 🟡 Medium | Track who changed what when |
-| 5.4 | **Volunteer hours tracking** | Future | 🟡 Medium | Log volunteer time contributions |
+| 6.1 | **Build Opportunities Page** | Phase 3.7 | 🟡 Medium | `/opportunities` route |
+| 6.2 | **Publish to Website** | Phase 3.17 | 🔴 Large | Admin queue, API integration |
+| 6.3 | **Audit tables** | Phase 4.17 | 🟡 Medium | Track who changed what when |
+| 6.4 | **Volunteer hours tracking** | Future | 🟡 Medium | Log volunteer time contributions |
+| 6.5 | **Avatar upload in onboarding** | Future | 🟢 Small | Profile picture during Step 1 |
+| 6.6 | **GDPR consent collection** | Future | 🟢 Small | Terms acceptance in onboarding |
+| 6.7 | **Email notifications** | Future | 🟡 Medium | Resend integration for approvals |
 
 ### AI Features (Optional)
 

@@ -199,8 +199,8 @@ Components install to `/src/components/ui/` and are fully customizable.
 - `projects` - Collaborative projects with progress
 - `event_rsvps` - Event attendance with support options
 - `project_interests` - Project collaboration expressions
-- `chat_rooms` - Chat room definitions
-- `chat_messages` - Chat messages
+- `conversations` - Chat conversations (DMs and groups)
+- `messages` - Chat messages
 - `notifications` - User notifications
 
 **Views:**
@@ -334,9 +334,14 @@ export default async function Page() {
 - Comments on events and projects
 - RSVP and project interest functionality
 
+**Phase 4 Recently Added:**
+- OAuth providers (Google/Microsoft) - handlers in login page
+- File uploads (Supabase Storage) - avatars, post-images, event-images buckets
+- Post editing - authors can edit their posts
+- Real-time feed updates - posts, comments, reactions update live
+- Onboarding flow - new user wizard (profile, org, skills, notifications)
+
 **Not Yet Built:**
-- OAuth providers (Microsoft/Google)
-- File uploads
 - Admin panel
 
 ---

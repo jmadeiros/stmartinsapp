@@ -194,8 +194,8 @@ export function MessageBubble({
             className={cn(
               "px-4 py-2.5 text-sm leading-relaxed",
               isOwn
-                ? "bg-primary text-primary-foreground rounded-2xl rounded-br-md"
-                : "bg-muted/60 text-foreground rounded-2xl rounded-bl-md",
+                ? "bg-green-600 text-white rounded-2xl rounded-br-md"
+                : "bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-2xl rounded-bl-md",
               // Adjust corners based on position in group
               isFirstInGroup && isOwn && "rounded-tr-2xl",
               isFirstInGroup && !isOwn && "rounded-tl-2xl",

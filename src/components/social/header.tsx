@@ -135,6 +135,7 @@ export function SocialHeader() {
     { label: "Calendar", href: "/calendar" },
     { label: "Projects", href: "/projects" },
     { label: "People", href: "/people" },
+    { label: "Opportunities", href: "/opportunities" },
     { label: "Notes", href: "/meeting-notes" },
   ]
 

@@ -1,26 +1,30 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect, useCallback, useRef } from "react"
 import { useRouter } from "next/navigation"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
-import { MessageCircle, Heart, ExternalLink, Calendar, Target, Send, Trash2, Edit2, Pin } from "lucide-react"
+import { MessageCircle, Heart, ExternalLink, Calendar, Target, Send, Trash2, Edit2, Pin, Image as ImageIcon, X, Loader2, Paperclip, Smile } from "lucide-react"
 import { ContentBadge } from "@/components/ui/content-badge"
 import { CategoryBadge } from "@/components/ui/category-badge"
 import { PostMenu } from "@/components/ui/post-menu"
 import { Textarea } from "@/components/ui/textarea"
-import type { Post } from "@/lib/types"
+import { Input } from "@/components/ui/input"
+import { CategorySelector } from "@/components/ui/category-selector"
+import type { Post, PostCategory } from "@/lib/types"
+import { uploadPostImage } from "@/lib/actions/storage"
 import { getComments, addComment, deleteComment, getCommentCount, type CommentWithAuthor } from "@/lib/actions/comments"
 import { createClient } from "@/lib/supabase/client"
 import { toggleReaction, getReactionData } from "@/lib/actions/reactions"
 import { getPollByPostId, type Poll } from "@/lib/actions/polls"
 import { PollCard } from "@/components/social/poll-card"
-import { pinPost, unpinPost, acknowledgePost, hasUserAcknowledged, getPostAcknowledgments } from "@/lib/actions/posts"
+import { pinPost, unpinPost, acknowledgePost, hasUserAcknowledged, getPostAcknowledgments, updatePost } from "@/lib/actions/posts"
 import { useToast } from "@/hooks/use-toast"
 import { CheckCircle2 } from "lucide-react"
 import { cn } from "@/lib/utils"
+// EditPostDialog removed - using inline editing (Twitter-style) instead
 
 interface PostCardProps {
   post: Post
@@ -55,9 +59,22 @@ export function PostCard({ post }: PostCardProps) {
   const [acknowledgmentCount, setAcknowledgmentCount] = useState(0)
   const [isAcknowledging, setIsAcknowledging] = useState(false)
 
+  // Inline edit state (Twitter-style)
+  const [isEditing, setIsEditing] = useState(false)
+  const [editContent, setEditContent] = useState(post.content)
+  const [editCategory, setEditCategory] = useState<PostCategory>(post.category as PostCategory || "general")
+  const [editTitle, setEditTitle] = useState(post.title || "")
+  const [editImage, setEditImage] = useState<{ preview: string; file: File } | null>(null)
+  const [editImageUrl, setEditImageUrl] = useState<string | null>(post.image || null)
+  const [isSavingEdit, setIsSavingEdit] = useState(false)
+  const [isUploadingImage, setIsUploadingImage] = useState(false)
+  const [imageUploadError, setImageUploadError] = useState<string | null>(null)
+  const [isAuthor, setIsAuthor] = useState(false)
+  const editImageInputRef = useRef<HTMLInputElement>(null)
+
   const { toast } = useToast()
 
-  // Get current user and check if admin
+  // Get current user, check if admin, and check if author
   useEffect(() => {
     const supabase = createClient()
     supabase.auth.getUser().then(async ({ data: { user } }) => {
@@ -74,9 +91,20 @@ export function PostCard({ post }: PostCardProps) {
         if (profile && profile.role === 'admin') {
           setIsAdmin(true)
         }
+
+        // Check if user is the author of this post
+        const { data: postData } = await (supabase
+          .from('posts') as any)
+          .select('author_id')
+          .eq('id', post.id)
+          .single()
+
+        if (postData && postData.author_id === user.id) {
+          setIsAuthor(true)
+        }
       }
     })
-  }, [])
+  }, [post.id])
 
   // Fetch reaction data on mount
   useEffect(() => {
@@ -281,6 +309,160 @@ export function PostCard({ post }: PostCardProps) {
     }
   }
 
+  // Handle inline edit save (Twitter-style)
+  const handleSaveEdit = async () => {
+    if (!editContent.trim()) {
+      toast({
+        title: "Content required",
+        description: "Please write something before saving.",
+        variant: "destructive",
+      })
+      return
+    }
+
+    // Check if anything actually changed
+    const contentChanged = editContent !== post.content
+    const categoryChanged = editCategory !== (post.category || "general")
+    const titleChanged = editTitle !== (post.title || "")
+    const imageChanged = editImage !== null || editImageUrl !== post.image
+
+    if (!contentChanged && !categoryChanged && !titleChanged && !imageChanged) {
+      setIsEditing(false)
+      return
+    }
+
+    setIsSavingEdit(true)
+    setImageUploadError(null)
+
+    try {
+      // Upload new image if selected
+      let finalImageUrl: string | null = editImageUrl
+
+      if (editImage) {
+        setIsUploadingImage(true)
+        const uploadResult = await uploadPostImage(editImage.preview)
+        setIsUploadingImage(false)
+
+        if (!uploadResult.success) {
+          setImageUploadError(uploadResult.error || "Failed to upload image")
+          setIsSavingEdit(false)
+          return
+        }
+        finalImageUrl = uploadResult.data?.publicUrl || null
+      }
+
+      const updateData: {
+        content?: string
+        category?: PostCategory
+        title?: string
+        image_url?: string | null
+      } = {}
+
+      if (contentChanged) updateData.content = editContent
+      if (categoryChanged) updateData.category = editCategory
+      if (titleChanged) updateData.title = editTitle || undefined
+      if (imageChanged) updateData.image_url = finalImageUrl
+
+      const result = await updatePost(post.id, updateData)
+
+      if (result.success) {
+        // Update local post data
+        if (contentChanged) post.content = editContent
+        if (categoryChanged) post.category = editCategory
+        if (titleChanged) post.title = editTitle || undefined
+        if (imageChanged) post.image = finalImageUrl || undefined
+
+        setEditImageUrl(finalImageUrl)
+        setEditImage(null)
+        setIsEditing(false)
+        toast({
+          title: "Post updated",
+          description: "Your changes have been saved.",
+        })
+      } else {
+        toast({
+          title: "Failed to save",
+          description: result.error || "An error occurred while saving.",
+          variant: "destructive",
+        })
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "An unexpected error occurred.",
+        variant: "destructive",
+      })
+    } finally {
+      setIsSavingEdit(false)
+      setIsUploadingImage(false)
+    }
+  }
+
+  // Handle image selection for edit mode
+  const handleEditImageSelect = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    // Validate file type
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp']
+    if (!allowedTypes.includes(file.type)) {
+      setImageUploadError('Invalid file type. Please use JPEG, PNG, GIF, or WebP.')
+      return
+    }
+
+    // Validate file size (50MB)
+    if (file.size > 50 * 1024 * 1024) {
+      setImageUploadError('File too large. Maximum size is 50MB.')
+      return
+    }
+
+    // Read and set preview
+    const reader = new FileReader()
+    reader.onload = (e) => {
+      const base64Data = e.target?.result as string
+      setEditImage({ preview: base64Data, file })
+      setImageUploadError(null)
+    }
+    reader.onerror = () => {
+      setImageUploadError('Failed to read file')
+    }
+    reader.readAsDataURL(file)
+
+    // Reset input to allow re-selecting same file
+    if (editImageInputRef.current) {
+      editImageInputRef.current.value = ''
+    }
+  }, [])
+
+  // Handle removing image in edit mode
+  const handleEditImageRemove = useCallback(() => {
+    setEditImage(null)
+    setEditImageUrl(null)
+    setImageUploadError(null)
+  }, [])
+
+  // Handle cancel edit
+  const handleCancelEdit = () => {
+    setEditContent(post.content)
+    setEditCategory(post.category as PostCategory || "general")
+    setEditTitle(post.title || "")
+    setEditImage(null)
+    setEditImageUrl(post.image || null)
+    setImageUploadError(null)
+    setIsEditing(false)
+  }
+
+  // Handle edit button click
+  const handleEditClick = () => {
+    setEditContent(post.content)
+    setEditCategory(post.category as PostCategory || "general")
+    setEditTitle(post.title || "")
+    setEditImage(null)
+    setEditImageUrl(post.image || null)
+    setImageUploadError(null)
+    setIsEditing(true)
+  }
+
   // Determine CTA based on linked content
   const getCTA = () => {
     if (post.linkedEventId) {
@@ -338,10 +520,10 @@ export function PostCard({ post }: PostCardProps) {
           </div>
           <PostMenu
             contentType="post"
-            isAuthor={false}
+            isAuthor={isAuthor}
             isAdmin={isAdmin}
             isPinned={isPinned}
-            onEdit={() => {}}
+            onEdit={handleEditClick}
             onShare={() => {}}
             onReport={() => {}}
             onLinkToEvent={() => {}}
@@ -351,24 +533,170 @@ export function PostCard({ post }: PostCardProps) {
           />
         </div>
 
-        {/* Badges - Category and Cause */}
-        {(post.category || post.cause) && (
-          <div className="mb-3 flex flex-wrap gap-2">
-            {post.category && <CategoryBadge category={post.category} />}
-            {/* Only show cause for learnings - other categories won't have that option */}
-            {post.cause && post.category === 'learnings' && (
-              <ContentBadge type="cause" label={post.cause} />
+        {/* EDIT MODE - Full inline editor */}
+        {isEditing ? (
+          <div className="mb-4 space-y-4 p-4 -mx-4 bg-muted/30 rounded-lg border border-border/50">
+            {/* Category Selector */}
+            <div className="pb-3 border-b border-border/50">
+              <CategorySelector
+                selected={editCategory}
+                onChange={setEditCategory}
+              />
+            </div>
+
+            {/* Optional Title Input */}
+            <Input
+              value={editTitle}
+              onChange={(e) => setEditTitle(e.target.value)}
+              placeholder="Add a title (optional)"
+              className="text-lg font-semibold border-0 bg-transparent px-0 focus-visible:ring-0 placeholder:text-muted-foreground/50"
+              disabled={isSavingEdit}
+            />
+
+            {/* Content Textarea */}
+            <Textarea
+              value={editContent}
+              onChange={(e) => setEditContent(e.target.value)}
+              className="min-h-[100px] text-sm leading-relaxed resize-none border-0 bg-transparent px-0 focus-visible:ring-0"
+              placeholder="What's on your mind?"
+              disabled={isSavingEdit}
+              autoFocus
+            />
+
+            {/* Image Preview - Shows when there's an image */}
+            {(editImage || editImageUrl) && (
+              <div className="relative rounded-lg overflow-hidden border border-border bg-muted">
+                <img
+                  src={editImage?.preview || editImageUrl || ""}
+                  alt="Preview"
+                  className="w-full max-h-48 object-cover"
+                />
+                {/* Remove image button */}
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  className="absolute top-2 right-2 h-8 w-8 rounded-full p-0"
+                  onClick={handleEditImageRemove}
+                  disabled={isSavingEdit || isUploadingImage}
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+                {/* Upload indicator overlay */}
+                {isUploadingImage && (
+                  <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                    <div className="flex items-center gap-2 text-white">
+                      <Loader2 className="h-6 w-6 animate-spin" />
+                      <span className="text-sm font-medium">Uploading...</span>
+                    </div>
+                  </div>
+                )}
+              </div>
             )}
+
+            {/* Image upload error */}
+            {imageUploadError && (
+              <p className="text-sm text-destructive">{imageUploadError}</p>
+            )}
+
+            {/* Action Buttons Row */}
+            <div className="flex items-center gap-2 pt-2 border-t border-border/50">
+              {/* Hidden file input for image upload */}
+              <input
+                ref={editImageInputRef}
+                type="file"
+                accept="image/jpeg,image/png,image/gif,image/webp"
+                onChange={handleEditImageSelect}
+                className="hidden"
+                disabled={isSavingEdit || isUploadingImage}
+              />
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => editImageInputRef.current?.click()}
+                disabled={isSavingEdit || isUploadingImage}
+                className={cn(
+                  "text-muted-foreground hover:text-primary hover:bg-primary/5 h-9 px-3 gap-2",
+                  (editImage || editImageUrl) && "text-primary bg-primary/10"
+                )}
+              >
+                {isUploadingImage ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <ImageIcon className="h-4 w-4" />
+                )}
+                <span className="text-sm">
+                  {editImage || editImageUrl ? "Change" : "Photo"}
+                </span>
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                disabled
+                className="text-muted-foreground h-9 px-3 gap-2 opacity-50"
+              >
+                <Paperclip className="h-4 w-4" />
+                <span className="text-sm hidden sm:inline">Attachment</span>
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                disabled
+                className="text-muted-foreground h-9 px-3 gap-2 opacity-50"
+              >
+                <Smile className="h-4 w-4" />
+                <span className="text-sm hidden sm:inline">Emoji</span>
+              </Button>
+
+              {/* Save/Cancel Buttons */}
+              <div className="flex items-center gap-2 ml-auto">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleCancelEdit}
+                  disabled={isSavingEdit}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  size="sm"
+                  onClick={handleSaveEdit}
+                  disabled={isSavingEdit || !editContent.trim()}
+                  className="gap-2"
+                >
+                  {isSavingEdit ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      Saving...
+                    </>
+                  ) : (
+                    "Save"
+                  )}
+                </Button>
+              </div>
+            </div>
           </div>
-        )}
+        ) : (
+          <>
+            {/* Badges - Category and Cause (VIEW MODE) */}
+            {(post.category || post.cause) && (
+              <div className="mb-3 flex flex-wrap gap-2">
+                {post.category && <CategoryBadge category={post.category} />}
+                {/* Only show cause for learnings - other categories won't have that option */}
+                {post.cause && post.category === 'learnings' && (
+                  <ContentBadge type="cause" label={post.cause} />
+                )}
+              </div>
+            )}
 
-        {/* Title (optional) */}
-        {post.title && (
-          <h2 className="mb-2 text-lg font-bold text-foreground tracking-tight">{post.title}</h2>
-        )}
+            {/* Title (optional) - VIEW MODE */}
+            {post.title && (
+              <h2 className="mb-2 text-lg font-bold text-foreground tracking-tight">{post.title}</h2>
+            )}
 
-        {/* Content */}
-        <p className="mb-4 text-sm leading-relaxed text-foreground whitespace-pre-wrap">{post.content}</p>
+            {/* Content - VIEW MODE */}
+            <p className="mb-4 text-sm leading-relaxed text-foreground whitespace-pre-wrap">{post.content}</p>
+          </>
+        )}
 
         {/* Linked Content Indicator */}
         {(post.linkedEventId || post.linkedProjectId) && (
@@ -396,8 +724,8 @@ export function PostCard({ post }: PostCardProps) {
           </div>
         )}
 
-        {/* Image (if attached) */}
-        {post.image && (
+        {/* Image (if attached) - VIEW MODE ONLY */}
+        {!isEditing && post.image && (
           <div className="mb-4 overflow-hidden rounded-xl">
             <img src={post.image} alt={post.title || "Post image"} className="h-[150px] sm:h-[200px] w-full object-cover" />
           </div>
@@ -512,6 +840,7 @@ export function PostCard({ post }: PostCardProps) {
           )}
         </div>
       )}
+
     </Card>
   )
 }

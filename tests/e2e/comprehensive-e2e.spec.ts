@@ -863,8 +863,8 @@ test.describe('Village Hub E2E Tests', () => {
       const projectCard = page.locator('[data-testid="project-card"], .project-card, a[href*="/projects/"], [role="link"]').first();
       
       if (await projectCard.count() > 0) {
-        const projectLink = projectCard.getAttribute('href');
-        
+        const projectLink = await projectCard.getAttribute('href');
+
         if (projectLink) {
           await projectCard.click();
           await page.waitForLoadState('networkidle');

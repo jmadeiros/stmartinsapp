@@ -14,6 +14,7 @@ export type CreatePostParams = {
   linkedEventId?: string
   linkedProjectId?: string
   mentionedUserIds?: string[]
+  imageUrl?: string
 }
 
 export type CreatePostResult = {
@@ -206,6 +207,7 @@ export async function createPost(params: CreatePostParams): Promise<CreatePostRe
         category: params.category || 'general',
         linked_event_id: params.linkedEventId || null,
         linked_project_id: params.linkedProjectId || null,
+        image_url: params.imageUrl || null,
       } as any)
       .select()
       .single()
@@ -834,6 +836,118 @@ export async function hasUserAcknowledged(postId: string, userId?: string) {
       success: false,
       error: error instanceof Error ? error.message : 'Unknown error',
       data: false
+    }
+  }
+}
+
+/**
+ * Update an existing post
+ * Only the post author can edit their own post
+ */
+export async function updatePost(
+  postId: string,
+  params: {
+    content?: string
+    category?: PostCategory
+    title?: string
+    cause?: string
+    image_url?: string | null
+  }
+) {
+  const supabase = await createClient()
+
+  try {
+    // Get current user
+    const { data: { user }, error: authError } = await supabase.auth.getUser()
+
+    if (authError || !user) {
+      console.error('[updatePost] Not authenticated:', authError)
+      return { success: false, error: 'Not authenticated' }
+    }
+
+    // Verify user is author
+    const { data: post, error: fetchError } = await (supabase
+      .from('posts') as any)
+      .select('author_id')
+      .eq('id', postId)
+      .single()
+
+    if (fetchError) {
+      console.error('[updatePost] Error fetching post:', fetchError)
+      return { success: false, error: 'Post not found' }
+    }
+
+    if (!post || post.author_id !== user.id) {
+      console.error('[updatePost] User is not the author of this post')
+      return { success: false, error: 'Not authorized to edit this post' }
+    }
+
+    // Build update object, only including provided fields
+    const updateData: Record<string, any> = {
+      updated_at: new Date().toISOString()
+    }
+
+    if (params.content !== undefined) {
+      updateData.content = params.content
+    }
+    if (params.category !== undefined) {
+      updateData.category = params.category
+    }
+    if (params.title !== undefined) {
+      updateData.title = params.title
+    }
+    if (params.cause !== undefined) {
+      updateData.cause = params.cause
+    }
+    if (params.image_url !== undefined) {
+      updateData.image_url = params.image_url
+    }
+
+    // Update post
+    const { error: updateError } = await (supabase
+      .from('posts') as any)
+      .update(updateData)
+      .eq('id', postId)
+
+    if (updateError) {
+      console.error('[updatePost] Error updating post:', updateError)
+      return { success: false, error: updateError.message }
+    }
+
+    console.log(`[updatePost] Successfully updated post ${postId}`)
+
+    // Handle @mentions - re-process from content if content was updated
+    if (params.content) {
+      // Extract @mentions from new content
+      const extractedNames = await extractMentions(params.content)
+      if (extractedNames.length > 0) {
+        const resolvedUsers = await resolveUserMentions(supabase, extractedNames)
+        const userIdsToMention = resolvedUsers.map(u => u.userId)
+
+        if (userIdsToMention.length > 0) {
+          // Delete old mentions
+          await (supabase
+            .from('post_mentions' as any) as any)
+            .delete()
+            .eq('post_id', postId)
+
+          // Insert new mentions
+          const mentionResult = await insertPostMentions(supabase, postId, userIdsToMention)
+          if (!mentionResult.success) {
+            console.warn(`[updatePost] Failed to save mentions: ${mentionResult.error}`)
+          } else {
+            console.log(`[updatePost] Updated ${userIdsToMention.length} mentions for post ${postId}`)
+          }
+        }
+      }
+    }
+
+    return { success: true, error: null }
+  } catch (error) {
+    console.error('[updatePost] Exception:', error)
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error'
     }
   }
 }
