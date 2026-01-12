@@ -566,6 +566,7 @@ export default function SignInPage() {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'azure',
         options: {
+          scopes: 'email offline_access',
           redirectTo: `${siteUrl}/auth/callback`
         }
       });
