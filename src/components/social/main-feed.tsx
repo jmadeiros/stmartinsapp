@@ -595,7 +595,7 @@ export function MainFeed({ initialFeedItems = [], userId, orgId, userRole = 'vol
                 <div className="relative">
                   {/* Highlighted text overlay (shows @mentions in blue) */}
                   <div
-                    className="absolute inset-0 pointer-events-none whitespace-pre-wrap break-words text-base px-0 py-0 text-transparent"
+                    className="absolute inset-0 pointer-events-none whitespace-pre-wrap break-words text-base px-0 py-0 text-gray-900"
                     style={{
                       fontFamily: 'inherit',
                       fontSize: '16px',

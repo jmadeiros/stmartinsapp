@@ -14,9 +14,13 @@ export default async function OnboardingPage() {
   }
 
   // Check if user already completed onboarding
-  const { needsOnboarding } = await checkOnboardingStatus()
+  const onboardingStatus = await checkOnboardingStatus()
 
-  if (!needsOnboarding) {
+  if (!onboardingStatus.needsOnboarding) {
+    // If pending approval, redirect there instead of dashboard
+    if (onboardingStatus.redirectTo) {
+      redirect(onboardingStatus.redirectTo)
+    }
     redirect('/dashboard')
   }
 

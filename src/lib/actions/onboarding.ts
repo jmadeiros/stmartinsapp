@@ -53,11 +53,12 @@ export async function checkOnboardingStatus() {
       bio: string | null
       skills: string[] | null
       interests: string[] | null
+      approval_status: string | null
     }
 
     const { data: profile, error: profileError } = await supabase
       .from('user_profiles')
-      .select('user_id, full_name, organization_id, bio, skills, interests')
+      .select('user_id, full_name, organization_id, bio, skills, interests, approval_status')
       .eq('user_id', user.id)
       .single()
 
@@ -79,7 +80,12 @@ export async function checkOnboardingStatus() {
       return { needsOnboarding: true, reason: 'no_interests', currentStep: 3 }
     }
 
-    // All complete
+    // Check approval status - if pending or rejected, redirect to pending-approval
+    if (typedProfile.approval_status === 'pending' || typedProfile.approval_status === 'rejected') {
+      return { needsOnboarding: false, reason: 'pending_approval', currentStep: 5, redirectTo: '/pending-approval' }
+    }
+
+    // All complete and approved
     return { needsOnboarding: false, reason: null, currentStep: 5 }
   } catch (error) {
     console.error('[checkOnboardingStatus] Error:', error)

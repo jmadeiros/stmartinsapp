@@ -7,6 +7,7 @@ interface ProfileResult {
   full_name: string | null
   organization_id: string | null
   bio: string | null
+  approval_status: string | null
 }
 
 export async function GET(request: Request) {
@@ -42,7 +43,7 @@ export async function GET(request: Request) {
       // Check if profile exists and is complete
       const { data: profile } = await (supabase
         .from('user_profiles')
-        .select('user_id, full_name, organization_id, bio')
+        .select('user_id, full_name, organization_id, bio, approval_status')
         .eq('user_id', session.user.id)
         .single() as unknown as Promise<{ data: ProfileResult | null; error: unknown }>)
 
@@ -50,9 +51,14 @@ export async function GET(request: Request) {
       if (!profile || !profile.organization_id || !profile.full_name) {
         return NextResponse.redirect(`${origin}/onboarding`)
       }
+
+      // User pending approval -> redirect to pending page
+      if (profile.approval_status !== 'approved') {
+        return NextResponse.redirect(`${origin}/pending-approval`)
+      }
     }
   }
 
-  // Existing user with complete profile -> dashboard
+  // Existing user with complete profile and approved -> dashboard
   return NextResponse.redirect(`${origin}/dashboard`)
 }
