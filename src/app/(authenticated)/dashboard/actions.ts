@@ -9,37 +9,34 @@ export async function getFeedData(orgId: string): Promise<FeedItem[]> {
 
   console.log('[getFeedData] Fetching feed for org:', orgId)
 
-  // Fetch posts - pinned posts appear first
+  // Fetch posts - pinned posts appear first (all orgs for cross-org visibility)
   const { data: postsData, error: postsError } = await supabase
     .from('posts')
     .select('*')
-    .eq('org_id', orgId)
     .is('deleted_at', null)
     .order('is_pinned', { ascending: false })
     .order('created_at', { ascending: false })
-    .limit(10)
+    .limit(30)
 
   console.log('[getFeedData] Posts:', postsData?.length || 0, 'Error:', postsError)
 
-  // Fetch events
+  // Fetch events (all orgs for cross-org visibility)
   const { data: eventsData, error: eventsError } = await supabase
     .from('events')
     .select('*')
-    .eq('org_id', orgId)
     .is('deleted_at', null)
     .order('created_at', { ascending: false })
-    .limit(10)
+    .limit(30)
 
   console.log('[getFeedData] Events:', eventsData?.length || 0, 'Error:', eventsError)
 
-  // Fetch projects
+  // Fetch projects (all orgs for cross-org visibility)
   const { data: projectsData, error: projectsError } = await supabase
     .from('projects')
     .select('*')
-    .eq('org_id', orgId)
     .is('deleted_at', null)
     .order('created_at', { ascending: false })
-    .limit(10)
+    .limit(30)
 
   console.log('[getFeedData] Projects:', projectsData?.length || 0, 'Error:', projectsError)
 

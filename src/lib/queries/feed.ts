@@ -20,16 +20,22 @@ export type FeedRealtimeEvent =
  */
 export async function getFeed(
   supabase: Client,
-  orgId: string,
+  orgId?: string, // Optional - if omitted, shows all orgs
   options?: {
     limit?: number
     offset?: number
   }
 ) {
-  const { data, error } = await supabase
+  let query = supabase
     .from('feed')
     .select('*')
-    .eq('org_id', orgId)
+
+  // Only filter by org_id if explicitly provided (for cross-org visibility, omit orgId)
+  if (orgId) {
+    query = query.eq('org_id', orgId)
+  }
+
+  const { data, error } = await query
     .order('is_pinned', { ascending: false })
     .order('created_at', { ascending: false })
     .range(options?.offset ?? 0, (options?.offset ?? 0) + (options?.limit ?? 20) - 1)
@@ -48,14 +54,14 @@ export async function getFeed(
  */
 export async function getPostsByCategory(
   supabase: Client,
-  orgId: string,
+  orgId: string | undefined, // Optional - if omitted, shows all orgs
   category: Database['public']['Enums']['post_category'],
   options?: {
     limit?: number
     offset?: number
   }
 ) {
-  const { data, error } = await supabase
+  let query = supabase
     .from('posts')
     .select(`
       *,
@@ -65,7 +71,12 @@ export async function getPostsByCategory(
         avatar_url
       )
     `)
-    .eq('org_id', orgId)
+
+  if (orgId) {
+    query = query.eq('org_id', orgId)
+  }
+
+  const { data, error } = await query
     .eq('category', category)
     .order('is_pinned', { ascending: false })
     .order('created_at', { ascending: false })
@@ -84,13 +95,13 @@ export async function getPostsByCategory(
  */
 export async function getEvents(
   supabase: Client,
-  orgId: string,
+  orgId?: string, // Optional - if omitted, shows all orgs
   options?: {
     limit?: number
     offset?: number
   }
 ) {
-  const { data, error } = await supabase
+  let query = supabase
     .from('events')
     .select(`
       *,
@@ -101,7 +112,12 @@ export async function getEvents(
       ),
       rsvps:event_rsvps(count)
     `)
-    .eq('org_id', orgId)
+
+  if (orgId) {
+    query = query.eq('org_id', orgId)
+  }
+
+  const { data, error } = await query
     .order('start_date', { ascending: true })
     .range(options?.offset ?? 0, (options?.offset ?? 0) + (options?.limit ?? 20) - 1)
 
@@ -118,13 +134,13 @@ export async function getEvents(
  */
 export async function getProjects(
   supabase: Client,
-  orgId: string,
+  orgId?: string, // Optional - if omitted, shows all orgs
   options?: {
     limit?: number
     offset?: number
   }
 ) {
-  const { data, error } = await supabase
+  let query = supabase
     .from('projects')
     .select(`
       *,
@@ -135,7 +151,12 @@ export async function getProjects(
       ),
       tasks:project_tasks(count)
     `)
-    .eq('org_id', orgId)
+
+  if (orgId) {
+    query = query.eq('org_id', orgId)
+  }
+
+  const { data, error } = await query
     .order('created_at', { ascending: false })
     .range(options?.offset ?? 0, (options?.offset ?? 0) + (options?.limit ?? 20) - 1)
 
@@ -381,16 +402,21 @@ export async function expressProjectInterest(
  */
 export async function getOpportunities(
   supabase: Client,
-  orgId: string,
+  orgId?: string, // Optional - if omitted, shows all orgs
   options?: {
     limit?: number
     offset?: number
   }
 ) {
-  const { data, error } = await supabase
+  let query = supabase
     .from('opportunities')
     .select('*')
-    .eq('org_id', orgId)
+
+  if (orgId) {
+    query = query.eq('org_id', orgId)
+  }
+
+  const { data, error } = await query
     .order('created_at', { ascending: false })
     .range(options?.offset ?? 0, (options?.offset ?? 0) + (options?.limit ?? 20) - 1)
 
@@ -416,7 +442,7 @@ export async function getOpportunities(
  */
 export function subscribeToFeed(
   supabase: Client,
-  orgId: string,
+  orgId?: string, // Optional - if omitted, receives all orgs (cross-org visibility)
   callbacks: {
     onPostInsert?: (post: PostRow) => void
     onPostUpdate?: (post: PostRow) => void
@@ -426,11 +452,12 @@ export function subscribeToFeed(
     onCommentDelete?: (comment: PostCommentRow) => void
     onReactionInsert?: (reaction: PostReactionRow) => void
     onReactionDelete?: (reaction: PostReactionRow) => void
-  }
+  } = {}
 ): RealtimeChannel {
-  console.log('[Feed Realtime] Creating subscription for org:', orgId)
+  const channelName = orgId ? `feed:${orgId}` : 'feed:all'
+  console.log('[Feed Realtime] Creating subscription:', channelName)
 
-  const channel = supabase.channel(`feed:${orgId}`)
+  const channel = supabase.channel(channelName)
 
   // Subscribe to posts table
   channel
@@ -443,8 +470,8 @@ export function subscribeToFeed(
       },
       (payload: { new: PostRow }) => {
         console.log('[Feed Realtime] Post INSERT received:', payload)
-        // Filter by org_id client-side (RLS should already filter, but double-check)
-        if (payload.new.org_id === orgId) {
+        // If orgId provided, filter client-side; otherwise accept all
+        if (!orgId || payload.new.org_id === orgId) {
           callbacks.onPostInsert?.(payload.new)
         }
       }
@@ -458,7 +485,7 @@ export function subscribeToFeed(
       },
       (payload: { new: PostRow; old: PostRow }) => {
         console.log('[Feed Realtime] Post UPDATE received:', payload)
-        if (payload.new.org_id === orgId) {
+        if (!orgId || payload.new.org_id === orgId) {
           callbacks.onPostUpdate?.(payload.new)
         }
       }
@@ -472,7 +499,7 @@ export function subscribeToFeed(
       },
       (payload: { old: PostRow }) => {
         console.log('[Feed Realtime] Post DELETE received:', payload)
-        if (payload.old.org_id === orgId) {
+        if (!orgId || payload.old.org_id === orgId) {
           callbacks.onPostDelete?.(payload.old)
         }
       }

@@ -9,8 +9,8 @@ import type { FeedItem, FeedPost } from '@/lib/types'
 // Query keys for cache management
 export const feedKeys = {
   all: ['feed'] as const,
-  list: (orgId: string) => [...feedKeys.all, 'list', orgId] as const,
-  item: (orgId: string, itemId: string) => [...feedKeys.all, 'item', orgId, itemId] as const,
+  list: (orgId?: string) => [...feedKeys.all, 'list', orgId || 'all'] as const,
+  item: (orgId: string | undefined, itemId: string) => [...feedKeys.all, 'item', orgId || 'all', itemId] as const,
 }
 
 interface UseFeedRealtimeOptions {
@@ -79,8 +79,8 @@ export function useFeedRealtime({
 
   // Realtime subscription
   useEffect(() => {
-    if (!orgId || !enabled) {
-      console.log('[useFeedRealtime] Skipping subscription:', { orgId, enabled })
+    if (!enabled) {
+      console.log('[useFeedRealtime] Skipping subscription - disabled')
       return
     }
 
@@ -88,7 +88,7 @@ export function useFeedRealtime({
     let channelCleanup: (() => void) | undefined
 
     async function setupSubscription() {
-      console.log('[useFeedRealtime] Setting up realtime subscription for org:', orgId)
+      console.log('[useFeedRealtime] Setting up realtime subscription:', orgId || 'all orgs')
 
       // Ensure the client has an authenticated session before subscribing
       const { data: sessionData, error: sessionError } = await supabase.auth.getSession()
@@ -104,9 +104,10 @@ export function useFeedRealtime({
       // Make sure realtime uses the user's access token (otherwise RLS will block events)
       supabase.realtime.setAuth(sessionData.session.access_token)
 
+      // Subscribe to feed - pass undefined for cross-org visibility
       const channel = subscribeToFeed(
         supabase,
-        orgId!,
+        orgId, // Can be undefined for all orgs
         {
           // On INSERT - new post arrived
           onPostInsert: (newPost) => {
@@ -114,7 +115,7 @@ export function useFeedRealtime({
 
             // Update query cache by adding new post to the beginning
             queryClient.setQueryData<FeedItem[]>(
-              feedKeys.list(orgId!),
+              feedKeys.list(orgId),
               (old) => {
                 if (!old) return old
                 const feedItem = convertPostRowToFeedItem(newPost)
@@ -130,7 +131,7 @@ export function useFeedRealtime({
             onNewPost?.(newPost)
 
             // Invalidate queries to fetch full data with author info
-            queryClient.invalidateQueries({ queryKey: feedKeys.list(orgId!) })
+            queryClient.invalidateQueries({ queryKey: feedKeys.list(orgId) })
           },
 
           // On UPDATE - post changed (e.g., edited, pinned)
@@ -138,7 +139,7 @@ export function useFeedRealtime({
             console.log('[useFeedRealtime] Received post update via realtime:', updatedPost)
 
             queryClient.setQueryData<FeedItem[]>(
-              feedKeys.list(orgId!),
+              feedKeys.list(orgId),
               (old) => {
                 if (!old) return old
                 return old.map(item => {
@@ -164,7 +165,7 @@ export function useFeedRealtime({
             console.log('[useFeedRealtime] Received post delete via realtime:', deletedPost)
 
             queryClient.setQueryData<FeedItem[]>(
-              feedKeys.list(orgId!),
+              feedKeys.list(orgId),
               (old) => {
                 if (!old) return old
                 return old.filter(item => item.id !== deletedPost.id)
@@ -179,7 +180,7 @@ export function useFeedRealtime({
             console.log('[useFeedRealtime] Received new comment via realtime:', newComment)
 
             queryClient.setQueryData<FeedItem[]>(
-              feedKeys.list(orgId!),
+              feedKeys.list(orgId),
               (old) => {
                 if (!old) return old
                 return old.map(item => {
@@ -200,7 +201,7 @@ export function useFeedRealtime({
             console.log('[useFeedRealtime] Received comment delete via realtime:', deletedComment)
 
             queryClient.setQueryData<FeedItem[]>(
-              feedKeys.list(orgId!),
+              feedKeys.list(orgId),
               (old) => {
                 if (!old) return old
                 return old.map(item => {
@@ -221,7 +222,7 @@ export function useFeedRealtime({
             console.log('[useFeedRealtime] Received new reaction via realtime:', newReaction)
 
             queryClient.setQueryData<FeedItem[]>(
-              feedKeys.list(orgId!),
+              feedKeys.list(orgId),
               (old) => {
                 if (!old) return old
                 return old.map(item => {
@@ -242,7 +243,7 @@ export function useFeedRealtime({
             console.log('[useFeedRealtime] Received reaction delete via realtime:', deletedReaction)
 
             queryClient.setQueryData<FeedItem[]>(
-              feedKeys.list(orgId!),
+              feedKeys.list(orgId),
               (old) => {
                 if (!old) return old
                 return old.map(item => {
@@ -263,7 +264,7 @@ export function useFeedRealtime({
       isConnectedRef.current = true
 
       channelCleanup = () => {
-        console.log('[useFeedRealtime] Cleaning up realtime subscription for org:', orgId)
+        console.log('[useFeedRealtime] Cleaning up realtime subscription:', orgId || 'all orgs')
         isConnectedRef.current = false
         channel.unsubscribe()
       }
